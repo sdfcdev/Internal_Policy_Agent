@@ -1,0 +1,111 @@
+import axios from 'axios';
+
+const API = axios.create({
+  baseURL: 'http://localhost:8000',
+  timeout: 120_000,          // 2 min – LLM responses can be slow
+});
+
+export async function sendChat(query, employeeId) {
+  const { data } = await API.post('/chat', { query, employee_id: employeeId });
+  return data;
+}
+
+export async function uploadPdf(file, adminId, startDate, expireDate, onProgress) {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('admin_id', adminId || 'System');
+  if (startDate) form.append('start_date', startDate);
+  if (expireDate) form.append('expire_date', expireDate);
+  
+  const { data } = await API.post('/upload', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: (e) => {
+      if (onProgress && e.total) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    },
+  });
+  return data;
+}
+
+export async function getDocuments() {
+  const { data } = await API.get('/admin/documents');
+  return data;
+}
+
+export async function getDocumentCount() {
+  const { data } = await API.get('/documents');
+  return data;
+}
+
+export async function healthCheck() {
+  const { data } = await API.get('/health');
+  return data;
+}
+
+// -- NWE -- 
+
+export async function getChatHistory(employeeId) {
+  const { data } = await API.get(`/history/${employeeId}`);
+  return data;
+}
+
+export async function saveHistorySession(sessionId) {
+  const { data } = await API.put(`/history/save/${sessionId}`);
+  return data;
+}
+
+export async function renameHistorySession(sessionId, title) {
+  const { data } = await API.put(`/history/rename/${sessionId}`, { title });
+  return data;
+}
+
+export async function getAdminLogs() {
+  const { data } = await API.get('/admin/logs');
+  return data;
+}
+
+export async function getChunks() {
+  const { data } = await API.get('/admin/chunks');
+  return data;
+}
+
+export async function deleteDocument(filename) {
+  const { data } = await API.delete(`/admin/document/${filename}`);
+  return data;
+}
+
+export async function renameDocument(old_filename, new_filename, admin_id) {
+  const { data } = await API.post(`/admin/document/rename`, { old_filename, new_filename, admin_id });
+  return data;
+}
+
+export async function updateDocument(filename, start_date, expire_date, admin_id) {
+  const { data } = await API.post(`/admin/document/update`, { filename, start_date, expire_date, admin_id });
+  return data;
+}
+
+export async function getAccounts() {
+  const { data } = await API.get('/admin/account');
+  return data;
+}
+
+export async function addAccount(username, password, role, name, emp_num, designation, department) {
+  const { data } = await API.post('/admin/account', { username, password, role, name, emp_num, designation, department });
+  return data;
+}
+
+export async function deleteAccount(username) {
+  const { data } = await API.delete(`/admin/account/${username}`);
+  return data;
+}
+
+export async function updateAccount(username, role, name, emp_num, password) {
+  const { data } = await API.put(`/admin/account/${username}`, { role, name, emp_num, password });
+  return data;
+}
+
+export async function login(username, password) {
+  const { data } = await API.post('/auth/login', { username, password });
+  return data;
+}

@@ -1,0 +1,39 @@
+# ─────────────────────────────────────────────────────────
+#  SDF AI Copilot – Python Backend Dependencies
+#  Python 3.14 compatible (uses pre-built wheels)
+# ─────────────────────────────────────────────────────────
+
+# Web framework
+fastapi>=0.115.5
+uvicorn[standard]>=0.32.1
+python-multipart>=0.0.18
+aiofiles>=24.1.0
+
+# LangChain ecosystem
+langchain>=0.3.7
+langchain-community>=0.3.7
+langchain-google-genai>=2.0.0
+langchain-chroma>=0.1.4
+langgraph>=0.2.45
+
+# LLM & Embeddings
+# (using Google Generative AI)
+
+# Numerics
+numpy>=2.0.0
+
+# Vector DB
+chromadb>=0.5.23
+
+# PDF parsing
+llama-parse>=0.5.0
+
+# Database
+pyodbc>=5.3.0
+
+# Utilities
+pydantic>=2.12.5
+python-dotenv>=1.0.1
+httpx>=0.28.1
+aiofiles>=24.1.0
+python-multipart>=0.0.18

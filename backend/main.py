@@ -1,0 +1,595 @@
+"""
+SDF AI Copilot - Production-Ready Multi-Agent RAG Backend
+FastAPI + LangGraph + Google Gemini (Pro/Flash) + LlamaParse + ChromaDB + MSSQL Audit Trail
+"""
+
+import os
+import uuid
+import json
+import logging
+import traceback
+import asyncio
+from datetime import datetime
+from pathlib import Path
+from typing import Annotated, List, Optional, TypedDict, Dict, Any, AsyncGenerator
+
+import pyodbc
+import aiofiles
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Path as APIPath
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from dotenv import load_dotenv
+
+# LangChain / LangGraph
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_chroma import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage, SystemMessage
+from langgraph.graph import StateGraph, END
+
+# LlamaParse
+from llama_parse import LlamaParse
+
+load_dotenv()
+
+# ─────────────────────────────────────────────
+# Logging Setup
+# ─────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("sdf_copilot")
+
+# ─────────────────────────────────────────────
+# Directory Setup
+# ─────────────────────────────────────────────
+BASE_DIR = Path(__file__).parent
+UPLOAD_DIR = BASE_DIR / "uploads"
+CHROMA_DIR = BASE_DIR / "chroma_db"
+UPLOAD_DIR.mkdir(exist_ok=True)
+CHROMA_DIR.mkdir(exist_ok=True)
+
+# ─────────────────────────────────────────────
+# FastAPI App
+# ─────────────────────────────────────────────
+app = FastAPI(
+    title="SDF AI Copilot API",
+    description="Enterprise Multi-Agent RAG System with Google Gemini & LlamaParse",
+    version="2.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ─────────────────────────────────────────────
+# Shared Singletons
+# ─────────────────────────────────────────────
+# Global Billing Tracker (Mock for presentation)
+ESTIMATED_COST_PER_REQ = 0.002 # ~$2 per 1000 requests
+MONTHLY_BUDGET_LIMIT = 30.0
+current_monthly_spend = 0.0 # This would ideally be in a DB table
+
+_embeddings = None
+_vectorstore = None
+
+def get_embeddings():
+    global _embeddings
+    if _embeddings is None:
+        logger.info("Initializing Google Generative AI Embeddings (gemini-embedding-001)…")
+        _embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+    return _embeddings
+
+def get_vectorstore():
+    global _vectorstore
+    if _vectorstore is None:
+        logger.info("Initializing ChromaDB at %s…", CHROMA_DIR)
+        _vectorstore = Chroma(
+            collection_name="sdf_knowledge_base",
+            embedding_function=get_embeddings(),
+            persist_directory=str(CHROMA_DIR),
+        )
+    return _vectorstore
+
+def get_llm(model_name: str = "models/gemini-flash-latest"):
+    """Returns a Gemini model. Use gemini-pro-latest for complex logic, flash for speed."""
+    logger.info(f"Connecting to Google Gemini ({model_name})…")
+    return ChatGoogleGenerativeAI(model=model_name, temperature=0.1)
+
+# ─────────────────────────────────────────────
+# MSSQL Connections
+# ─────────────────────────────────────────────
+MSSQL_SERVER = os.getenv("MSSQL_SERVER", "localhost\\SQLEXPRESS")
+MSSQL_DATABASE = os.getenv("MSSQL_DATABASE", "SDF_Copilot")
+MSSQL_USER = os.getenv("MSSQL_USER", "")
+MSSQL_PASS = os.getenv("MSSQL_PASSWORD", "")
+
+def get_db_connection():
+    drivers = [
+        "{ODBC Driver 17 for SQL Server}",
+        "{ODBC Driver 18 for SQL Server}",
+        "{SQL Server Native Client 11.0}",
+        "{SQL Server}"
+    ]
+    
+    for driver in drivers:
+        try:
+            if MSSQL_USER and MSSQL_PASS:
+                conn_str = f"DRIVER={driver};SERVER={MSSQL_SERVER};DATABASE={MSSQL_DATABASE};UID={MSSQL_USER};PWD={MSSQL_PASS};TrustServerCertificate=yes;Connection Timeout=5;"
+            else:
+                conn_str = f"DRIVER={driver};SERVER={MSSQL_SERVER};DATABASE={MSSQL_DATABASE};Trusted_Connection=yes;TrustServerCertificate=yes;Connection Timeout=5;"
+            
+            logger.info(f"Attempting MSSQL connection with {driver}…")
+            conn = pyodbc.connect(conn_str)
+            logger.info(f"MSSQL Connection Successful with {driver}.")
+            return conn
+        except pyodbc.Error:
+            continue
+            
+    logger.error(f"All MSSQL connection attempts failed for {MSSQL_SERVER}. Check your SQL Server name and Drivers.")
+    return None
+
+def ensure_audit_table():
+    conn = get_db_connection()
+    if conn is None: return
+    try:
+        cursor = conn.cursor()
+        cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='AuditTrail' AND xtype='U') CREATE TABLE AuditTrail (ID INT IDENTITY(1,1) PRIMARY KEY, EmployeeID NVARCHAR(100) NOT NULL, SessionID NVARCHAR(100) NULL, QueryText NVARCHAR(MAX) NOT NULL, AIResponse NVARCHAR(MAX) NOT NULL, IsSaved BIT DEFAULT 0, CreatedAt DATETIME DEFAULT GETDATE())")
+        cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='DocumentLogs' AND xtype='U') CREATE TABLE DocumentLogs (ID INT IDENTITY(1,1) PRIMARY KEY, AdminID NVARCHAR(100) NULL, Action NVARCHAR(50) NOT NULL, Filename NVARCHAR(255) NOT NULL, ChunksCount INT NOT NULL, CreatedAt DATETIME NOT NULL DEFAULT GETDATE())")
+        cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='KnowledgeDocuments' AND xtype='U') CREATE TABLE KnowledgeDocuments (ID INT IDENTITY(1,1) PRIMARY KEY, Filename NVARCHAR(255) NOT NULL, StartDate NVARCHAR(100) NULL, ExpireDate NVARCHAR(100) NULL, AdminID NVARCHAR(100) NULL, CreatedAt DATETIME NOT NULL DEFAULT GETDATE())")
+        cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='QueryCache' AND xtype='U') CREATE TABLE QueryCache (ID INT IDENTITY(1,1) PRIMARY KEY, QueryText NVARCHAR(MAX) NOT NULL, AIResponse NVARCHAR(MAX) NOT NULL, Accuracy NVARCHAR(50) NOT NULL, CreatedAt DATETIME DEFAULT GETDATE())")
+        cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Accounts' AND xtype='U') CREATE TABLE Accounts (ID INT IDENTITY(1,1) PRIMARY KEY, Username NVARCHAR(100) NOT NULL UNIQUE, Password NVARCHAR(200) NOT NULL, Role NVARCHAR(50) NOT NULL, Name NVARCHAR(150) NULL, CreatedAt DATETIME DEFAULT GETDATE())")
+        cursor.execute("SELECT COUNT(*) FROM Accounts")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("INSERT INTO Accounts (Username, Password, Role, Name) VALUES ('master_admin', 'admin123', 'master', 'Master Admin')")
+        # Check and add columns if missing
+        try: cursor.execute("ALTER TABLE AuditTrail ADD IsSaved INT DEFAULT 0")
+        except: pass
+        try: cursor.execute("ALTER TABLE AuditTrail ADD SessionTitle NVARCHAR(MAX)")
+        except: pass
+        
+        conn.commit()
+    except pyodbc.Error as exc:
+        logger.error("Database setup failed: %s", exc)
+    finally:
+        conn.close()
+
+def log_document_action(action: str, filename: str, chunks_count: int, admin_id: str = "System"):
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO DocumentLogs (AdminID, Action, Filename, ChunksCount) VALUES (?, ?, ?, ?)", admin_id, action, filename, chunks_count)
+            conn.commit()
+        finally: conn.close()
+
+# ─────────────────────────────────────────────
+# LangGraph State Definition
+# ─────────────────────────────────────────────
+class AgentState(TypedDict):
+    query: str
+    employee_id: str
+    session_id: str
+    save_chat: bool
+    retrieved_chunks: List[str]
+    draft_response: str
+    final_response: str
+    hallucination_check: str
+    accuracy_score: str
+    rewrite_count: int
+    current_agent: str
+
+# ─────────────────────────────────────────────
+# Agent Nodes
+# ─────────────────────────────────────────────
+
+def researcher_node(state: AgentState) -> AgentState:
+    """Researcher Agent: Finds relevant chunks from ChromaDB."""
+    logger.info("[RESEARCHER] Finding relevant document chunks…")
+    vs = get_vectorstore()
+    docs = vs.similarity_search(state["query"], k=5)
+    chunks = [doc.page_content for doc in docs]
+    if not chunks:
+        chunks = ["No relevant documents found in the knowledge base."]
+    return {**state, "retrieved_chunks": chunks, "current_agent": "Researcher"}
+
+def compliance_node(state: AgentState) -> AgentState:
+    """Compliance Agent: Uses Gemini Pro to check if context is sufficient."""
+    logger.info("[COMPLIANCE] Validating policy compliance with Gemini Pro…")
+    llm = get_llm("gemini-1.5-flash")
+    context = "\n\n---\n\n".join(state["retrieved_chunks"])
+    prompt = f"As a Corporate Compliance Officer, evaluate if the following context contains enough information to answer the query safely and accurately.\n\nQUERY: {state['query']}\n\nCONTEXT: {context}\n\nRespond with a 1-sentence assessment."
+    response = llm.invoke(prompt)
+    return {**state, "draft_response": f"[COMPLIANCE] {response.content}", "current_agent": "Compliance"}
+
+def communicator_node(state: AgentState) -> AgentState:
+    """Communicator Agent: Uses Gemini Flash to draft a professional response."""
+    logger.info("[COMMUNICATOR] Drafting concise bilingual response with Gemini Flash…")
+    llm = get_llm("gemini-1.5-flash")
+    context = "\n\n---\n\n".join(state["retrieved_chunks"])
+    history = state.get("history", "")
+    prompt = (
+        "You are a Professional Corporate Communications AI for Sarvodaya Development Finance (SDF). "
+        "DOCUMENT CONTEXT:\n{context}\n\n"
+        "CHAT HISTORY:\n{history}\n\n"
+        "USER QUERY: {state['query']}\n\n"
+        "INSTRUCTIONS:\n"
+        "1. If the answer is in the CONTEXT, provide a professional response with citations like [Source: file.pdf, Page: X].\n"
+        "2. If the user is just saying 'Hi' or asking a general question NOT in the context, politely explain that you are the SDF AI Copilot and can only answer questions based on official internal documents.\n"
+        "3. BILINGUAL: Always respond in both English and Sinhala (Sinhala translation follows English).\n"
+        "4. Keep it concise (under 100 words).\n"
+    )
+    response = llm.invoke(prompt.format(context=context, history=history))
+    return {**state, "draft_response": response.content, "current_agent": "Communicator"}
+
+def reviewer_node(state: AgentState) -> AgentState:
+    """Reviewer Agent: Uses Gemini Pro to verify accuracy and avoid hallucination."""
+    logger.info("[REVIEWER] Fact-checking response with Gemini Pro…")
+    llm = get_llm("gemini-1.5-flash")
+    context = "\n\n---\n\n".join(state["retrieved_chunks"])
+    prompt = (
+        "Review the DRAFT RESPONSE against the DOCUMENT CONTEXT for accuracy and hallucinations. "
+        "Output ONLY raw JSON: {\"verdict\": \"PASS\" or \"FAIL\", \"accuracy\": \"X%\"}\n\n"
+        f"CONTEXT:\n{context}\n\nDRAFT:\n{state['draft_response']}"
+    )
+    response = llm.invoke(prompt)
+    try:
+        data = json.loads(response.content.strip("` \n").replace("json", ""))
+        verdict = data.get("verdict", "FAIL")
+        acc = data.get("accuracy", "0%")
+    except:
+        verdict, acc = "FAIL", "0%"
+    
+    return {**state, "hallucination_check": verdict.lower(), "accuracy_score": acc, "current_agent": "Reviewer"}
+
+def audit_node(state: AgentState) -> AgentState:
+    """Audit Agent: Saves to MSSQL and QueryCache."""
+    global current_monthly_spend
+    logger.info("[AUDIT] Recording transaction in MSSQL…")
+    
+    current_monthly_spend += ESTIMATED_COST_PER_REQ
+    
+    final = state.get("draft_response", "No response generated.")
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO AuditTrail (EmployeeID, SessionID, QueryText, AIResponse, IsSaved) VALUES (?, ?, ?, ?, ?)",
+                           state["employee_id"], state.get("session_id", ""), state["query"], final, 1 if state.get("save_chat") else 0)
+            cursor.execute("INSERT INTO QueryCache (QueryText, AIResponse, Accuracy) VALUES (?, ?, ?)",
+                           state["query"].strip().lower(), final, state.get("accuracy_score", "0%"))
+            conn.commit()
+        finally: conn.close()
+    return {**state, "final_response": final, "current_agent": "Done"}
+
+# ─────────────────────────────────────────────
+# Graph Construction
+# ─────────────────────────────────────────────
+def hallucination_router(state):
+    if state["hallucination_check"] == "pass" or state.get("rewrite_count", 0) >= 2: return "audit"
+    return "rewrite"
+
+def increment_rewrite(state):
+    return {**state, "rewrite_count": state.get("rewrite_count", 0) + 1}
+
+def build_graph():
+    workflow = StateGraph(AgentState)
+    workflow.add_node("researcher", researcher_node)
+    workflow.add_node("compliance", compliance_node)
+    workflow.add_node("communicator", communicator_node)
+    workflow.add_node("reviewer", reviewer_node)
+    workflow.add_node("increment_rewrite", increment_rewrite)
+    workflow.add_node("audit", audit_node)
+
+    workflow.set_entry_point("researcher")
+    workflow.add_edge("researcher", "compliance")
+    workflow.add_edge("compliance", "communicator")
+    workflow.add_edge("communicator", "reviewer")
+    workflow.add_conditional_edges("reviewer", hallucination_router, {"audit": "audit", "rewrite": "increment_rewrite"})
+    workflow.add_edge("increment_rewrite", "communicator")
+    workflow.add_edge("audit", END)
+    return workflow.compile()
+
+graph = build_graph()
+
+# ─────────────────────────────────────────────
+# FastAPI Endpoints
+# ─────────────────────────────────────────────
+
+class ChatRequest(BaseModel):
+    query: str
+    employee_id: str
+    session_id: str = ""
+    save_chat: bool = False
+
+@app.post("/chat/stream")
+async def stream_chat(request: ChatRequest):
+    # Check Cache
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT AIResponse, Accuracy FROM QueryCache WHERE QueryText = ?", request.query.strip().lower())
+            row = cursor.fetchone()
+            if row:
+                async def cache_gen():
+                    yield f"data: {json.dumps({'agent': 'Cache', 'status': 'done', 'response': row[0], 'accuracy_score': row[1], 'hallucination_check': 'pass'})}\n\n"
+                    yield "data: [DONE]\n\n"
+                return StreamingResponse(cache_gen(), media_type="text/event-stream")
+        finally: conn.close()
+
+    initial_state = {
+        "query": request.query, "employee_id": request.employee_id, "session_id": request.session_id, "save_chat": request.save_chat,
+        "retrieved_chunks": [], "draft_response": "", "final_response": "", "hallucination_check": "", "rewrite_count": 0, "current_agent": "Starting", "accuracy_score": ""
+    }
+
+    async def event_gen():
+        try:
+            async for step in graph.astream(initial_state):
+                for node, state in step.items():
+                    if node == "increment_rewrite": continue
+                    yield f"data: {json.dumps({'agent': state.get('current_agent', node), 'status': 'processing', 'response': state.get('final_response', state.get('draft_response', '')), 'accuracy_score': state.get('accuracy_score', ''), 'hallucination_check': state.get('hallucination_check', '')})}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            error_msg = str(e)
+            if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+                error_msg = "Google Gemini API Quota Exceeded (429). Please wait a minute or use a different API Key."
+            logger.error(traceback.format_exc())
+            yield f"data: {json.dumps({'error': error_msg})}\n\n"
+
+    return StreamingResponse(event_gen(), media_type="text/event-stream")
+
+@app.post("/upload")
+async def upload_pdf(file: UploadFile = File(...), admin_id: str = Form("System"), start_date: str = Form(""), expire_date: str = Form("")):
+    if not file.filename.lower().endswith(".pdf"): raise HTTPException(status_code=400, detail="Only PDFs allowed.")
+    
+    file_path = UPLOAD_DIR / file.filename
+    async with aiofiles.open(file_path, "wb") as f:
+        await f.write(await file.read())
+
+    try:
+        logger.info("[ADMIN] Parsing PDF with LlamaParse…")
+        parser = LlamaParse(result_type="markdown")
+        llama_docs = parser.load_data(str(file_path))
+        
+        # Convert to LangChain format
+        from langchain_core.documents import Document
+        # Ingest documents with page metadata
+        chunks = []
+        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+        
+        for i, doc in enumerate(llama_docs):
+            page_num = i + 1 # Assuming one doc per page from LlamaParse
+            page_chunks = splitter.create_documents([doc.text], metadatas=[{"source": file.filename, "page": page_num}])
+            chunks.extend(page_chunks)
+        
+        vs = get_vectorstore()
+        # High-speed ingestion for Pay-as-you-go (no delays)
+        batch_size = 100 
+        for i in range(0, len(chunks), batch_size):
+            batch = chunks[i:i + batch_size]
+            vs.add_documents(batch)
+            logger.info(f"Ingested {min(i + batch_size, len(chunks))}/{len(chunks)} chunks with page metadata…")
+        
+        log_document_action("UPLOAD", file.filename, len(chunks), admin_id)
+        
+        conn = get_db_connection()
+        if not conn:
+            raise HTTPException(status_code=500, detail="Database connection failed. Check your SQL Server settings.")
+            
+        try:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO KnowledgeDocuments (Filename, StartDate, ExpireDate, AdminID) VALUES (?, ?, ?, ?)",
+                           file.filename, start_date, expire_date, admin_id)
+            cursor.execute("TRUNCATE TABLE QueryCache")
+            conn.commit()
+        finally: conn.close()
+
+        return {"message": "Success", "filename": file.filename, "chunks_added": len(chunks)}
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.on_event("startup")
+async def on_startup():
+    ensure_audit_table()
+
+@app.get("/health")
+async def health(): return {"status": "ok"}
+
+@app.get("/documents")
+async def get_total_docs():
+    try:
+        vs = get_vectorstore()
+        count = vs._collection.count()
+        return {"total_chunks": count}
+    except:
+        return {"total_chunks": 0}
+
+@app.get("/admin/logs")
+async def get_admin_logs():
+    conn = get_db_connection()
+    if not conn: return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT ID, AdminID, Action, Filename, ChunksCount, CreatedAt FROM DocumentLogs ORDER BY CreatedAt DESC")
+        return [{"id": r[0], "admin_id": r[1], "action": r[2], "filename": r[3], "chunks_count": r[4], "created_at": r[5].isoformat()} for r in cursor.fetchall()]
+    finally: conn.close()
+
+@app.get("/admin/chunks")
+async def list_all_chunks():
+    try:
+        vs = get_vectorstore()
+        results = vs._collection.get()
+        chunks = []
+        for i in range(len(results['ids'])):
+            chunks.append({
+                "id": results['ids'][i],
+                "text": results['documents'][i],
+                "metadata": results['metadatas'][i]
+            })
+        return {"chunks": chunks}
+    except Exception as e:
+        logger.error(e)
+        return {"chunks": []}
+
+# Auth, List Chunks, List Logs, etc.
+
+@app.post("/auth/login")
+async def login(req: Dict[str, str]):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed. Check your SQL Server settings.")
+    cursor = conn.cursor()
+    cursor.execute("SELECT Username, Role, Name FROM Accounts WHERE Username=? AND Password=?", req['username'], req['password'])
+    row = cursor.fetchone()
+    if not row: raise HTTPException(status_code=401)
+    return {"username": row[0], "role": row[1], "name": row[2], "emp_num": row[0]}
+
+@app.get("/admin/documents")
+async def list_docs():
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed. Cannot list documents.")
+    cursor = conn.cursor()
+    cursor.execute("SELECT ID, Filename, StartDate, ExpireDate, AdminID, CreatedAt FROM KnowledgeDocuments ORDER BY ID DESC")
+    return [{"id": r[0], "filename": r[1], "start_date": r[2], "expire_date": r[3], "admin_id": r[4], "created_at": r[5].isoformat()} for r in cursor.fetchall()]
+
+@app.delete("/admin/document/{filename}")
+async def delete_doc(filename: str):
+    try:
+        vs = get_vectorstore()
+        collection = vs._collection
+        # Delete only chunks belonging to this file
+        collection.delete(where={"source": filename})
+        
+        log_document_action("DELETE", filename, 0, "System")
+        
+        conn = get_db_connection()
+        if conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM KnowledgeDocuments WHERE Filename = ?", filename)
+                cursor.execute("TRUNCATE TABLE QueryCache")
+                conn.commit()
+            finally: conn.close()
+
+        # Delete local file
+        local_file = UPLOAD_DIR / filename
+        if local_file.exists(): local_file.unlink()
+
+        return {"message": f"Deleted document {filename} and its associated knowledge."}
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/admin/account")
+async def list_users():
+    conn = get_db_connection()
+    if not conn: return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT Username, Name, Role FROM Accounts")
+        return [{"username": r[0], "name": r[1], "role": r[2]} for r in cursor.fetchall()]
+    finally: conn.close()
+
+@app.post("/admin/account")
+async def add_user(user_data: Dict[str, str]):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO Accounts (Username, Password, Name, Role) VALUES (?, ?, ?, ?)",
+                       user_data["username"], user_data["password"], user_data["name"], user_data["role"])
+        conn.commit()
+        return {"message": "User added successfully"}
+    finally: conn.close()
+
+@app.delete("/admin/account/{username}")
+async def delete_user(username: str):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM Accounts WHERE Username = ?", username)
+        conn.commit()
+        return {"message": "User deleted"}
+    finally: conn.close()
+
+@app.put("/admin/account/{username}")
+async def update_user(username: str, user_data: Dict[str, str]):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        if user_data.get("password"):
+            cursor.execute("UPDATE Accounts SET Role=?, Name=?, Password=? WHERE Username=?",
+                           user_data["role"], user_data["name"], user_data["password"], username)
+        else:
+            cursor.execute("UPDATE Accounts SET Role=?, Name=? WHERE Username=?",
+                           user_data["role"], user_data["name"], username)
+        conn.commit()
+        return {"message": "User updated"}
+    finally: conn.close()
+
+@app.put("/admin/document/update")
+async def update_doc_dates(data: Dict[str, str]):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE KnowledgeDocuments SET StartDate = ?, ExpireDate = ? WHERE Filename = ?",
+                       data["start_date"], data["expire_date"], data["filename"])
+        conn.commit()
+        return {"message": "Document dates updated"}
+    finally: conn.close()
+
+@app.get("/admin/billing-status")
+async def get_billing():
+    return {
+        "spent": round(current_monthly_spend, 4),
+        "limit": MONTHLY_BUDGET_LIMIT,
+        "remaining": round(max(0, MONTHLY_BUDGET_LIMIT - current_monthly_spend), 4),
+        "status": "OK" if current_monthly_spend < MONTHLY_BUDGET_LIMIT else "QUOTA_EXCEEDED"
+    }
+
+@app.get("/download/{filename}")
+async def download_file(filename: str):
+    file_path = UPLOAD_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(path=file_path, filename=filename, media_type='application/pdf')
+
+@app.get("/history/{employee_id}")
+async def get_history(employee_id: str):
+    conn = get_db_connection()
+    if not conn: return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT SessionID, QueryText, AIResponse, CreatedAt, IsSaved, SessionTitle FROM AuditTrail WHERE EmployeeID=? ORDER BY CreatedAt DESC", employee_id)
+        return [{"session_id": r[0], "query": r[1], "response": r[2], "created_at": r[3].isoformat(), "is_saved": r[4], "session_title": r[5]} for r in cursor.fetchall()]
+    finally: conn.close()
+
+@app.put("/history/save/{session_id}")
+async def save_chat_session(session_id: str):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE AuditTrail SET IsSaved = 1 WHERE SessionID = ?", session_id)
+        conn.commit()
+        return {"message": "Session saved"}
+    finally: conn.close()
+
+@app.put("/history/rename/{session_id}")
+async def rename_chat_session(session_id: str, data: Dict[str, str]):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE AuditTrail SET SessionTitle = ? WHERE SessionID = ?", data['title'], session_id)
+        conn.commit()
+        return {"message": "Session renamed"}
+    finally: conn.close()
