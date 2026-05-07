@@ -455,7 +455,7 @@ async def login(req: Dict[str, str]):
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
     cursor = conn.cursor()
-    cursor.execute("SELECT Username, Role, Name, IsFirstLogin FROM Accounts WHERE Username=? AND Password=?", req['username'], req['password'])
+    cursor.execute("SELECT Username, Role, Name, IsRegistered FROM Accounts WHERE Username=? AND Password=?", req['username'], req['password'])
     row = cursor.fetchone()
     if not row: raise HTTPException(status_code=401)
     return {
@@ -463,7 +463,7 @@ async def login(req: Dict[str, str]):
         "role": row[1], 
         "name": row[2], 
         "emp_num": row[0],
-        "is_first_login": bool(row[3])
+        "is_registered": bool(row[3])
     }
 
 @app.get("/admin/documents")

@@ -39,28 +39,6 @@ def import_users():
         return
 
     cursor = conn.cursor()
-    
-    # 1. Ensure the Accounts table exists first
-    cursor.execute("""
-        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Accounts' AND xtype='U')
-        CREATE TABLE Accounts (
-            ID INT IDENTITY(1,1) PRIMARY KEY,
-            Username NVARCHAR(100) NOT NULL UNIQUE,
-            Password NVARCHAR(200) NULL,
-            Role NVARCHAR(50) NOT NULL,
-            Name NVARCHAR(150) NULL,
-            Q1 NVARCHAR(255) NULL,
-            A1 NVARCHAR(255) NULL,
-            Q2 NVARCHAR(255) NULL,
-            A2 NVARCHAR(255) NULL,
-            Q3 NVARCHAR(255) NULL,
-            A3 NVARCHAR(255) NULL,
-            IsRegistered INT DEFAULT 0,
-            CreatedAt DATETIME DEFAULT GETDATE()
-        )
-    """)
-    conn.commit()
-
     success_count = 0
     skip_count = 0
 
@@ -84,9 +62,9 @@ def import_users():
     conn.commit()
     conn.close()
     print(f"\nIMPORT COMPLETE!")
-    print(f"✅ Successfully whitelisted: {success_count}")
+    print(f"✅ Successfully added: {success_count}")
     print(f"⚠️ Already existed: {skip_count}")
-    print(f"\nSUCCESS: These users can now go to the 'Register' page and set their own passwords.")
+    print(f"\nNote: All new users can log in with password: {DEFAULT_PASSWORD}")
 
 if __name__ == "__main__":
     import_users()
