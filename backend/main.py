@@ -128,9 +128,9 @@ def get_db_connection():
     for driver in drivers:
         try:
             if MSSQL_USER and MSSQL_PASS:
-                conn_str = f"DRIVER={driver};SERVER={MSSQL_SERVER};DATABASE={MSSQL_DATABASE};UID={MSSQL_USER};PWD={MSSQL_PASS};Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=5;"
+                conn_str = f"DRIVER={driver};SERVER={MSSQL_SERVER};DATABASE={MSSQL_DATABASE};UID={MSSQL_USER};PWD={MSSQL_PASS};TrustServerCertificate=yes;Connection Timeout=5;"
             else:
-                conn_str = f"DRIVER={driver};SERVER={MSSQL_SERVER};DATABASE={MSSQL_DATABASE};Trusted_Connection=yes;Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=5;"
+                conn_str = f"DRIVER={driver};SERVER={MSSQL_SERVER};DATABASE={MSSQL_DATABASE};Trusted_Connection=yes;TrustServerCertificate=yes;Connection Timeout=5;"
             
             logger.info(f"Attempting MSSQL connection with {driver}…")
             conn = pyodbc.connect(conn_str)
