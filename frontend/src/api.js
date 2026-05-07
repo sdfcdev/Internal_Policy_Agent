@@ -109,3 +109,27 @@ export async function login(username, password) {
   const { data } = await API.post('/auth/login', { username, password });
   return data;
 }
+
+export async function register(username, password, q1, a1, q2, a2, q3, a3) {
+  const { data } = await API.post('/auth/register', { 
+    username, 
+    password, 
+    q1, a1, q2, a2, q3, a3
+  });
+  return data;
+}
+
+export async function getUserQuestions(username) {
+  const { data } = await API.get(`/auth/user-questions/${username}`);
+  return data;
+}
+
+export async function verifySecurity(username, a1, a2, a3) {
+  const { data } = await API.post('/auth/verify-security', { username, a1, a2, a3 });
+  return data;
+}
+
+export async function resetForgottenPassword(username, newPassword) {
+  const { data } = await API.post('/auth/reset-forgotten-password', { username, new_password: newPassword });
+  return data;
+}

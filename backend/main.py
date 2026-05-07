@@ -99,10 +99,15 @@ def get_vectorstore():
         )
     return _vectorstore
 
-def get_llm(model_name: str = "models/gemini-flash-latest"):
-    """Returns a Gemini model. Use gemini-pro-latest for complex logic, flash for speed."""
+def get_llm(model_name: str = "gemini-2.0-flash"):
+    """Returns a Gemini model. Optimized for gemini-2.0-flash."""
+    key = os.getenv("GOOGLE_API_KEY")
     logger.info(f"Connecting to Google Gemini ({model_name})…")
-    return ChatGoogleGenerativeAI(model=model_name, temperature=0.1)
+    return ChatGoogleGenerativeAI(
+        model=model_name, 
+        google_api_key=key, 
+        temperature=0.1
+    )
 
 # ─────────────────────────────────────────────
 # MSSQL Connections
@@ -146,14 +151,15 @@ def ensure_audit_table():
         cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='DocumentLogs' AND xtype='U') CREATE TABLE DocumentLogs (ID INT IDENTITY(1,1) PRIMARY KEY, AdminID NVARCHAR(100) NULL, Action NVARCHAR(50) NOT NULL, Filename NVARCHAR(255) NOT NULL, ChunksCount INT NOT NULL, CreatedAt DATETIME NOT NULL DEFAULT GETDATE())")
         cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='KnowledgeDocuments' AND xtype='U') CREATE TABLE KnowledgeDocuments (ID INT IDENTITY(1,1) PRIMARY KEY, Filename NVARCHAR(255) NOT NULL, StartDate NVARCHAR(100) NULL, ExpireDate NVARCHAR(100) NULL, AdminID NVARCHAR(100) NULL, CreatedAt DATETIME NOT NULL DEFAULT GETDATE())")
         cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='QueryCache' AND xtype='U') CREATE TABLE QueryCache (ID INT IDENTITY(1,1) PRIMARY KEY, QueryText NVARCHAR(MAX) NOT NULL, AIResponse NVARCHAR(MAX) NOT NULL, Accuracy NVARCHAR(50) NOT NULL, CreatedAt DATETIME DEFAULT GETDATE())")
-        cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Accounts' AND xtype='U') CREATE TABLE Accounts (ID INT IDENTITY(1,1) PRIMARY KEY, Username NVARCHAR(100) NOT NULL UNIQUE, Password NVARCHAR(200) NOT NULL, Role NVARCHAR(50) NOT NULL, Name NVARCHAR(150) NULL, CreatedAt DATETIME DEFAULT GETDATE())")
+        cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Accounts' AND xtype='U') CREATE TABLE Accounts (ID INT IDENTITY(1,1) PRIMARY KEY, Username NVARCHAR(100) NOT NULL UNIQUE, Password NVARCHAR(200) NULL, Role NVARCHAR(50) NOT NULL, Name NVARCHAR(150) NULL, Q1 NVARCHAR(255) NULL, A1 NVARCHAR(255) NULL, Q2 NVARCHAR(255) NULL, A2 NVARCHAR(255) NULL, Q3 NVARCHAR(255) NULL, A3 NVARCHAR(255) NULL, IsRegistered INT DEFAULT 0, CreatedAt DATETIME DEFAULT GETDATE())")
         cursor.execute("SELECT COUNT(*) FROM Accounts")
         if cursor.fetchone()[0] == 0:
-            cursor.execute("INSERT INTO Accounts (Username, Password, Role, Name) VALUES ('master_admin', 'admin123', 'master', 'Master Admin')")
-        # Check and add columns if missing
-        try: cursor.execute("ALTER TABLE AuditTrail ADD IsSaved INT DEFAULT 0")
+            cursor.execute("INSERT INTO Accounts (Username, Password, Role, Name, IsRegistered) VALUES ('master_admin', 'admin123', 'master', 'Master Admin', 1)")
+        
+        # Migration: Ensure IsRegistered column exists
+        try: cursor.execute("ALTER TABLE Accounts ADD IsRegistered INT DEFAULT 0")
         except: pass
-        try: cursor.execute("ALTER TABLE AuditTrail ADD SessionTitle NVARCHAR(MAX)")
+        try: cursor.execute("ALTER TABLE Accounts ALTER COLUMN Password NVARCHAR(200) NULL")
         except: pass
         
         conn.commit()
@@ -202,18 +208,18 @@ def researcher_node(state: AgentState) -> AgentState:
     return {**state, "retrieved_chunks": chunks, "current_agent": "Researcher"}
 
 def compliance_node(state: AgentState) -> AgentState:
-    """Compliance Agent: Uses Gemini Pro to check if context is sufficient."""
-    logger.info("[COMPLIANCE] Validating policy compliance with Gemini Pro…")
-    llm = get_llm("gemini-1.5-flash")
+    """Compliance Agent: Uses Gemini Pro for high-accuracy validation."""
+    logger.info("[COMPLIANCE] Validating policy compliance with Gemini 2.5 Pro…")
+    llm = get_llm("gemini-2.5-pro")
     context = "\n\n---\n\n".join(state["retrieved_chunks"])
     prompt = f"As a Corporate Compliance Officer, evaluate if the following context contains enough information to answer the query safely and accurately.\n\nQUERY: {state['query']}\n\nCONTEXT: {context}\n\nRespond with a 1-sentence assessment."
     response = llm.invoke(prompt)
     return {**state, "draft_response": f"[COMPLIANCE] {response.content}", "current_agent": "Compliance"}
 
 def communicator_node(state: AgentState) -> AgentState:
-    """Communicator Agent: Uses Gemini Flash to draft a professional response."""
-    logger.info("[COMMUNICATOR] Drafting concise bilingual response with Gemini Flash…")
-    llm = get_llm("gemini-1.5-flash")
+    """Communicator Agent: Uses Gemini Flash for high-speed response drafting."""
+    logger.info("[COMMUNICATOR] Drafting response with Gemini 2.0 Flash…")
+    llm = get_llm("gemini-2.0-flash")
     context = "\n\n---\n\n".join(state["retrieved_chunks"])
     history = state.get("history", "")
     prompt = (
@@ -231,9 +237,9 @@ def communicator_node(state: AgentState) -> AgentState:
     return {**state, "draft_response": response.content, "current_agent": "Communicator"}
 
 def reviewer_node(state: AgentState) -> AgentState:
-    """Reviewer Agent: Uses Gemini Pro to verify accuracy and avoid hallucination."""
-    logger.info("[REVIEWER] Fact-checking response with Gemini Pro…")
-    llm = get_llm("gemini-1.5-flash")
+    """Reviewer Agent: Uses Gemini Pro for final fact-checking and accuracy."""
+    logger.info("[REVIEWER] Fact-checking with Gemini 2.5 Pro…")
+    llm = get_llm("gemini-2.5-pro")
     context = "\n\n---\n\n".join(state["retrieved_chunks"])
     prompt = (
         "Review the DRAFT RESPONSE against the DOCUMENT CONTEXT for accuracy and hallucinations. "
@@ -447,12 +453,18 @@ async def list_all_chunks():
 async def login(req: Dict[str, str]):
     conn = get_db_connection()
     if not conn:
-        raise HTTPException(status_code=500, detail="Database connection failed. Check your SQL Server settings.")
+        raise HTTPException(status_code=500, detail="Database connection failed")
     cursor = conn.cursor()
-    cursor.execute("SELECT Username, Role, Name FROM Accounts WHERE Username=? AND Password=?", req['username'], req['password'])
+    cursor.execute("SELECT Username, Role, Name, IsFirstLogin FROM Accounts WHERE Username=? AND Password=?", req['username'], req['password'])
     row = cursor.fetchone()
     if not row: raise HTTPException(status_code=401)
-    return {"username": row[0], "role": row[1], "name": row[2], "emp_num": row[0]}
+    return {
+        "username": row[0], 
+        "role": row[1], 
+        "name": row[2], 
+        "emp_num": row[0],
+        "is_first_login": bool(row[3])
+    }
 
 @app.get("/admin/documents")
 async def list_docs():
@@ -592,4 +604,94 @@ async def rename_chat_session(session_id: str, data: Dict[str, str]):
         cursor.execute("UPDATE AuditTrail SET SessionTitle = ? WHERE SessionID = ?", data['title'], session_id)
         conn.commit()
         return {"message": "Session renamed"}
+    finally: conn.close()
+
+# ─────────────────────────────────────────────
+# Authentication & User Management
+# ─────────────────────────────────────────────
+
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    q1: str
+    a1: str
+    q2: str
+    a2: str
+    q3: str
+    a3: str
+
+@app.post("/auth/register")
+async def register_user(req: RegisterRequest):
+    """Self-registration for pre-authorized EPF numbers."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        # පරීක්ෂා කරනවා EPF එක ලිස්ට් එකේ තියෙනවද සහ දැනටමත් රෙජිස්ටර් වෙලාද කියලා
+        cursor.execute("SELECT IsRegistered FROM Accounts WHERE Username = ?", req.username)
+        row = cursor.fetchone()
+        
+        if not row:
+            raise HTTPException(status_code=403, detail="EPF Number not authorized for registration. Contact IT.")
+        if row[0] == 1:
+            raise HTTPException(status_code=400, detail="Account already registered. Please login or reset password.")
+            
+        cursor.execute(
+            "UPDATE Accounts SET Password = ?, Q1 = ?, A1 = ?, Q2 = ?, A2 = ?, Q3 = ?, A3 = ?, IsRegistered = 1 WHERE Username = ?",
+            req.password, req.q1, req.a1, req.q2, req.a2, req.q3, req.a3, req.username
+        )
+        conn.commit()
+        return {"message": "Registration successful"}
+    finally: conn.close()
+
+@app.get("/auth/user-questions/{username}")
+async def get_user_questions(username: str):
+    """Fetches the security questions assigned to a specific user."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT Q1, Q2, Q3 FROM Accounts WHERE Username = ?", username)
+        row = cursor.fetchone()
+        if not row: raise HTTPException(status_code=404, detail="User not found")
+        if not row[0]: raise HTTPException(status_code=400, detail="Security questions not set for this user")
+        return {"q1": row[0], "q2": row[1], "q3": row[2]}
+    finally: conn.close()
+
+class SecurityVerifyRequest(BaseModel):
+    username: str
+    a1: str
+    a2: str
+    a3: str
+
+@app.post("/auth/verify-security")
+async def verify_security(req: SecurityVerifyRequest):
+    """Verifies answers for the user's specific security questions."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT A1, A2, A3 FROM Accounts WHERE Username = ?",
+            req.username
+        )
+        row = cursor.fetchone()
+        if not row: raise HTTPException(status_code=404, detail="User not found")
+        
+        if row[0] == req.a1 and row[1] == req.a2 and row[2] == req.a3:
+            return {"status": "verified"}
+            
+        raise HTTPException(status_code=401, detail="Security answers do not match")
+    finally: conn.close()
+
+class ResetPasswordRequest(BaseModel):
+    username: str
+    new_password: str
+
+@app.post("/auth/reset-forgotten-password")
+async def reset_forgotten_password(req: ResetPasswordRequest):
+    """Resets password after security verification."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE Accounts SET Password = ? WHERE Username = ?", req.new_password, req.username)
+        conn.commit()
+        return {"message": "Password reset successful"}
     finally: conn.close()

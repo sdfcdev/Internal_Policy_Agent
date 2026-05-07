@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import Sidebar       from './components/Sidebar';
 import ChatView      from './components/ChatView';
 import AdminDashboard from './components/AdminDashboard';
+import Register      from './components/Register';
+import ForgotPassword from './components/ForgotPassword';
 import { healthCheck, login } from './api';
 
-function LoginScreen({ onLogin }) {
+function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -40,6 +42,10 @@ function LoginScreen({ onLogin }) {
           <div>
             <label className="block text-[10px] text-slate-400 mb-1">Password</label>
             <input type="password" value={password} onChange={e=>setPassword(e.target.value)} disabled={loading} required className="input-field py-2 text-sm w-full" />
+          </div>
+          <div className="flex justify-between items-center">
+            <button type="button" onClick={onRegister} className="text-[10px] text-brand-400 hover:text-brand-300 underline transition">New Staff? Register</button>
+            <button type="button" onClick={onForgotPassword} className="text-[10px] text-slate-400 hover:text-white underline transition">Forgot Password?</button>
           </div>
           {error && <div className="text-xs text-red-400 bg-red-900/20 border border-red-500/30 p-2 rounded">{error}</div>}
           <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 mt-2 rounded-lg font-medium shadow-sm transition">
@@ -132,9 +138,19 @@ export default function App() {
         <div className="absolute -bottom-40 -right-20 w-[500px] h-[500px] rounded-full bg-purple-700/6 blur-3xl" />
       </div>
 
-      {!user ? (
-        <LoginScreen onLogin={setUser} />
-      ) : (
+      {(!user && view !== 'forgot-password' && view !== 'register') && (
+        <LoginScreen onLogin={setUser} onForgotPassword={() => setView('forgot-password')} onRegister={() => setView('register')} />
+      )}
+
+      {view === 'forgot-password' && (
+        <ForgotPassword onBack={() => setView('chat')} />
+      )}
+
+      {view === 'register' && (
+        <Register onBack={() => setView('chat')} onComplete={setUser} />
+      )}
+
+      {user && (
         <>
           <Sidebar activeView={view} onViewChange={setView} backendOk={backendOk} role={user.role} />
 
