@@ -15,6 +15,7 @@ from typing import Annotated, List, Optional, TypedDict, Dict, Any, AsyncGenerat
 
 import pyodbc
 import aiofiles
+import bcrypt
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Path as APIPath
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -110,21 +111,22 @@ def get_llm(model_name: str = "gemini-2.0-flash"):
     )
 
 # ─────────────────────────────────────────────
-# MSSQL Connections
+# Database Setup (MSSQL)
 # ─────────────────────────────────────────────
-MSSQL_SERVER = os.getenv("MSSQL_SERVER", "localhost\\SQLEXPRESS")
-MSSQL_DATABASE = os.getenv("MSSQL_DATABASE", "SDF_Copilot")
-MSSQL_USER = os.getenv("MSSQL_USER", "")
-MSSQL_PASS = os.getenv("MSSQL_PASSWORD", "")
+MSSQL_SERVER   = os.getenv("MSSQL_SERVER", "localhost")
+MSSQL_DATABASE = os.getenv("MSSQL_DATABASE", "SDF_Copilot_DB")
+MSSQL_USER     = os.getenv("MSSQL_USER", "") # Leave empty for Windows Auth
+MSSQL_PASS     = os.getenv("MSSQL_PASS", "")
 
 def get_db_connection():
     drivers = [
-        "{ODBC Driver 17 for SQL Server}",
-        "{ODBC Driver 18 for SQL Server}",
-        "{SQL Server Native Client 11.0}",
-        "{SQL Server}"
+        '{ODBC Driver 17 for SQL Server}',
+        '{ODBC Driver 18 for SQL Server}',
+        '{SQL Server Native Client 11.0}',
+        '{SQL Server}'
     ]
     
+    conn = None
     for driver in drivers:
         try:
             if MSSQL_USER and MSSQL_PASS:
@@ -148,15 +150,21 @@ def ensure_audit_table():
     try:
         cursor = conn.cursor()
         cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='AuditTrail' AND xtype='U') CREATE TABLE AuditTrail (ID INT IDENTITY(1,1) PRIMARY KEY, EmployeeID NVARCHAR(100) NOT NULL, SessionID NVARCHAR(100) NULL, QueryText NVARCHAR(MAX) NOT NULL, AIResponse NVARCHAR(MAX) NOT NULL, IsSaved BIT DEFAULT 0, CreatedAt DATETIME DEFAULT GETDATE())")
-        cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='DocumentLogs' AND xtype='U') CREATE TABLE DocumentLogs (ID INT IDENTITY(1,1) PRIMARY KEY, AdminID NVARCHAR(100) NULL, Action NVARCHAR(50) NOT NULL, Filename NVARCHAR(255) NOT NULL, ChunksCount INT NOT NULL, CreatedAt DATETIME NOT NULL DEFAULT GETDATE())")
-        cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='KnowledgeDocuments' AND xtype='U') CREATE TABLE KnowledgeDocuments (ID INT IDENTITY(1,1) PRIMARY KEY, Filename NVARCHAR(255) NOT NULL, StartDate NVARCHAR(100) NULL, ExpireDate NVARCHAR(100) NULL, AdminID NVARCHAR(100) NULL, CreatedAt DATETIME NOT NULL DEFAULT GETDATE())")
+        cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='DocumentLogs' AND xtype='U') CREATE TABLE DocumentLogs (ID INT IDENTITY(1,1) PRIMARY KEY, AdminID NVARCHAR(100) NULL, Action NVARCHAR(50) NOT NULL, Filename NVARCHAR(255) NOT NULL, ChunksCount INT NOT NULL, Target NVARCHAR(100) NULL, CreatedAt DATETIME NOT NULL DEFAULT GETDATE())")
+        cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='KnowledgeDocuments' AND xtype='U') CREATE TABLE KnowledgeDocuments (ID INT IDENTITY(1,1) PRIMARY KEY, Filename NVARCHAR(255) NOT NULL, Department NVARCHAR(100) DEFAULT 'General', StartDate NVARCHAR(100) NULL, ExpireDate NVARCHAR(100) NULL, AdminID NVARCHAR(100) NULL, CreatedAt DATETIME NOT NULL DEFAULT GETDATE())")
         cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='QueryCache' AND xtype='U') CREATE TABLE QueryCache (ID INT IDENTITY(1,1) PRIMARY KEY, QueryText NVARCHAR(MAX) NOT NULL, AIResponse NVARCHAR(MAX) NOT NULL, Accuracy NVARCHAR(50) NOT NULL, CreatedAt DATETIME DEFAULT GETDATE())")
+        cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='IntelligenceAudit' AND xtype='U') CREATE TABLE IntelligenceAudit (ID INT IDENTITY(1,1) PRIMARY KEY, EmployeeID NVARCHAR(100) NOT NULL, Query NVARCHAR(MAX) NOT NULL, DraftResponse NVARCHAR(MAX) NULL, ReviewerFeedback NVARCHAR(MAX) NULL, FinalResponse NVARCHAR(MAX) NOT NULL, LoopCount INT DEFAULT 0, ModelInfo NVARCHAR(100) NULL, CreatedAt DATETIME DEFAULT GETDATE())")
         cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Accounts' AND xtype='U') CREATE TABLE Accounts (ID INT IDENTITY(1,1) PRIMARY KEY, Username NVARCHAR(100) NOT NULL UNIQUE, Password NVARCHAR(200) NULL, Role NVARCHAR(50) NOT NULL, Name NVARCHAR(150) NULL, Q1 NVARCHAR(255) NULL, A1 NVARCHAR(255) NULL, Q2 NVARCHAR(255) NULL, A2 NVARCHAR(255) NULL, Q3 NVARCHAR(255) NULL, A3 NVARCHAR(255) NULL, IsRegistered INT DEFAULT 0, CreatedAt DATETIME DEFAULT GETDATE())")
         cursor.execute("SELECT COUNT(*) FROM Accounts")
         if cursor.fetchone()[0] == 0:
-            cursor.execute("INSERT INTO Accounts (Username, Password, Role, Name, IsRegistered) VALUES ('master_admin', 'admin123', 'master', 'Master Admin', 1)")
+            hashed_default = hash_password("admin123")
+            cursor.execute("INSERT INTO Accounts (Username, Password, Role, Name, IsRegistered) VALUES ('master_admin', ?, 'master', 'Master Admin', 1)", hashed_default)
         
-        # Migration: Ensure IsRegistered column exists
+        # Migration: Ensure new columns exist
+        try: cursor.execute("ALTER TABLE DocumentLogs ADD Target NVARCHAR(100) NULL")
+        except: pass
+        try: cursor.execute("ALTER TABLE KnowledgeDocuments ADD Department NVARCHAR(100) DEFAULT 'General'")
+        except: pass
         try: cursor.execute("ALTER TABLE Accounts ADD IsRegistered INT DEFAULT 0")
         except: pass
         try: cursor.execute("ALTER TABLE Accounts ALTER COLUMN Password NVARCHAR(200) NULL")
@@ -168,12 +176,22 @@ def ensure_audit_table():
     finally:
         conn.close()
 
-def log_document_action(action: str, filename: str, chunks_count: int, admin_id: str = "System"):
+def log_document_action(action: str, filename: str, chunks_count: int, admin_id: str = "System", target: str = None):
     conn = get_db_connection()
+    display_name = admin_id
     if conn:
         try:
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO DocumentLogs (AdminID, Action, Filename, ChunksCount) VALUES (?, ?, ?, ?)", admin_id, action, filename, chunks_count)
+            # Lookup real name and role for better logging
+            cursor.execute("SELECT Name, Role FROM Accounts WHERE Username = ?", admin_id)
+            row = cursor.fetchone()
+            if row:
+                name = row[0] or "Unknown"
+                role = row[1].capitalize() if row[1] else "User"
+                display_name = f"{role} {name} ({admin_id})"
+            
+            cursor.execute("INSERT INTO DocumentLogs (AdminID, Action, Filename, ChunksCount, Target) VALUES (?, ?, ?, ?, ?)",
+                           display_name, action, filename, chunks_count, target)
             conn.commit()
         finally: conn.close()
 
@@ -257,7 +275,7 @@ def reviewer_node(state: AgentState) -> AgentState:
     return {**state, "hallucination_check": verdict.lower(), "accuracy_score": acc, "current_agent": "Reviewer"}
 
 def audit_node(state: AgentState) -> AgentState:
-    """Audit Agent: Saves to MSSQL and QueryCache."""
+    """Audit Agent: Saves to MSSQL and IntelligenceAudit if loops > 0."""
     global current_monthly_spend
     logger.info("[AUDIT] Recording transaction in MSSQL…")
     
@@ -272,6 +290,13 @@ def audit_node(state: AgentState) -> AgentState:
                            state["employee_id"], state.get("session_id", ""), state["query"], final, 1 if state.get("save_chat") else 0)
             cursor.execute("INSERT INTO QueryCache (QueryText, AIResponse, Accuracy) VALUES (?, ?, ?)",
                            state["query"].strip().lower(), final, state.get("accuracy_score", "0%"))
+            
+            # Intelligence Audit (Log ONLY if multiple attempts were needed)
+            if state.get("rewrite_count", 0) > 0:
+                model_info = "Gemini 1.5 Flash (Writer) | Gemini 1.5 Pro (Reviewer)"
+                cursor.execute("INSERT INTO IntelligenceAudit (EmployeeID, Query, DraftResponse, ReviewerFeedback, FinalResponse, LoopCount, ModelInfo) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                               state["employee_id"], state["query"], state.get("draft_response", ""), state.get("hallucination_check", ""), final, state["rewrite_count"], model_info)
+            
             conn.commit()
         finally: conn.close()
     return {**state, "final_response": final, "current_agent": "Done"}
@@ -354,7 +379,13 @@ async def stream_chat(request: ChatRequest):
     return StreamingResponse(event_gen(), media_type="text/event-stream")
 
 @app.post("/upload")
-async def upload_pdf(file: UploadFile = File(...), admin_id: str = Form("System"), start_date: str = Form(""), expire_date: str = Form("")):
+async def upload_pdf(
+    file: UploadFile = File(...), 
+    admin_id: str = Form("System"), 
+    start_date: str = Form(""), 
+    expire_date: str = Form(""),
+    department: str = Form("General")
+):
     if not file.filename.lower().endswith(".pdf"): raise HTTPException(status_code=400, detail="Only PDFs allowed.")
     
     file_path = UPLOAD_DIR / file.filename
@@ -362,44 +393,40 @@ async def upload_pdf(file: UploadFile = File(...), admin_id: str = Form("System"
         await f.write(await file.read())
 
     try:
-        logger.info("[ADMIN] Parsing PDF with LlamaParse…")
+        logger.info(f"[ADMIN] Parsing PDF ({file.filename}) with department: {department}")
         parser = LlamaParse(result_type="markdown")
         llama_docs = parser.load_data(str(file_path))
         
         # Convert to LangChain format
         from langchain_core.documents import Document
-        # Ingest documents with page metadata
         chunks = []
         splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         
         for i, doc in enumerate(llama_docs):
-            page_num = i + 1 # Assuming one doc per page from LlamaParse
-            page_chunks = splitter.create_documents([doc.text], metadatas=[{"source": file.filename, "page": page_num}])
+            page_num = i + 1
+            # Add department to metadata
+            page_chunks = splitter.create_documents([doc.text], metadatas=[{"source": file.filename, "page": page_num, "department": department}])
             chunks.extend(page_chunks)
         
         vs = get_vectorstore()
-        # High-speed ingestion for Pay-as-you-go (no delays)
         batch_size = 100 
         for i in range(0, len(chunks), batch_size):
             batch = chunks[i:i + batch_size]
             vs.add_documents(batch)
-            logger.info(f"Ingested {min(i + batch_size, len(chunks))}/{len(chunks)} chunks with page metadata…")
         
-        log_document_action("UPLOAD", file.filename, len(chunks), admin_id)
+        log_document_action("UPLOAD", file.filename, len(chunks), admin_id, department)
         
         conn = get_db_connection()
-        if not conn:
-            raise HTTPException(status_code=500, detail="Database connection failed. Check your SQL Server settings.")
-            
-        try:
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO KnowledgeDocuments (Filename, StartDate, ExpireDate, AdminID) VALUES (?, ?, ?, ?)",
-                           file.filename, start_date, expire_date, admin_id)
-            cursor.execute("TRUNCATE TABLE QueryCache")
-            conn.commit()
-        finally: conn.close()
+        if conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute("INSERT INTO KnowledgeDocuments (Filename, Department, StartDate, ExpireDate, AdminID) VALUES (?, ?, ?, ?, ?)",
+                               file.filename, department, start_date, expire_date, admin_id)
+                cursor.execute("TRUNCATE TABLE QueryCache")
+                conn.commit()
+            finally: conn.close()
 
-        return {"message": "Success", "filename": file.filename, "chunks_added": len(chunks)}
+        return {"message": "Success", "filename": file.filename, "chunks_added": len(chunks), "department": department}
     except Exception as e:
         logger.error(e)
         raise HTTPException(status_code=500, detail=str(e))
@@ -426,8 +453,22 @@ async def get_admin_logs():
     if not conn: return []
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT ID, AdminID, Action, Filename, ChunksCount, CreatedAt FROM DocumentLogs ORDER BY CreatedAt DESC")
-        return [{"id": r[0], "admin_id": r[1], "action": r[2], "filename": r[3], "chunks_count": r[4], "created_at": r[5].isoformat()} for r in cursor.fetchall()]
+        cursor.execute("SELECT ID, AdminID, Action, Filename, ChunksCount, Target, CreatedAt FROM DocumentLogs ORDER BY CreatedAt DESC")
+        return [{"id": r[0], "admin_id": r[1], "action": r[2], "filename": r[3], "chunks_count": r[4], "target": r[5], "created_at": r[6].isoformat()} for r in cursor.fetchall()]
+    finally: conn.close()
+
+@app.get("/admin/intelligence-audit")
+async def get_intelligence_audit():
+    conn = get_db_connection()
+    if not conn: return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT ID, EmployeeID, Query, DraftResponse, ReviewerFeedback, FinalResponse, LoopCount, ModelInfo, CreatedAt FROM IntelligenceAudit ORDER BY CreatedAt DESC")
+        return [{
+            "id": r[0], "employee_id": r[1], "query": r[2], 
+            "draft": r[3], "feedback": r[4], "final": r[5], 
+            "loops": r[6], "model": r[7], "created_at": r[8].isoformat()
+        } for r in cursor.fetchall()]
     finally: conn.close()
 
 @app.get("/admin/chunks")
@@ -449,22 +490,42 @@ async def list_all_chunks():
 
 # Auth, List Chunks, List Logs, etc.
 
+# ─────────────────────────────────────────────
+# Password Hashing Helpers (bcrypt)
+# ─────────────────────────────────────────────
+def hash_password(plain: str) -> str:
+    """Hash a plain-text password using bcrypt."""
+    return bcrypt.hashpw(plain.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(plain: str, hashed: str) -> bool:
+    """Verify a plain-text password against a bcrypt hash."""
+    try:
+        return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
+    except Exception:
+        # Fallback: plain-text comparison for legacy accounts not yet migrated
+        return plain == hashed
+
 @app.post("/auth/login")
 async def login(req: Dict[str, str]):
     conn = get_db_connection()
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
-    cursor = conn.cursor()
-    cursor.execute("SELECT Username, Role, Name, IsRegistered FROM Accounts WHERE Username=? AND Password=?", req['username'], req['password'])
-    row = cursor.fetchone()
-    if not row: raise HTTPException(status_code=401)
-    return {
-        "username": row[0], 
-        "role": row[1], 
-        "name": row[2], 
-        "emp_num": row[0],
-        "is_registered": bool(row[3])
-    }
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT Username, Role, Name, Password, IsRegistered FROM Accounts WHERE Username=?", req['username'])
+        row = cursor.fetchone()
+        if not row or not row[3]:
+            raise HTTPException(status_code=401, detail="Invalid username or password.")
+        if not verify_password(req['password'], row[3]):
+            raise HTTPException(status_code=401, detail="Invalid username or password.")
+        return {
+            "username": row[0], 
+            "role": row[1], 
+            "name": row[2], 
+            "emp_num": row[0],
+            "is_first_login": False
+        }
+    finally: conn.close()
 
 @app.get("/admin/documents")
 async def list_docs():
@@ -472,18 +533,18 @@ async def list_docs():
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed. Cannot list documents.")
     cursor = conn.cursor()
-    cursor.execute("SELECT ID, Filename, StartDate, ExpireDate, AdminID, CreatedAt FROM KnowledgeDocuments ORDER BY ID DESC")
-    return [{"id": r[0], "filename": r[1], "start_date": r[2], "expire_date": r[3], "admin_id": r[4], "created_at": r[5].isoformat()} for r in cursor.fetchall()]
+    cursor.execute("SELECT ID, Filename, Department, StartDate, ExpireDate, AdminID, CreatedAt FROM KnowledgeDocuments ORDER BY ID DESC")
+    return [{"id": r[0], "filename": r[1], "department": r[2], "start_date": r[3], "expire_date": r[4], "admin_id": r[5], "created_at": r[6].isoformat()} for r in cursor.fetchall()]
 
 @app.delete("/admin/document/{filename}")
-async def delete_doc(filename: str):
+async def delete_doc(filename: str, admin_id: str = "System"):
     try:
         vs = get_vectorstore()
         collection = vs._collection
         # Delete only chunks belonging to this file
         collection.delete(where={"source": filename})
         
-        log_document_action("DELETE", filename, 0, "System")
+        log_document_action("DELETE", filename, 0, admin_id)
         
         conn = get_db_connection()
         if conn:
@@ -515,21 +576,31 @@ async def list_users():
 
 @app.post("/admin/account")
 async def add_user(user_data: Dict[str, str]):
+    """Admin authorizes an EPF number for self-registration."""
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO Accounts (Username, Password, Name, Role) VALUES (?, ?, ?, ?)",
-                       user_data["username"], user_data["password"], user_data["name"], user_data["role"])
+        # Insert with NULL password and IsRegistered=0 to allow them to register themselves
+        cursor.execute("INSERT INTO Accounts (Username, Password, Role, Name, IsRegistered) VALUES (?, NULL, ?, ?, 0)",
+                       user_data["username"], user_data["role"], user_data["name"])
+        
+        # Log the action
+        log_document_action("USER_ADD", user_data["username"], 0, user_data.get("admin_id", "System"))
+        
         conn.commit()
-        return {"message": "User added successfully"}
+        return {"message": "User authorized successfully. They can now register using their EPF."}
     finally: conn.close()
 
 @app.delete("/admin/account/{username}")
-async def delete_user(username: str):
+async def delete_user(username: str, admin_id: str = "System"):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM Accounts WHERE Username = ?", username)
+        
+        # Log the action
+        log_document_action("USER_DELETE", username, 0, admin_id)
+        
         conn.commit()
         return {"message": "User deleted"}
     finally: conn.close()
@@ -540,11 +611,16 @@ async def update_user(username: str, user_data: Dict[str, str]):
     try:
         cursor = conn.cursor()
         if user_data.get("password"):
+            hashed = hash_password(user_data["password"])
             cursor.execute("UPDATE Accounts SET Role=?, Name=?, Password=? WHERE Username=?",
-                           user_data["role"], user_data["name"], user_data["password"], username)
+                           user_data["role"], user_data["name"], hashed, username)
         else:
             cursor.execute("UPDATE Accounts SET Role=?, Name=? WHERE Username=?",
                            user_data["role"], user_data["name"], username)
+            
+        # Log the action
+        log_document_action("USER_UPDATE", username, 0, user_data.get("admin_id", "System"))
+        
         conn.commit()
         return {"message": "User updated"}
     finally: conn.close()
@@ -556,8 +632,51 @@ async def update_doc_dates(data: Dict[str, str]):
         cursor = conn.cursor()
         cursor.execute("UPDATE KnowledgeDocuments SET StartDate = ?, ExpireDate = ? WHERE Filename = ?",
                        data["start_date"], data["expire_date"], data["filename"])
+        
+        # Log the modification
+        log_document_action("MODIFY", data["filename"], 0, data.get("admin_id", "System"))
+        
         conn.commit()
         return {"message": "Document dates updated"}
+    finally: conn.close()
+
+@app.post("/admin/document/rename")
+async def rename_document(data: Dict[str, str]):
+    old_name = data["old_filename"]
+    new_name = data["new_filename"]
+    admin_id = data.get("admin_id", "System")
+    
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # 1. Update KnowledgeDocuments
+        cursor.execute("UPDATE KnowledgeDocuments SET Filename = ? WHERE Filename = ?", new_name, old_name)
+        
+        # 2. Update ChromaDB Chunks (Metadata)
+        vs = get_vectorstore()
+        collection = vs._collection
+        # We fetch all IDs first because update(where=...) is not directly supported for IDs/Metadata as a batch in older chroma
+        # But we can update metadata for all chunks where source matches
+        collection.update(
+            where={"source": old_name},
+            metadatas=[{"source": new_name}] * collection.count(where={"source": old_name})
+        )
+        
+        # 3. Rename local file
+        old_path = UPLOAD_DIR / old_name
+        new_path = UPLOAD_DIR / new_name
+        if old_path.exists():
+            old_path.rename(new_path)
+            
+        # 4. Log the rename
+        log_document_action("RENAME", f"{old_name} -> {new_name}", 0, admin_id)
+        
+        conn.commit()
+        return {"message": "Document renamed successfully"}
+    except Exception as e:
+        logger.error(f"Rename failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally: conn.close()
 
 @app.get("/admin/billing-status")
@@ -635,9 +754,10 @@ async def register_user(req: RegisterRequest):
         if row[0] == 1:
             raise HTTPException(status_code=400, detail="Account already registered. Please login or reset password.")
             
+        hashed = hash_password(req.password)
         cursor.execute(
             "UPDATE Accounts SET Password = ?, Q1 = ?, A1 = ?, Q2 = ?, A2 = ?, Q3 = ?, A3 = ?, IsRegistered = 1 WHERE Username = ?",
-            req.password, req.q1, req.a1, req.q2, req.a2, req.q3, req.a3, req.username
+            hashed, req.q1, req.a1, req.q2, req.a2, req.q3, req.a3, req.username
         )
         conn.commit()
         return {"message": "Registration successful"}
@@ -691,7 +811,8 @@ async def reset_forgotten_password(req: ResetPasswordRequest):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("UPDATE Accounts SET Password = ? WHERE Username = ?", req.new_password, req.username)
+        hashed = hash_password(req.new_password)
+        cursor.execute("UPDATE Accounts SET Password = ? WHERE Username = ?", hashed, req.username)
         conn.commit()
         return {"message": "Password reset successful"}
     finally: conn.close()

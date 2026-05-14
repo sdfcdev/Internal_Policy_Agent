@@ -1,75 +1,279 @@
-/**
- * Sidebar navigation component shared between both views.
- */
-import { BotMessageSquare, LayoutDashboard, Cpu, Activity } from 'lucide-react';
+import { useState } from 'react';
+import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, MessageSquare, DownloadCloud, Edit2, X, Check, ChevronDown } from 'lucide-react';
+import { renameHistorySession } from '../api';
 
 const NAV = [
   { id: 'chat',  label: 'AI Copilot',       icon: BotMessageSquare },
   { id: 'admin', label: 'Admin Dashboard',   icon: LayoutDashboard  },
 ];
 
-export default function Sidebar({ activeView, onViewChange, backendOk, role }) {
-  const isPrivileged = role === 'master' || role === 'admin' || role === 'subadmin';
-  const availableNav = isPrivileged ? NAV : NAV.filter(n => n.id === 'chat');
+export default function Sidebar({ 
+  activeView, onViewChange, backendOk, role, 
+  historyData = [], libraryDocs = [], activeSessionId, onSelectSession, onRefreshData, user 
+}) {
+  const [leftTab, setLeftTab] = useState('history'); // 'history' | 'library'
+  const [historySearch, setHistorySearch] = useState('');
+  const [editingSessionId, setEditingSessionId] = useState(null);
+  const [editingSessionTitle, setEditingSessionTitle] = useState('');
+  const [expandedDepts, setExpandedDepts] = useState({});
+
+  const groupedHistory = historyData.filter(d => d.is_saved).reduce((acc, h) => {
+      if (!acc[h.session_id]) acc[h.session_id] = [];
+      acc[h.session_id].push(h);
+      return acc;
+  }, {});
+  const sessionList = Object.keys(groupedHistory).sort((a,b) => b.localeCompare(a)); 
+  
+  const filteredSessionList = sessionList.filter(sId => {
+      if (!historySearch.trim()) return true;
+      const firstQ = groupedHistory[sId][0];
+      const title = firstQ.session_title || firstQ.query;
+      return title.toLowerCase().includes(historySearch.toLowerCase());
+  });
+
+  async function handleRenameSubmit(sId) {
+      if (!editingSessionTitle.trim()) { setEditingSessionId(null); return; }
+      try {
+          await renameHistorySession(sId, editingSessionTitle);
+          setEditingSessionId(null);
+          if (onRefreshData) onRefreshData();
+      } catch (e) {
+          alert('Failed to rename session.');
+      }
+  }
+
   return (
-    <aside className="flex flex-col w-64 min-h-screen bg-dark-800 border-r border-white/10 p-4 shrink-0">
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-2 py-4 mb-6">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-600/20 border border-brand-500/30">
-          <Cpu className="w-5 h-5 text-brand-400" />
-        </div>
-        <div>
-          <p className="font-bold text-white leading-none">SDF AI</p>
-          <p className="text-[11px] text-brand-400 font-medium tracking-wider uppercase">Copilot</p>
+    <aside className="flex flex-col w-72 min-h-screen bg-dark-800 border-r border-white/10 shrink-0 overflow-hidden">
+      {/* Logo Area */}
+      <div className="flex flex-col items-start gap-2 px-6 py-6 border-b border-white/5 bg-dark-900/20">
+        <img 
+          src="/logo.png" 
+          alt="Sarvodaya Logo" 
+          className="h-10 w-auto object-contain brightness-110 contrast-110"
+        />
+        <div className="mt-1">
+          <p className="text-xs font-semibold text-white tracking-wide uppercase">AI Copilot</p>
+          <p className="text-[10px] text-slate-500 font-medium">Internal Policy Agent</p>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-1">
-        {availableNav.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            id={`nav-${id}`}
-            onClick={() => onViewChange(id)}
-            className={`
-              w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-              transition-all duration-200
-              ${activeView === id
-                ? 'bg-brand-600/25 text-brand-300 border border-brand-500/30 shadow-sm shadow-brand-600/10'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}
-            `}
-          >
-            <Icon className="w-4 h-4 flex-shrink-0" />
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      {/* Backend status */}
-      <div className="mt-auto pt-4 border-t border-white/10">
-        <div className="flex items-center gap-2 px-3 py-2">
-          <Activity className="w-3.5 h-3.5 text-slate-500" />
-          <span className="text-xs text-slate-500">Backend</span>
-          <span className={`ml-auto w-2 h-2 rounded-full flex-shrink-0 ${
-            backendOk === null  ? 'bg-yellow-500 animate-pulse' :
-            backendOk           ? 'bg-emerald-400 animate-pulse-slow' :
-                                  'bg-red-500'
-          }`} />
-          <span className={`text-xs font-medium ${
-            backendOk === null  ? 'text-yellow-400' :
-            backendOk           ? 'text-emerald-400' :
-                                  'text-red-400'
-          }`}>
-            {backendOk === null ? 'Checking…' : backendOk ? 'Online' : 'Offline'}
-          </span>
+      {/* Navigation Switcher (ONLY FOR PRIVILEGED USERS IN CHAT VIEW) */}
+      {activeView === 'chat' && user && (user.role === 'master' || user.role === 'admin' || user.role === 'subadmin') && (
+        <div className="px-4 py-3 border-b border-white/5 bg-brand-600/5">
+           <button 
+             onClick={() => onViewChange('admin')}
+             className="w-full py-2.5 bg-dark-900 border border-white/10 rounded-xl text-[10px] font-black text-brand-400 tracking-widest uppercase hover:bg-brand-600 hover:text-white transition-all shadow-lg"
+           >
+             SWITCH TO ADMIN DASHBOARD
+           </button>
         </div>
-        <p className="px-3 mt-2 text-[10px] text-slate-600 leading-relaxed">
-          LLM: Gemini 1.5 (Pro/Flash)<br />
-          Parsing: LlamaParse<br />
-          Vector DB: ChromaDB
-        </p>
+      )}
+
+      {/* Dynamic Content Area (History/Library - ONLY IN CHAT VIEW) */}
+      {activeView === 'chat' ? (
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex items-center gap-1 p-2 border-b border-white/5 select-none bg-dark-900/10">
+             <button 
+               onClick={()=>setLeftTab('history')} 
+               className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${leftTab==='history' ? 'bg-brand-600/20 text-brand-300' : 'text-slate-500 hover:bg-white/5'}`}
+             >
+               PAST CHATS
+             </button>
+             <button 
+               onClick={()=>setLeftTab('library')} 
+               className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${leftTab==='library' ? 'bg-brand-600/20 text-brand-300' : 'text-slate-500 hover:bg-white/5'}`}
+             >
+               LIBRARY
+             </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {leftTab === 'history' ? (
+              <div className="p-3 space-y-3">
+                <input 
+                   type="text"
+                   placeholder="Search chats..."
+                   value={historySearch}
+                   onChange={e => setHistorySearch(e.target.value)}
+                   className="input-field text-[11px] py-1.5 px-3 w-full bg-dark-900 border-white/5 placeholder-slate-600"
+                />
+                <div className="space-y-2">
+                  {filteredSessionList.map(sId => {
+                    const qs = groupedHistory[sId];
+                    const firstQ = qs[0];
+                    const isActive = activeSessionId === sId;
+                    return (
+                      <div 
+                        key={sId}
+                        className={`group relative p-2.5 rounded-xl border transition-all cursor-pointer ${
+                          isActive 
+                            ? 'bg-brand-600/10 border-brand-500/40 shadow-sm' 
+                            : 'bg-white/2 border-white/5 hover:bg-white/5'
+                        }`}
+                        onClick={() => {
+                          const restoredMsgs = [
+                            { id: "intro_"+sId, role: 'assistant', content: `Continuing chat... loaded previous context.`, time: '', active_agent: 'Done' }
+                          ];
+                          qs.forEach((h) => {
+                             restoredMsgs.push({ id: h.id + "_u", role: 'user', content: h.query, time: new Date(h.created_at).toLocaleTimeString() });
+                             restoredMsgs.push({ id: h.id + "_a", role: 'assistant', content: h.response, time: new Date(h.created_at).toLocaleTimeString(), active_agent: 'Done', hallucination_check: 'pass' });
+                          });
+                          onSelectSession({ id: sId, messages: restoredMsgs });
+                        }}
+                      >
+                        {editingSessionId === sId ? (
+                          <div className="flex items-center gap-1">
+                            <input 
+                              autoFocus 
+                              className="bg-dark-900 text-[10px] w-full p-1 rounded border border-brand-500"
+                              value={editingSessionTitle}
+                              onChange={e => setEditingSessionTitle(e.target.value)}
+                              onKeyDown={e => e.key === 'Enter' && handleRenameSubmit(sId)}
+                            />
+                            <button onClick={() => handleRenameSubmit(sId)} className="text-emerald-400"><Check className="w-3 h-3"/></button>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-[11px] text-slate-200 line-clamp-2 pr-4 leading-relaxed font-medium">
+                              {firstQ.session_title || firstQ.query}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1.5 opacity-60">
+                              <span className="text-[9px] text-slate-500 font-mono">{new Date(firstQ.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setEditingSessionTitle(firstQ.session_title || firstQ.query); setEditingSessionId(sId); }}
+                              className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-brand-400"
+                            >
+                              <Edit2 className="w-3 h-3"/>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {filteredSessionList.length === 0 && (
+                    <p className="text-[10px] text-slate-600 text-center py-10 italic">No history found.</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 space-y-2">
+                {/* Grouped Library by Department */}
+                {Object.keys(
+                  libraryDocs.reduce((acc, doc) => {
+                    const dept = doc.department || 'General';
+                    if (!acc[dept]) acc[dept] = [];
+                    acc[dept].push(doc);
+                    return acc;
+                  }, {})
+                ).sort().map(dept => {
+                  const docsInDept = libraryDocs.filter(d => (d.department || 'General') === dept);
+                  const isExpanded = !!expandedDepts[dept];
+                  
+                  return (
+                    <div key={dept} className="flex flex-col border border-white/5 rounded-xl bg-white/2 overflow-hidden shadow-sm shadow-black/20">
+                      <button 
+                        onClick={() => setExpandedDepts(prev => ({ ...prev, [dept]: !prev[dept] }))}
+                        className={`flex items-center justify-between px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${isExpanded ? 'bg-brand-600/30 text-brand-300' : 'text-slate-400 hover:bg-white/5'}`}
+                      >
+                        <div className="flex items-center gap-2">
+                           <LayoutDashboard className={`w-3.5 h-3.5 transition-transform duration-300 ${isExpanded ? 'scale-110' : 'opacity-40'}`} />
+                           {dept}
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <span className="text-[9px] bg-dark-900/50 px-1.5 py-0.5 rounded-md border border-white/10">{docsInDept.length}</span>
+                           <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-brand-400' : 'text-slate-600'}`} />
+                        </div>
+                      </button>
+                      
+                      {isExpanded && (
+                        <div className="flex flex-col border-t border-white/5 bg-dark-900/40 animate-fade-in">
+                          {docsInDept.map(doc => (
+                            <a 
+                              key={doc.id} 
+                              href={`http://127.0.0.1:8000/download/${doc.filename}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="flex items-center gap-3 p-3 hover:bg-brand-600/10 transition-all group border-b border-white/5 last:border-0"
+                            >
+                              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                                <FileText className="w-3.5 h-3.5 text-emerald-500/60" />
+                              </div>
+                              <span className="text-[10px] text-slate-400 truncate flex-1 font-semibold group-hover:text-slate-200">{doc.filename}</span>
+                              <DownloadCloud className="w-3.5 h-3.5 text-slate-600 group-hover:text-emerald-400 transition-colors" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {libraryDocs.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-10 opacity-30">
+                    <FileText className="w-8 h-8 mb-2" />
+                    <p className="text-[10px] text-slate-400 italic">Library is empty.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-dark-900/20">
+           <div className="w-16 h-16 rounded-3xl bg-brand-600/10 border border-brand-500/20 flex items-center justify-center mb-4">
+              <LayoutDashboard className="w-8 h-8 text-brand-400" />
+           </div>
+           <p className="text-xs font-bold text-white uppercase tracking-widest mb-1">Admin Mode</p>
+           <p className="text-[10px] text-slate-500 leading-relaxed mb-8 px-4">Chat history and library are disabled while managing the system.</p>
+           
+           <div className="w-full px-2">
+              <button 
+                onClick={() => onViewChange('chat')}
+                className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-[10px] font-black tracking-[0.2em] uppercase transition-all shadow-xl shadow-brand-600/20"
+              >
+                SWITCH TO AI COPILOT
+              </button>
+           </div>
+        </div>
+      )}
+
+      {/* Backend status - Reveal on Hover */}
+      <div className="mt-auto p-4 border-t border-white/10 group cursor-help bg-dark-900/20 transition-all duration-500 hover:bg-brand-600/5">
+        <div className="flex flex-col gap-2 transition-all duration-500">
+           {/* Simple indicator always visible (small dot) */}
+           <div className="flex items-center justify-center opacity-30 group-hover:opacity-0 transition-opacity absolute inset-x-0 bottom-4">
+              <div className={`w-1.5 h-1.5 rounded-full ${backendOk ? 'bg-emerald-400' : 'bg-red-500'}`} />
+           </div>
+
+           {/* Hidden content that pops up on hover */}
+           <div className="opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 pointer-events-none group-hover:pointer-events-auto">
+              <div className="flex items-center gap-2 px-2 py-1 mb-1">
+                <Activity className="w-3.5 h-3.5 text-slate-500" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">System Status</span>
+                <span className={`ml-auto w-2 h-2 rounded-full flex-shrink-0 ${
+                  backendOk === null  ? 'bg-yellow-500 animate-pulse' :
+                  backendOk           ? 'bg-emerald-400 animate-pulse-slow' :
+                                        'bg-red-500'
+                }`} />
+                <span className={`text-[10px] font-black ${
+                  backendOk === null  ? 'text-yellow-400' :
+                  backendOk           ? 'text-emerald-400' :
+                                        'text-red-400'
+                }`}>
+                  {backendOk === null ? 'SYNC' : backendOk ? 'ONLINE' : 'OFFLINE'}
+                </span>
+              </div>
+              
+              <div className="px-2 mt-1 h-0 overflow-hidden group-hover:h-auto transition-all duration-300">
+                <p className="text-[9px] text-slate-600 leading-relaxed border-t border-white/5 pt-2 font-mono">
+                  LLM: GEMINI 1.5 PRO<br />
+                  PARSING: LLAMAPARSE<br />
+                  INDEX: CHROMADB
+                </p>
+              </div>
+           </div>
+        </div>
       </div>
     </aside>
   );
 }
-

@@ -27,6 +27,7 @@ export default function Register({ onBack, onComplete }) {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -42,8 +43,8 @@ export default function Register({ onBack, onComplete }) {
     setError('');
     try {
       await register(username, password, q1, a1, q2, a2, q3, a3);
-      alert("Registration successful! You can now login.");
-      onBack();
+      setSuccess(true);
+      setTimeout(() => onBack(), 2500);
     } catch (err) {
       setError(err.response?.data?.detail || 'Registration failed. Is your EPF authorized?');
     } finally {
@@ -102,6 +103,7 @@ export default function Register({ onBack, onComplete }) {
             </div>
           </div>
 
+          {success && <div className="text-sm text-emerald-300 bg-emerald-900/30 border border-emerald-500/30 p-3 rounded-lg flex items-center gap-2 animate-fade-in">✅ Registration successful! Redirecting to login...</div>}
           {error && <div className="text-xs text-red-400 bg-red-900/20 border border-red-500/30 p-2 rounded">{error}</div>}
           
           <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 mt-2 rounded-lg font-medium shadow-sm transition">

@@ -19,7 +19,9 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
     setError('');
     try {
       const user = await login(username, password);
-      onLogin(user);
+      // Auto-route based on role
+      const isPrivileged = user.role === 'master' || user.role === 'admin' || user.role === 'subadmin';
+      onLogin(user, isPrivileged ? 'admin' : 'chat');
     } catch (e) {
       setError(e.response?.data?.detail || 'Login failed. Invalid credentials.');
     } finally {
@@ -31,8 +33,9 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
     <div className="flex flex-1 items-center justify-center p-8 z-10 w-full relative h-[100vh]">
       <div className="glass-card p-8 w-full max-w-sm glow-ring animate-fade-in">
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-white">SDF AI Copilot</h2>
-          <p className="text-xs text-slate-400 mt-1">Please login to continue</p>
+          <img src="/logo.png" alt="SDF Logo" className="h-12 w-auto mx-auto mb-4 brightness-110" />
+          <h2 className="text-xl font-bold text-white tracking-tight">AI Internal Policy Agent</h2>
+          <p className="text-xs text-slate-400 mt-1">Authorized Staff Access Only</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -61,7 +64,15 @@ export default function App() {
   const [view, setView]         = useState('chat');   // 'chat' | 'admin'
   const [user, setUser]         = useState(null);     // { username, role, name, emp_num }
   const [backendOk, setBackend] = useState(null);
-  const [theme, setTheme]       = useState('dark');
+  const [theme, setTheme]       = useState('light');
+
+  // Lifted Chat State
+  const [historyData, setHistoryData] = useState([]);
+  const [libraryDocs, setLibraryDocs] = useState([]);
+  const [sessionId, setSessionId]     = useState('');
+  const [messages, setMessages]       = useState([]);
+  const [saveChat, setSaveChat]       = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Handle URL-based routing
   useEffect(() => {
@@ -88,17 +99,12 @@ export default function App() {
     window.location.hash = `#/${view}`;
   }, [view]);
 
-  // Handle auto-routing upon login or role restrictions
+  // Removed automatic hash-based switching that might conflict with our new role-based logic
   useEffect(() => {
     if (user) {
       const isPrivileged = user.role === 'master' || user.role === 'admin' || user.role === 'subadmin';
-      
       if (!isPrivileged && view === 'admin') {
-         // Force users back to chat if they try to access admin
          setView('chat');
-      } else if (isPrivileged && view === 'chat' && !window.location.hash.includes('chat')) {
-         // Admins might want to start on admin page if no explicit chat hash
-         setView('admin');
       }
     }
   }, [user, view]);
@@ -130,6 +136,30 @@ export default function App() {
     return () => { mounted = false; clearInterval(interval); };
   }, []);
 
+  // Sync data when user changes
+  useEffect(() => {
+    if (user) {
+      loadChatData();
+    }
+  }, [user]);
+
+  async function loadChatData() {
+    if (!user) return;
+    setLoadingHistory(true);
+    try {
+      const [hist, docs] = await Promise.all([
+        import('./api').then(m => m.getChatHistory(user.username)),
+        import('./api').then(m => m.getDocuments())
+      ]);
+      setHistoryData(hist);
+      setLibraryDocs(docs);
+    } catch (e) {
+      console.error("Failed to load chat data:", e);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
+
   return (
     <div className="flex min-h-screen bg-dark-900 text-white">
       {/* Ambient gradient blobs */}
@@ -139,7 +169,14 @@ export default function App() {
       </div>
 
       {(!user && view !== 'forgot-password' && view !== 'register') && (
-        <LoginScreen onLogin={setUser} onForgotPassword={() => setView('forgot-password')} onRegister={() => setView('register')} />
+        <LoginScreen 
+          onLogin={(userData, initialView) => {
+            setUser(userData);
+            setView(initialView);
+          }} 
+          onForgotPassword={() => setView('forgot-password')} 
+          onRegister={() => setView('register')} 
+        />
       )}
 
       {view === 'forgot-password' && (
@@ -152,28 +189,95 @@ export default function App() {
 
       {user && (
         <>
-          <Sidebar activeView={view} onViewChange={setView} backendOk={backendOk} role={user.role} />
+          <Sidebar 
+            activeView={view} 
+            onViewChange={setView} 
+            backendOk={backendOk} 
+            role={user.role}
+            historyData={historyData}
+            libraryDocs={libraryDocs}
+            activeSessionId={sessionId}
+            onSelectSession={(session) => {
+               setSessionId(session.id);
+               setMessages(session.messages);
+               setSaveChat(true);
+            }}
+            onRefreshData={loadChatData}
+            user={user}
+          />
 
           <main className="flex flex-col flex-1 h-screen overflow-hidden relative z-10 w-full min-w-0">
-            {/* Context switch button for demo */}
-            <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-              <span className="text-xs text-slate-400 mr-2">Hello, <span className="text-white font-semibold">{user.name || user.username}</span></span>
-              <button onClick={() => {setUser(null); setView('chat');}} className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full bg-dark-800 border border-white/10 hover:bg-dark-700 transition lg:text-[10px]">Logout</button>
-              <button 
-                onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full bg-dark-800 border border-white/10 hover:bg-dark-700 transition"
-              >
-                {theme === 'dark' ? '☀️' : '🌙'}
-              </button>
-            </div>
+            {/* Top Header Bar */}
+            <header className="h-20 flex items-center justify-between px-8 bg-dark-900/50 backdrop-blur-md border-b border-white/5 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-[3px] bg-brand-500 rounded-full hidden lg:block" />
+                <div>
+                  <h1 className="text-sm font-bold text-white tracking-widest uppercase">
+                    {view === 'admin' 
+                      ? (user.role === 'subadmin' ? 'Sub-Administrative Dashboard' : 'Administrative Dashboard') 
+                      : 'User Dashboard'}
+                  </h1>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    {view === 'admin' 
+                      ? 'Manage knowledge base documents and system logs' 
+                      : 'Access policy documents, query history, and generated responses'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex flex-col items-end mr-2">
+                  <span className="text-xs font-semibold text-white leading-none">{user.name || user.username}</span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-tighter mt-1">{user.role}</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                   <button 
+                    onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+                    className="p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition group"
+                    title="Toggle Theme"
+                  >
+                    {theme === 'dark' ? <span className="text-sm">☀️</span> : <span className="text-sm">🌙</span>}
+                  </button>
+                  
+                  <button 
+                    onClick={() => {setUser(null); setView('chat');}} 
+                    className="px-4 py-1.5 text-xs font-bold rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white transition shadow-sm"
+                  >
+                    LOGOUT
+                  </button>
+                </div>
+              </div>
+            </header>
 
             <div className={view === 'chat' ? 'flex flex-col flex-1 h-full overflow-hidden' : 'hidden'}>
-              <ChatView user={user} />
+              <ChatView 
+                user={user} 
+                historyData={historyData} 
+                libraryDocs={libraryDocs}
+                sessionId={sessionId}
+                setSessionId={setSessionId}
+                messages={messages}
+                setMessages={setMessages}
+                saveChat={saveChat}
+                setSaveChat={setSaveChat}
+                onRefreshHistory={loadChatData}
+              />
             </div>
             
             <div className={view === 'admin' && (user.role === 'master' || user.role === 'admin' || user.role === 'subadmin') ? 'flex flex-col flex-1 h-full overflow-hidden' : 'hidden'}>
               <AdminDashboard user={user} role={user.role} />
             </div>
+
+            {/* Global Footer */}
+            <footer className="py-4 border-t border-white/5 bg-dark-900/80 backdrop-blur-sm text-center shrink-0">
+               <p className="text-[10px] text-slate-500 tracking-wide font-normal">
+                 © 2026 Sarvodaya Development Finance. All rights reserved.
+               </p>
+               <p className="text-[10px] text-slate-500 tracking-wide font-normal mt-1">
+                 Solution by AI Engineering Team
+               </p>
+            </footer>
           </main>
         </>
       )}

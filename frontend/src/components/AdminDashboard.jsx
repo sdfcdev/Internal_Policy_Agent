@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { UploadCloud, FileText, CheckCircle2, XCircle, Loader2, Trash2, List, AlignLeft, Edit, Save, Users, PlusCircle, ChevronDown, ChevronUp, Download } from 'lucide-react';
-import { uploadPdf, getDocumentCount, getAdminLogs, getChunks, deleteDocument, renameDocument, updateDocument, getAccounts, addAccount, deleteAccount, updateAccount, getDocuments } from '../api';
+import { UploadCloud, FileText, CheckCircle2, XCircle, Loader2, Trash2, List, AlignLeft, Edit, Save, Users, PlusCircle, ChevronDown, ChevronUp, Download, Brain, Search, Info } from 'lucide-react';
+import { uploadPdf, getDocumentCount, getAdminLogs, getChunks, deleteDocument, renameDocument, updateDocument, getAccounts, addAccount, deleteAccount, updateAccount, getDocuments, getIntelligenceAudit } from '../api';
 
 function fileSizeLabel(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -9,6 +9,16 @@ function fileSizeLabel(bytes) {
 }
 
 export default function AdminDashboard({ user, role }) {
+  // Toast notification state
+  const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
+  const toastTimer = useRef(null);
+
+  function showToast(message, type = 'success') {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ message, type });
+    toastTimer.current = setTimeout(() => setToast(null), 4000);
+  }
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading]       = useState(false);
   const [progress, setProgress]         = useState(0);
@@ -22,10 +32,17 @@ export default function AdminDashboard({ user, role }) {
   const [documents, setDocuments]       = useState([]);
   const [accounts, setAccounts]       = useState([]);
   const [loadingData, setLoadingData]   = useState(false);
+  
+  // AI Intelligence Audit State
+  const [logView, setLogView] = useState('document'); // 'document' | 'intelligence'
+  const [intelLogs, setIntelLogs] = useState([]);
+  const [intelSearch, setIntelSearch] = useState('');
+  const [loopFilter, setLoopFilter] = useState('all'); // 'all' | '1' | '2' | '3' | 'gt1' | 'gt2'
 
   // New Admin fields
   const [startDate, setStartDate]       = useState('');
   const [expireDate, setExpireDate]     = useState('');
+  const [department, setDepartment]     = useState('General');
 
   // Editing state
   const [editingDoc, setEditingDoc]     = useState(null);
@@ -83,6 +100,13 @@ export default function AdminDashboard({ user, role }) {
         }
       } catch (e) { console.error("Accounts fetch failed", e); }
 
+      try {
+        if (role === 'master') {
+          const iLogs = await getIntelligenceAudit();
+          setIntelLogs(iLogs || []);
+        }
+      } catch (e) { console.error("Intelligence Audit fetch failed", e); }
+
     } catch (e) {
       console.error("Dashboard global fetch error", e);
     } finally {
@@ -125,11 +149,12 @@ export default function AdminDashboard({ user, role }) {
     setProgress(0);
 
     try {
-      const data = await uploadPdf(selectedFile, user.username, startDate, expireDate, pct => setProgress(pct));
+      const data = await uploadPdf(selectedFile, user.username, startDate, expireDate, department, pct => setProgress(pct));
       setResult(data);
       setSelectedFile(null);
       setStartDate('');
       setExpireDate('');
+      setDepartment('General');
       if (fileInputRef.current) fileInputRef.current.value = '';
       fetchData(); // Refresh UI
     } catch (err) {
@@ -144,10 +169,11 @@ export default function AdminDashboard({ user, role }) {
     if(!confirm(`Are you sure you want to delete chunks for ${filename}?`)) return;
     setLoadingData(true);
     try {
-      await deleteDocument(filename);
+      await deleteDocument(filename, user.username);
+      showToast(`"${filename}" deleted successfully.`, 'success');
       await fetchData();
     } catch (e) {
-      alert("Failed to delete document: " + e.message);
+      showToast("Failed to delete document: " + e.message, 'error');
     }
     setLoadingData(false);
   }
@@ -160,9 +186,10 @@ export default function AdminDashboard({ user, role }) {
       }
       await updateDocument(editFilename, editStart, editExpire, user.username);
       setEditingDoc(null);
+      showToast('Document updated successfully.', 'success');
       await fetchData();
     } catch (e) {
-      alert("Failed to update: " + e.message);
+      showToast("Failed to update: " + e.message, 'error');
     }
     setLoadingData(false);
   }
@@ -170,31 +197,34 @@ export default function AdminDashboard({ user, role }) {
   async function handleAddAccount(e) {
     e.preventDefault();
     try {
-      await addAccount(accUsername, accPassword, accRole, accName, accEmpNum, '', '');
-      setAccUsername(''); setAccPassword(''); setAccName(''); setAccEmpNum('');
+      await addAccount(accUsername, accRole, accName, accEmpNum, user.username);
+      setAccUsername(''); setAccName(''); setAccEmpNum('');
+      showToast(`Account "${accUsername}" created successfully.`, 'success');
       await fetchData();
     } catch (e) {
-      alert("Failed to add account: " + e.message);
+      showToast("Failed to add account: " + (e.response?.data?.detail || e.message), 'error');
     }
   }
 
   async function handleDeleteAccount(username) {
     if(!confirm(`Delete account for ${username}?`)) return;
     try {
-      await deleteAccount(username);
+      await deleteAccount(username, user.username);
+      showToast(`Account "${username}" deleted.`, 'success');
       await fetchData();
     } catch (e) {
-      alert("Failed to delete account: " + e.message);
+      showToast("Failed to delete account: " + e.message, 'error');
     }
   }
 
   async function handleUpdateAccount(username) {
     try {
-      await updateAccount(username, editAccRole, editAccName, editAccEmpNum, editAccPassword);
+      await updateAccount(username, editAccRole, editAccName, editAccEmpNum, editAccPassword, user.username);
       setEditingAcc(null);
+      showToast(`Account "${username}" updated successfully.`, 'success');
       await fetchData();
     } catch (e) {
-      alert("Failed to update account: " + e.message);
+      showToast("Failed to update account: " + (e.response?.data?.detail || e.message), 'error');
     }
   }
 
@@ -204,6 +234,7 @@ export default function AdminDashboard({ user, role }) {
 
   const downloadLogsPDF = async () => {
     try {
+        const isIntel = logView === 'intelligence';
         if (!window.jspdf) {
             await new Promise((resolve) => {
                const script = document.createElement("script");
@@ -223,41 +254,78 @@ export default function AdminDashboard({ user, role }) {
         const doc = new jsPDF();
         
         doc.setFontSize(16);
-        doc.text("SDF Admin - Document Management Logs", 14, 20);
+        doc.text(isIntel ? "SDF Admin - AI Intelligence Audit Report" : "SDF Admin - Document Management Logs", 14, 20);
         doc.setFontSize(10);
         doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 28);
 
-        const columns = ["Date", "Action", "Admin ID", "File", "Chunks"];
-        const rows = logs.map(l => [
-          new Date(l.created_at).toLocaleString(),
-          l.action,
-          l.admin_id || "System",
-          l.filename,
-          l.chunks_count
-        ]);
+        let columns, rows, headerColor;
+        
+        if (isIntel) {
+          const filtered = intelLogs.filter(l => {
+            const matchesSearch = l.employee_id.includes(intelSearch) || l.query.toLowerCase().includes(intelSearch.toLowerCase());
+            if (!matchesSearch) return false;
+            if (loopFilter === 'all') return true;
+            if (loopFilter === '1') return l.loops === 1;
+            if (loopFilter === '2') return l.loops === 2;
+            if (loopFilter === '3') return l.loops === 3;
+            if (loopFilter === 'gt1') return l.loops > 1;
+            if (loopFilter === 'gt2') return l.loops > 2;
+            return true;
+          });
+
+          columns = ["User", "Query", "Retries", "Model", "Timestamp"];
+          rows = filtered.map(l => [
+            l.employee_id,
+            l.query.length > 60 ? l.query.substring(0, 60) + "..." : l.query,
+            l.loops,
+            l.model.split('|')[0].trim(),
+            new Date(l.created_at).toLocaleString()
+          ]);
+          headerColor = [126, 34, 206]; // Purple for Intelligence
+        } else {
+          columns = ["Date", "Action", "Admin / Operator", "Target (File/User)", "Info"];
+          rows = logs.map(l => [
+            new Date(l.created_at).toLocaleString(),
+            l.action,
+            l.admin_id || "System",
+            l.filename,
+            l.chunks_count > 0 ? `${l.chunks_count} chunks` : "-"
+          ]);
+          headerColor = [79, 70, 229]; // Brand color for Documents
+        }
 
         doc.autoTable({
           head: [columns],
           body: rows,
           startY: 35,
           styles: { fontSize: 8 },
-          headStyles: { fillColor: [24, 24, 27] }, // Dark style to match theme
+          headStyles: { fillColor: headerColor },
         });
 
-        doc.save(`SDF_Admin_Logs_${Date.now()}.pdf`);
+        doc.save(isIntel ? `AI_Intelligence_Audit_${Date.now()}.pdf` : `SDF_Admin_Logs_${Date.now()}.pdf`);
     } catch(e) {
-        alert("Failed to generate PDF. Make sure you have internet access for the library.");
+        showToast("Failed to generate PDF. Make sure you have internet access for the library.", 'error');
     }
   };
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto w-full">
-      <header className="px-8 py-6 border-b border-white/10 flex justify-between items-center w-full shrink-0">
-        <div>
-          <h1 className="text-xl font-bold text-white">Admin Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Manage knowledge base documents and view logs</p>
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl border backdrop-blur-md transition-all duration-300 animate-fade-in ${
+          toast.type === 'success' 
+            ? 'bg-emerald-900/80 border-emerald-500/40 text-emerald-200' 
+            : 'bg-red-900/80 border-red-500/40 text-red-200'
+        }`}>
+          {toast.type === 'success' 
+            ? <CheckCircle2 size={18} className="text-emerald-400 shrink-0" /> 
+            : <XCircle size={18} className="text-red-400 shrink-0" />
+          }
+          <span className="text-sm font-medium">{toast.message}</span>
+          <button onClick={() => setToast(null)} className="ml-2 text-white/40 hover:text-white transition">✕</button>
         </div>
-      </header>
+      )}
+
 
       <div className="p-8 grid gap-8 w-full max-w-full">
 
@@ -295,14 +363,38 @@ export default function AdminDashboard({ user, role }) {
               )}
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3 w-full">
+            <div className="mt-4 space-y-4 w-full">
                <div>
-                  <label className="block text-[10px] font-medium text-slate-400 mb-1">Start Date</label>
-                  <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="input-field py-1.5 px-3 text-xs w-full"/>
+                  <label className="block text-[10px] font-medium text-slate-400 mb-1">Target Department</label>
+                    <select 
+                      value={department} 
+                      onChange={e => setDepartment(e.target.value)} 
+                      className="input-field py-1.5 px-3 text-xs w-full bg-dark-900 border-white/5"
+                    >
+                      <option value="General">General / Other</option>
+                      <option value="AUDIT">AUDIT</option>
+                      <option value="COMPLIANCE">COMPLIANCE</option>
+                      <option value="CREDIT AND LEASING">CREDIT AND LEASING</option>
+                      <option value="FINANCE">FINANCE</option>
+                      <option value="GOLD LOAN">GOLD LOAN</option>
+                      <option value="HR">HR</option>
+                      <option value="IT">IT</option>
+                      <option value="LEGAL">LEGAL</option>
+                      <option value="MARKETING">MARKETING</option>
+                      <option value="OPERATION">OPERATION</option>
+                      <option value="RECOVERY">RECOVERY</option>
+                      <option value="RISK">RISK</option>
+                    </select>
                </div>
-               <div>
-                  <label className="block text-[10px] font-medium text-slate-400 mb-1">Expire Date</label>
-                  <input type="date" value={expireDate} onChange={e => setExpireDate(e.target.value)} className="input-field py-1.5 px-3 text-xs w-full"/>
+               <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-medium text-slate-400 mb-1">Start Date</label>
+                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="input-field py-1.5 px-3 text-xs w-full"/>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-medium text-slate-400 mb-1">Expire Date</label>
+                    <input type="date" value={expireDate} onChange={e => setExpireDate(e.target.value)} className="input-field py-1.5 px-3 text-xs w-full"/>
+                  </div>
                </div>
             </div>
 
@@ -317,35 +409,168 @@ export default function AdminDashboard({ user, role }) {
             </button>
           </div>
 
-          {/* ACTION LOGS SECTION */}
-          <div className="glass-card p-6 flex flex-col h-full max-h-[500px] w-full">
+          <div className="glass-card p-6 flex flex-col h-full max-h-[650px] w-full relative overflow-hidden">
              <div className="flex items-center justify-between mb-4 shrink-0">
-                <div className="flex items-center gap-2">
-                  <List className="w-5 h-5 text-brand-400"/>
-                  <h2 className="text-base font-semibold text-white">Document Action Logs</h2>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-brand-600/10 border border-brand-500/20">
+                     {logView === 'document' ? <List className="w-5 h-5 text-brand-400"/> : <Brain className="w-5 h-5 text-purple-400"/>}
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-white uppercase tracking-tight">
+                      {logView === 'document' ? 'Document Action Logs' : 'AI Intelligence Audit'}
+                    </h2>
+                    <p className="text-[10px] text-slate-500 font-medium tracking-wide">
+                      {logView === 'document' ? 'Tracking file operations and system changes' : 'Evaluating AI reasoning and hallucination corrections'}
+                    </p>
+                  </div>
                 </div>
-                <button onClick={downloadLogsPDF} className="flex items-center gap-1.5 bg-dark-600 hover:bg-brand-600/50 text-slate-300 text-[10px] px-2.5 py-1 rounded transition border border-white/5 shadow-sm">
-                   <Download className="w-3.5 h-3.5" /> PDF
-                </button>
+
+                <div className="flex items-center gap-2">
+                   {/* Switch View Button (Master Admin Only) */}
+                   {role === 'master' && (
+                     <button 
+                       onClick={() => setLogView(logView === 'document' ? 'intelligence' : 'document')}
+                       className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all border ${
+                         logView === 'document' 
+                           ? 'bg-purple-600/10 text-purple-400 border-purple-500/30 hover:bg-purple-600 hover:text-white' 
+                           : 'bg-brand-600/10 text-brand-400 border-brand-500/30 hover:bg-brand-600 hover:text-white'
+                       }`}
+                     >
+                        {logView === 'document' ? 'Switch to Intelligence' : 'Back to Document Logs'}
+                     </button>
+                   )}
+                   <button onClick={downloadLogsPDF} className="flex items-center gap-1.5 bg-dark-600 hover:bg-brand-600/50 text-slate-300 text-[10px] px-2.5 py-1.5 rounded-xl transition border border-white/5">
+                      <Download className="w-3.5 h-3.5" /> PDF
+                   </button>
+                </div>
              </div>
-            <div className="flex-1 overflow-y-auto pr-2 space-y-3 w-full">
-              {logs.length === 0 ? <p className="text-sm text-slate-500 text-center mt-10">No actions recorded yet.</p> : 
+
+             {/* Search and Filter for Intelligence Audit */}
+             {logView === 'intelligence' && (
+                <div className="flex flex-col sm:flex-row gap-3 mb-4 shrink-0">
+                   <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                      <input 
+                        type="text"
+                        placeholder="Search by Employee ID or Query..."
+                        value={intelSearch}
+                        onChange={e => setIntelSearch(e.target.value)}
+                        className="input-field w-full pl-9 py-2 text-xs bg-dark-900/50 border-white/5"
+                      />
+                   </div>
+                   <select 
+                     value={loopFilter}
+                     onChange={e => setLoopFilter(e.target.value)}
+                     className="input-field bg-dark-900/50 border-white/5 py-2 px-3 text-xs min-w-[140px]"
+                   >
+                      <option value="all">All Retries</option>
+                      <option value="1">1 Retry Only</option>
+                      <option value="2">2 Retries Only</option>
+                      <option value="3">3 Retries Only</option>
+                      <option value="gt1">More than 1</option>
+                      <option value="gt2">More than 2</option>
+                   </select>
+                </div>
+             )}
+
+            <div className="flex-1 overflow-y-auto pr-2 space-y-3 w-full custom-scrollbar">
+              {logView === 'document' ? (
+                logs.length === 0 ? <p className="text-sm text-slate-500 text-center mt-10 italic">No actions recorded yet.</p> : 
                 logs.map(log => (
-                  <div key={log.id} className="flex flex-col gap-1 text-sm bg-dark-500/50 p-3 rounded-xl border border-white/5 w-full">
+                  <div key={log.id} className="flex flex-col gap-1 text-sm bg-dark-500/50 p-3 rounded-xl border border-white/5 w-full hover:border-brand-500/30 transition-all group">
                     <div className="flex justify-between items-center">
-                      <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${log.action === 'UPLOAD' ? 'bg-emerald-900/40 text-emerald-400' : 'bg-red-900/40 text-red-400'}`}>
-                        {log.action}
+                      <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-md ${
+                        log.action.startsWith('USER_') ? 'bg-indigo-900/40 text-indigo-400' : 
+                        log.action === 'UPLOAD' ? 'bg-emerald-900/40 text-emerald-400' : 
+                        log.action === 'DELETE' ? 'bg-red-900/40 text-red-400' :
+                        'bg-amber-900/40 text-amber-400'
+                      }`}>
+                        {log.action.replace('_', ' ')}
                       </span>
-                      <span className="text-xs text-slate-500">{new Date(log.created_at).toLocaleString()}</span>
+                      <span className="text-[10px] text-slate-600 font-mono">{log.created_at.replace('T', ' ').split('.')[0]}</span>
                     </div>
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-slate-300 font-medium truncate shrink" title={log.filename}>📄 {log.filename}</span>
-                      <span className="text-xs text-slate-400 shrink-0 ml-2">{log.chunks_count} chunks</span>
-                    </div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">By: {log.admin_id || 'System'}</div>
+                    <p className="text-xs text-slate-300 mt-1 font-medium"><span className="text-slate-500">Actor:</span> {log.admin_id}</p>
+                    <p className="text-xs text-slate-300 font-medium"><span className="text-slate-500">File:</span> {log.filename}</p>
+                    {log.target && <p className="text-xs text-indigo-400 font-black mt-1 uppercase tracking-tighter"><span className="text-slate-500">Target Dept:</span> {log.target}</p>}
                   </div>
                 ))
-              }
+              ) : (
+                intelLogs.filter(l => {
+                  const matchesSearch = l.employee_id.includes(intelSearch) || l.query.toLowerCase().includes(intelSearch.toLowerCase());
+                  if (!matchesSearch) return false;
+                  if (loopFilter === 'all') return true;
+                  if (loopFilter === '1') return l.loops === 1;
+                  if (loopFilter === '2') return l.loops === 2;
+                  if (loopFilter === '3') return l.loops === 3;
+                  if (loopFilter === 'gt1') return l.loops > 1;
+                  if (loopFilter === 'gt2') return l.loops > 2;
+                  return true;
+                }).length === 0 ? 
+                <p className="text-sm text-slate-500 text-center mt-10 italic">No matching reasoning logs found.</p> :
+                intelLogs.filter(l => {
+                  const matchesSearch = l.employee_id.includes(intelSearch) || l.query.toLowerCase().includes(intelSearch.toLowerCase());
+                  if (!matchesSearch) return false;
+                  if (loopFilter === 'all') return true;
+                  if (loopFilter === '1') return l.loops === 1;
+                  if (loopFilter === '2') return l.loops === 2;
+                  if (loopFilter === '3') return l.loops === 3;
+                  if (loopFilter === 'gt1') return l.loops > 1;
+                  if (loopFilter === 'gt2') return l.loops > 2;
+                  return true;
+                }).map(audit => (
+                  <div key={audit.id} className="flex flex-col gap-3 bg-dark-500/30 p-4 rounded-2xl border border-purple-500/10 w-full hover:border-purple-500/40 transition-all group relative">
+                    <div className="flex justify-between items-center">
+                       <div className="flex items-center gap-2">
+                          <div className="px-2 py-0.5 bg-purple-900/40 text-purple-400 text-[9px] font-black rounded-md border border-purple-500/20 uppercase tracking-widest">Reasoning Logic</div>
+                          <div className="px-2 py-0.5 bg-dark-900/50 text-slate-500 text-[9px] font-bold rounded-md border border-white/5 uppercase">{audit.loops} Retries</div>
+                       </div>
+                       <span className="text-[10px] text-slate-600 font-mono">{audit.created_at.replace('T', ' ').split('.')[0]}</span>
+                    </div>
+                    
+                    <div className="space-y-2">
+                       <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter w-16">User:</span>
+                          <span className="text-[11px] text-white font-black">{audit.employee_id}</span>
+                       </div>
+                       <div className="flex items-start gap-2">
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter w-16 shrink-0 mt-0.5">Query:</span>
+                          <p className="text-[11px] text-slate-300 leading-relaxed italic">"{audit.query}"</p>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2 mt-2">
+                       <details className="group/detail">
+                          <summary className="flex items-center justify-between p-2 rounded-lg bg-dark-900/40 cursor-pointer hover:bg-dark-900/60 transition-colors">
+                             <div className="flex items-center gap-2">
+                                <Info className="w-3 h-3 text-amber-500" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Thinking Process</span>
+                             </div>
+                             <ChevronDown className="w-3 h-3 text-slate-600 group-open/detail:rotate-180 transition-transform" />
+                          </summary>
+                          <div className="p-3 space-y-4 border-l border-amber-500/20 ml-2 mt-2">
+                             <div>
+                                <p className="text-[9px] font-black text-amber-500 uppercase mb-1">Failed Draft</p>
+                                <p className="text-[10px] text-slate-500 line-through leading-relaxed bg-red-900/5 p-2 rounded border border-red-500/5">{audit.draft}</p>
+                             </div>
+                             <div>
+                                <p className="text-[9px] font-black text-blue-400 uppercase mb-1">Reviewer Feedback</p>
+                                <p className="text-[10px] text-blue-300/80 italic leading-relaxed bg-blue-900/5 p-2 rounded border border-blue-500/10 font-medium">"{audit.feedback}"</p>
+                             </div>
+                             <div>
+                                <p className="text-[9px] font-black text-emerald-500 uppercase mb-1">Corrected Final</p>
+                                <p className="text-[10px] text-emerald-100 leading-relaxed bg-emerald-900/5 p-2 rounded border border-emerald-500/10 font-semibold">{audit.final}</p>
+                             </div>
+                          </div>
+                       </details>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-1 pt-2 border-t border-white/5">
+                       <Cpu className="w-3 h-3 text-slate-600" />
+                       <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{audit.model}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -361,16 +586,13 @@ export default function AdminDashboard({ user, role }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
                <div className="col-span-1 bg-dark-800/50 p-4 rounded-xl border border-white/5 shadow-inner shrink-0">
-                  <h3 className="text-xs font-semibold text-slate-300 mb-3 flex items-center gap-1"><PlusCircle className="w-4 h-4"/> Add Account</h3>
-                  <form onSubmit={handleAddAccount} className="space-y-3 w-full">
-                     <div>
-                        <label className="block text-[10px] text-slate-400 mb-1">Username *</label>
-                        <input type="text" value={accUsername} onChange={e=>setAccUsername(e.target.value)} required className="input-field py-1.5 px-3 text-xs w-full"/>
-                     </div>
-                     <div>
-                        <label className="block text-[10px] text-slate-400 mb-1">Password *</label>
-                        <input type="text" value={accPassword} onChange={e=>setAccPassword(e.target.value)} required className="input-field py-1.5 px-3 text-xs w-full"/>
-                     </div>
+                   <h3 className="text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1"><PlusCircle className="w-4 h-4"/> Authorize Account</h3>
+                   <p className="text-[10px] text-slate-500 mb-3 italic">User will set their own password during registration.</p>
+                   <form onSubmit={handleAddAccount} className="space-y-3 w-full">
+                      <div>
+                         <label className="block text-[10px] text-slate-400 mb-1">EPF Number (Username) *</label>
+                         <input type="text" value={accUsername} onChange={e=>setAccUsername(e.target.value)} required className="input-field py-1.5 px-3 text-xs w-full" placeholder="e.g. EMP1234"/>
+                      </div>
                      <div>
                         <label className="block text-[10px] text-slate-400 mb-1">Role *</label>
                         <select value={accRole} onChange={e=>setAccRole(e.target.value)} className="input-field py-1.5 px-3 text-xs w-full cursor-pointer">
@@ -387,7 +609,7 @@ export default function AdminDashboard({ user, role }) {
                         <label className="block text-[10px] text-slate-400 mb-1">Employee Number</label>
                         <input type="text" value={accEmpNum} onChange={e=>setAccEmpNum(e.target.value)} className="input-field py-1.5 px-3 text-xs w-full"/>
                      </div>
-                     <button type="submit" className="btn-primary w-full py-1.5 text-xs h-8 flex justify-center items-center">Create</button>
+                      <button type="submit" className="btn-primary w-full py-1.5 text-xs h-8 flex justify-center items-center">Authorize EPF</button>
                   </form>
                </div>
                <div className="col-span-2 overflow-y-auto max-h-[400px] w-full">
