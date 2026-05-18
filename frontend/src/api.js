@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:8000',
-  timeout: 120_000,          // 2 min – LLM responses can be slow
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  timeout: 120_000,
 });
 
 export async function sendChat(query, employeeId) {

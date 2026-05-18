@@ -95,7 +95,7 @@ export default function ChatView({
     setLoading(true);
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/chat/stream', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: q, employee_id: user.username, session_id: sessionId, save_chat: saveChat })
