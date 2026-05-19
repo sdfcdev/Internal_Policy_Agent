@@ -39,7 +39,7 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-[10px] text-slate-400 mb-1">Username</label>
+            <label className="block text-[10px] text-slate-400 mb-1">Employee Number</label>
             <input type="text" value={username} onChange={e=>setUsername(e.target.value)} disabled={loading} required className="input-field py-2 text-sm w-full" autoFocus />
           </div>
           <div>
@@ -227,7 +227,7 @@ export default function App() {
 
               <div className="flex items-center gap-3">
                 <div className="hidden sm:flex flex-col items-end mr-2">
-                  <span className="text-xs font-semibold text-white leading-none">{user.name || user.username}</span>
+                  <span className="text-xs font-semibold text-white leading-none">{user.preferred_name || user.name || user.username}</span>
                   <span className="text-[10px] text-slate-500 uppercase tracking-tighter mt-1">{user.role}</span>
                 </div>
                 

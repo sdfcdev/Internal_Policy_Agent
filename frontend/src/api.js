@@ -106,8 +106,8 @@ export async function deleteAccount(username, admin_id) {
   return data;
 }
 
-export async function updateAccount(username, role, name, emp_num, password, admin_id) {
-  const { data } = await API.put(`/admin/account/${username}`, { role, name, emp_num, password, admin_id });
+export async function updateAccount(username, role, name, preferred_name, emp_num, password, admin_id) {
+  const { data } = await API.put(`/admin/account/${username}`, { role, name, preferred_name, emp_num, password, admin_id });
   return data;
 }
 
@@ -116,10 +116,11 @@ export async function login(username, password) {
   return data;
 }
 
-export async function register(username, password, q1, a1, q2, a2, q3, a3) {
+export async function register(username, password, name, q1, a1, q2, a2, q3, a3) {
   const { data } = await API.post('/auth/register', { 
     username, 
     password, 
+    name,
     q1, a1, q2, a2, q3, a3
   });
   return data;

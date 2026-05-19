@@ -69,7 +69,7 @@ export default function ChatView({
       {
         id: Date.now(),
         role: 'assistant',
-        content: `Hello ${user?.name || user?.username}! I am your SDF AI Copilot. How can I assist you with company policies today?`,
+        content: `Hello ${user?.preferred_name || user?.name || user?.username}! I am your SDF AI Copilot. How can I assist you with company policies today?`,
         time: nowTime(),
       },
     ]);

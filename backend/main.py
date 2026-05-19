@@ -169,6 +169,8 @@ def ensure_audit_table():
         except: pass
         try: cursor.execute("ALTER TABLE Accounts ALTER COLUMN Password NVARCHAR(200) NULL")
         except: pass
+        try: cursor.execute("ALTER TABLE Accounts ADD PreferredName NVARCHAR(100) NULL")
+        except: pass
         
         conn.commit()
     except pyodbc.Error as exc:
@@ -512,7 +514,7 @@ async def login(req: Dict[str, str]):
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT Username, Role, Name, Password, IsRegistered FROM Accounts WHERE Username=?", req['username'])
+        cursor.execute("SELECT Username, Role, Name, Password, IsRegistered, PreferredName FROM Accounts WHERE Username=?", req['username'])
         row = cursor.fetchone()
         if not row or not row[3]:
             raise HTTPException(status_code=401, detail="Invalid username or password.")
@@ -523,6 +525,7 @@ async def login(req: Dict[str, str]):
             "role": row[1], 
             "name": row[2], 
             "emp_num": row[0],
+            "preferred_name": row[5] or row[2],
             "is_first_login": False
         }
     finally: conn.close()
@@ -570,8 +573,8 @@ async def list_users():
     if not conn: return []
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT Username, Name, Role FROM Accounts")
-        return [{"username": r[0], "name": r[1], "role": r[2]} for r in cursor.fetchall()]
+        cursor.execute("SELECT Username, Name, Role, PreferredName FROM Accounts")
+        return [{"username": r[0], "name": r[1], "role": r[2], "preferred_name": r[3]} for r in cursor.fetchall()]
     finally: conn.close()
 
 @app.post("/admin/account")
@@ -604,13 +607,14 @@ async def update_user(username: str, user_data: Dict[str, str]):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        pref_name = user_data.get("preferred_name")
         if user_data.get("password"):
             hashed = hash_password(user_data["password"])
-            cursor.execute("UPDATE Accounts SET Role=?, Name=?, Password=? WHERE Username=?",
-                           user_data["role"], user_data["name"], hashed, username)
+            cursor.execute("UPDATE Accounts SET Role=?, Name=?, PreferredName=?, Password=? WHERE Username=?",
+                           user_data["role"], user_data["name"], pref_name, hashed, username)
         else:
-            cursor.execute("UPDATE Accounts SET Role=?, Name=? WHERE Username=?",
-                           user_data["role"], user_data["name"], username)
+            cursor.execute("UPDATE Accounts SET Role=?, Name=?, PreferredName=? WHERE Username=?",
+                           user_data["role"], user_data["name"], pref_name, username)
             
         conn.commit()
         return {"message": "User updated"}
@@ -723,6 +727,7 @@ async def rename_chat_session(session_id: str, data: Dict[str, str]):
 class RegisterRequest(BaseModel):
     username: str
     password: str
+    name: str
     q1: str
     a1: str
     q2: str
@@ -747,8 +752,8 @@ async def register_user(req: RegisterRequest):
             
         hashed = hash_password(req.password)
         cursor.execute(
-            "UPDATE Accounts SET Password = ?, Q1 = ?, A1 = ?, Q2 = ?, A2 = ?, Q3 = ?, A3 = ?, IsRegistered = 1 WHERE Username = ?",
-            hashed, req.q1, req.a1, req.q2, req.a2, req.q3, req.a3, req.username
+            "UPDATE Accounts SET PreferredName = ?, Password = ?, Q1 = ?, A1 = ?, Q2 = ?, A2 = ?, Q3 = ?, A3 = ?, IsRegistered = 1 WHERE Username = ?",
+            req.name, hashed, req.q1, req.a1, req.q2, req.a2, req.q3, req.a3, req.username
         )
         conn.commit()
         return {"message": "Registration successful"}

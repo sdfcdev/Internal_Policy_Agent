@@ -63,6 +63,7 @@ export default function AdminDashboard({ user, role }) {
   const [editingAcc, setEditingAcc] = useState(null);
   const [editAccRole, setEditAccRole] = useState('');
   const [editAccName, setEditAccName] = useState('');
+  const [editAccPreferredName, setEditAccPreferredName] = useState('');
   const [editAccEmpNum, setEditAccEmpNum] = useState('');
   const [editAccPassword, setEditAccPassword] = useState('');
 
@@ -218,7 +219,7 @@ export default function AdminDashboard({ user, role }) {
 
   async function handleUpdateAccount(username) {
     try {
-      await updateAccount(username, editAccRole, editAccName, editAccEmpNum, editAccPassword, user.username);
+      await updateAccount(username, editAccRole, editAccName, editAccPreferredName, editAccEmpNum, editAccPassword, user.username);
       setEditingAcc(null);
       showToast(`Account "${username}" updated successfully.`, 'success');
       await fetchData();
@@ -642,25 +643,29 @@ export default function AdminDashboard({ user, role }) {
                               <td className="px-3 py-2 truncate">
                                 {isEditing ? (
                                     <div className="flex flex-col gap-1">
-                                       <input type="text" value={editAccName} onChange={e=>setEditAccName(e.target.value)} placeholder="Name" className="input-field py-1 px-2 text-[10px] w-full"/>
+                                       <input type="text" value={editAccName} onChange={e=>setEditAccName(e.target.value)} placeholder="Full Name" className="input-field py-1 px-2 text-[10px] w-full"/>
+                                       <input type="text" value={editAccPreferredName} onChange={e=>setEditAccPreferredName(e.target.value)} placeholder="Preferred Display Name" className="input-field py-1 px-2 text-[10px] w-full"/>
                                        <input type="text" value={editAccEmpNum} onChange={e=>setEditAccEmpNum(e.target.value)} placeholder="Emp Num" className="input-field py-1 px-2 text-[10px] w-full"/>
                                     </div>
                                 ) : (
-                                    <span>{acc.name} <span className="text-[10px] text-slate-500 ml-1">({acc.emp_num})</span></span>
+                                    <div className="flex flex-col">
+                                       <span>{acc.name} <span className="text-[10px] text-slate-500 ml-1">({acc.emp_num})</span></span>
+                                       {acc.preferred_name && <span className="text-[10px] text-brand-400 font-semibold mt-0.5">Display Name: {acc.preferred_name}</span>}
+                                    </div>
                                 )}
                               </td>
                               <td className="px-3 py-2 text-right">
                                 {isEditing ? (
                                     <div className="flex justify-end gap-1">
-                                      <button onClick={() => handleUpdateAccount(acc.username)} className="text-emerald-400 hover:text-emerald-300 bg-emerald-900/20 px-2 py-1 rounded text-[10px]">Save</button>
-                                      <button onClick={() => setEditingAcc(null)} className="text-slate-400 hover:text-slate-300 bg-dark-800 px-2 py-1 rounded text-[10px]">Close</button>
+                                       <button onClick={() => handleUpdateAccount(acc.username)} className="text-emerald-400 hover:text-emerald-300 bg-emerald-900/20 px-2 py-1 rounded text-[10px]">Save</button>
+                                       <button onClick={() => setEditingAcc(null)} className="text-slate-400 hover:text-slate-300 bg-dark-800 px-2 py-1 rounded text-[10px]">Close</button>
                                     </div>
                                 ) : (
                                     <div className="flex justify-end gap-1">
-                                      <button onClick={() => {
-                                          setEditingAcc(acc.username); setEditAccRole(acc.role); setEditAccName(acc.name || ''); setEditAccEmpNum(acc.emp_num || ''); setEditAccPassword('');
-                                      }} className="text-brand-300 hover:text-brand-200 bg-brand-900/20 px-2 py-1 rounded">Edit</button>
-                                      <button onClick={() => handleDeleteAccount(acc.username)} className="text-red-400 hover:text-red-300 bg-red-900/20 px-2 py-1 rounded">Del</button>
+                                       <button onClick={() => {
+                                           setEditingAcc(acc.username); setEditAccRole(acc.role); setEditAccName(acc.name || ''); setEditAccPreferredName(acc.preferred_name || ''); setEditAccEmpNum(acc.emp_num || ''); setEditAccPassword('');
+                                       }} className="text-brand-300 hover:text-brand-200 bg-brand-900/20 px-2 py-1 rounded">Edit</button>
+                                       <button onClick={() => handleDeleteAccount(acc.username)} className="text-red-400 hover:text-red-300 bg-red-900/20 px-2 py-1 rounded">Del</button>
                                     </div>
                                 )}
                               </td>

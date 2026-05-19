@@ -11,8 +11,17 @@ const SECURITY_QUESTIONS = [
   "What is your favorite book or movie?"
 ];
 
+const PASSWORD_RULES = [
+  { id: 'length', label: 'Minimum 8 characters', test: (pw) => pw.length >= 8 },
+  { id: 'upper', label: 'One uppercase letter (A-Z)', test: (pw) => /[A-Z]/.test(pw) },
+  { id: 'lower', label: 'One lowercase letter (a-z)', test: (pw) => /[a-z]/.test(pw) },
+  { id: 'number', label: 'One number (0-9)', test: (pw) => /[0-9]/.test(pw) },
+  { id: 'special', label: 'One special char (e.g. @, #, $, %)', test: (pw) => /[^A-Za-z0-9]/.test(pw) },
+];
+
 export default function Register({ onBack, onComplete }) {
   const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
@@ -35,6 +44,11 @@ export default function Register({ onBack, onComplete }) {
       setError("Passwords do not match.");
       return;
     }
+    const allPassed = PASSWORD_RULES.every(rule => rule.test(password));
+    if (!allPassed) {
+      setError("Please meet all password strength requirements.");
+      return;
+    }
     if (q1 === q2 || q1 === q3 || q2 === q3) {
       setError("Please select three different security questions.");
       return;
@@ -42,7 +56,7 @@ export default function Register({ onBack, onComplete }) {
     setLoading(true);
     setError('');
     try {
-      await register(username, password, q1, a1, q2, a2, q3, a3);
+      await register(username, password, name, q1, a1, q2, a2, q3, a3);
       setSuccess(true);
       setTimeout(() => onBack(), 2500);
     } catch (err) {
@@ -62,9 +76,13 @@ export default function Register({ onBack, onComplete }) {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
+            <div>
               <label className="block text-[10px] text-slate-400 mb-1">Employee Number</label>
               <input type="text" value={username} onChange={e=>setUsername(e.target.value)} required className="input-field py-2 text-sm w-full" autoFocus />
+            </div>
+            <div>
+              <label className="block text-[10px] text-slate-400 mb-1">Preferred Display Name</label>
+              <input type="text" value={name} onChange={e=>setName(e.target.value)} required className="input-field py-2 text-sm w-full" placeholder="e.g. Manoj" />
             </div>
             <div>
               <label className="block text-[10px] text-slate-400 mb-1">Password</label>
@@ -74,6 +92,27 @@ export default function Register({ onBack, onComplete }) {
               <label className="block text-[10px] text-slate-400 mb-1">Confirm Password</label>
               <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required className="input-field py-2 text-sm w-full" />
             </div>
+
+            {password && (
+              <div className="bg-dark-900/40 p-3 rounded-lg border border-white/5 space-y-1.5 animate-fade-in col-span-2">
+                <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Password Strength Requirements</p>
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  {PASSWORD_RULES.map(rule => {
+                    const passed = rule.test(password);
+                    return (
+                      <div key={rule.id} className="flex items-center gap-1.5">
+                        <span className={passed ? "text-emerald-400 font-bold" : "text-slate-600"}>
+                          {passed ? "✓" : "○"}
+                        </span>
+                        <span className={passed ? "text-emerald-300/80" : "text-slate-500"}>
+                          {rule.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="pt-2 border-t border-white/5 space-y-4">
