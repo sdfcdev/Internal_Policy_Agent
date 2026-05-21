@@ -362,7 +362,7 @@ export default function Sidebar({
                       </span>
                       <div
                         className={`relative flex items-center h-6 w-11 rounded-full p-1 transition-colors duration-500 ${
-                          theme === 'dark' ? 'bg-brand-500' : 'bg-slate-300'
+                          theme === 'dark' ? 'bg-brand-400/80' : 'bg-slate-500/50'
                         }`}
                       >
                         <div
