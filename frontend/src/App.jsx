@@ -30,7 +30,7 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8 z-10 w-full relative h-[100vh]">
+    <div className="flex flex-1 items-center justify-center p-8 z-10 w-full relative min-h-screen py-12">
       <div className="glass-card p-8 w-full max-w-sm glow-ring animate-fade-in">
         <div className="text-center mb-6">
           <img src="/logo.png" alt="SDF Logo" className="h-12 w-auto mx-auto mb-4 brightness-110" />

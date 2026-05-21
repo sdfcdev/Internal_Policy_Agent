@@ -67,7 +67,7 @@ export default function Register({ onBack, onComplete }) {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8 z-10 w-full relative h-[100vh]">
+    <div className="flex flex-1 items-center justify-center p-8 z-10 w-full relative min-h-screen py-12">
       <div className="glass-card p-8 w-full max-w-lg glow-ring animate-fade-in">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-medium text-white">Staff Registration</h2>
