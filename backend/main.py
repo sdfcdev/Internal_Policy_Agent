@@ -362,11 +362,11 @@ async def stream_chat(request: ChatRequest):
                     
                 greeting = f"Hi {user_name}! How can I help you today?"
                 
-                # Save to AuditTrail if required
-                if request.save_chat:
-                    cursor.execute("INSERT INTO AuditTrail (EmployeeID, SessionID, QueryText, AIResponse, IsSaved) VALUES (?, ?, ?, ?, ?)",
-                                   request.employee_id, request.session_id, request.query, greeting, 1)
-                    conn.commit()
+                # Save to AuditTrail so it exists if toggled later
+                is_saved = 1 if request.save_chat else 0
+                cursor.execute("INSERT INTO AuditTrail (EmployeeID, SessionID, QueryText, AIResponse, IsSaved) VALUES (?, ?, ?, ?, ?)",
+                               request.employee_id, request.session_id, request.query, greeting, is_saved)
+                conn.commit()
             except Exception as e:
                 logger.error(f"Greeting DB error: {e}")
             finally:
@@ -387,6 +387,12 @@ async def stream_chat(request: ChatRequest):
             cursor.execute("SELECT AIResponse, Accuracy FROM QueryCache WHERE QueryText = ?", request.query.strip().lower())
             row = cursor.fetchone()
             if row:
+                # Save to AuditTrail so it exists if toggled later
+                is_saved = 1 if request.save_chat else 0
+                cursor.execute("INSERT INTO AuditTrail (EmployeeID, SessionID, QueryText, AIResponse, IsSaved) VALUES (?, ?, ?, ?, ?)",
+                               request.employee_id, request.session_id, request.query, row[0], is_saved)
+                conn.commit()
+                
                 async def cache_gen():
                     yield f"data: {json.dumps({'agent': 'Cache', 'status': 'done', 'response': row[0], 'accuracy_score': row[1], 'hallucination_check': 'pass'})}\n\n"
                     yield "data: [DONE]\n\n"
