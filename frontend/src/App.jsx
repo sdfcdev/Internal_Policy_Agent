@@ -161,61 +161,65 @@ export default function App() {
     }
   }
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     const sessionName = sessionId ? (historyData.find(h => h.id === sessionId)?.session_title || 'Chat Session') : 'Current Chat Session';
     const dateStr = new Date().toLocaleString();
-    
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert("Please allow popups to download the PDF");
+
+    if (!window.html2pdf) {
+      const script = document.createElement('script');
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      script.async = true;
+      document.body.appendChild(script);
+      await new Promise((resolve) => {
+        script.onload = resolve;
+        setTimeout(resolve, 3000);
+      });
+    }
+
+    if (!window.html2pdf) {
+      alert("Failed to load PDF library. Please check your internet connection.");
       return;
     }
 
+    const container = document.createElement('div');
+    container.style.padding = '20px';
+    container.style.fontFamily = 'Inter, sans-serif';
+    container.style.color = '#1e293b';
+    container.style.backgroundColor = '#ffffff';
+    container.style.width = '800px';
+
     const htmlContent = `
-      <html>
-        <head>
-          <title>${sessionName} - SDF AI Copilot</title>
-          <style>
-            body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; color: #1e293b; max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-            h1 { color: #4f46e5; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 5px; }
-            .meta { color: #64748b; font-size: 13px; margin-bottom: 30px; }
-            .message { margin-bottom: 24px; padding: 16px; border-radius: 12px; }
-            .user { background: #f8fafc; border: 1px solid #e2e8f0; }
-            .assistant { background: #ffffff; border-left: 4px solid #8b5cf6; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-            .role { font-weight: bold; margin-bottom: 8px; font-size: 14px; display: flex; justify-content: space-between; }
-            .user .role { color: #3b82f6; }
-            .assistant .role { color: #8b5cf6; }
-            .time { font-size: 12px; color: #94a3b8; font-weight: normal; }
-            .content { white-space: pre-wrap; font-size: 14px; }
-            @media print {
-              body { padding: 0; }
-              .message { page-break-inside: avoid; }
-            }
-          </style>
-        </head>
-        <body>
-          <h1>${sessionName}</h1>
-          <div class="meta">Exported on: ${dateStr}</div>
-          ${messages.map(msg => `
-            <div class="message ${msg.role}">
-              <div class="role">
-                <span>${msg.role === 'user' ? (user?.preferred_name || user?.name || 'User') : 'SDF AI Copilot'}</span>
-                <span class="time">${msg.time || ''}</span>
-              </div>
-              <div class="content">${msg.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-            </div>
-          `).join('')}
-        </body>
-      </html>
+      <h1 style="color: #4f46e5; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 5px;">${sessionName}</h1>
+      <div style="color: #64748b; font-size: 13px; margin-bottom: 30px;">Exported on: ${dateStr}</div>
+      ${messages.map(msg => `
+        <div style="margin-bottom: 24px; padding: 16px; border-radius: 12px; ${msg.role === 'user' ? 'background: #f8fafc; border: 1px solid #e2e8f0;' : 'background: #ffffff; border-left: 4px solid #8b5cf6; box-shadow: 0 1px 3px rgba(0,0,0,0.1);'}">
+          <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px; display: flex; justify-content: space-between;">
+            <span style="color: ${msg.role === 'user' ? '#3b82f6' : '#8b5cf6'}">${msg.role === 'user' ? (user?.preferred_name || user?.name || 'User') : 'SDF AI Copilot'}</span>
+            <span style="font-size: 12px; color: #94a3b8; font-weight: normal;">${msg.time || ''}</span>
+          </div>
+          <div style="white-space: pre-wrap; font-size: 14px;">${msg.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+        </div>
+      `).join('')}
     `;
 
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    container.innerHTML = htmlContent;
     
-    printWindow.setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 500);
+    // We append the container far off-screen so it's not visible while generating
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    document.body.appendChild(container);
+
+    const opt = {
+      margin:       15,
+      filename:     `${sessionName}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    window.html2pdf().from(container).set(opt).save().then(() => {
+      document.body.removeChild(container);
+    });
   };
 
   return (
