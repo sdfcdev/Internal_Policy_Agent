@@ -28,7 +28,7 @@ export default function Sidebar({
   activeView, onViewChange, backendOk, role, 
   historyData = [], libraryDocs = [], activeSessionId, onSelectSession, onRefreshData, user,
   onNewChat, theme, onToggleTheme, onLogout,
-  textSize, setTextSize, userBubbleColor, setUserBubbleColor, aiBubbleColor, setAiBubbleColor
+  textSize, setTextSize, userBubbleColor, setUserBubbleColor, aiBubbleColor, setAiBubbleColor, fontStyle, setFontStyle
 }) {
   const [leftTab, setLeftTab] = useState('history'); // 'history' | 'library'
   const [historySearch, setHistorySearch] = useState('');
@@ -409,16 +409,37 @@ export default function Sidebar({
               </button>
             </div>
             
-            <div className="p-5 flex flex-col gap-6">
+            <div className="p-5 flex flex-col gap-5">
+              {/* Font Style */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Font Family</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['Inter', 'Roboto', 'Poppins', 'Outfit'].map(font => (
+                    <button
+                      key={font}
+                      onClick={() => setFontStyle(font)}
+                      className={`py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                        fontStyle === font 
+                          ? 'bg-brand-500/20 border-brand-500 text-brand-400' 
+                          : 'bg-dark-900 border-white/5 text-slate-400 hover:border-white/20'
+                      }`}
+                      style={{ fontFamily: font }}
+                    >
+                      {font}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Text Size */}
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-3">Text Size</label>
-                <div className="flex gap-3">
+                <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Text Size</label>
+                <div className="flex gap-2">
                   {['sm', 'md', 'lg'].map(size => (
                     <button
                       key={size}
                       onClick={() => setTextSize(size)}
-                      className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors border ${
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                         textSize === size 
                           ? 'bg-brand-500/20 border-brand-500 text-brand-400' 
                           : 'bg-dark-900 border-white/5 text-slate-400 hover:border-white/20'
@@ -432,24 +453,27 @@ export default function Sidebar({
 
               {/* User Bubble Color */}
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-3">User Chat Color</label>
-                <div className="flex gap-3">
+                <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">User Chat Color</label>
+                <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'blue', name: 'Blue', color: 'bg-blue-500' },
                     { id: 'emerald', name: 'Emerald', color: 'bg-emerald-500' },
-                    { id: 'violet', name: 'Violet', color: 'bg-violet-500' }
+                    { id: 'violet', name: 'Violet', color: 'bg-violet-500' },
+                    { id: 'teal', name: 'Teal', color: 'bg-teal-500' },
+                    { id: 'orange', name: 'Orange', color: 'bg-orange-500' },
+                    { id: 'fuchsia', name: 'Fuchsia', color: 'bg-fuchsia-500' }
                   ].map(c => (
                     <button
                       key={c.id}
                       onClick={() => setUserBubbleColor(c.id)}
-                      className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-colors border flex items-center justify-center gap-2 ${
+                      className={`py-1.5 px-2 rounded-lg text-[11px] font-medium transition-colors border flex items-center gap-1.5 ${
                         userBubbleColor === c.id 
                           ? 'bg-white/10 border-white/20 text-white' 
                           : 'bg-dark-900 border-white/5 text-slate-400 hover:border-white/20'
                       }`}
                     >
-                      <div className={`w-3 h-3 rounded-full ${c.color}`} />
-                      {c.name}
+                      <div className={`w-2.5 h-2.5 rounded-full ${c.color} shrink-0`} />
+                      <span className="truncate">{c.name}</span>
                     </button>
                   ))}
                 </div>
@@ -457,24 +481,27 @@ export default function Sidebar({
 
               {/* AI Bubble Color */}
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-3">AI Answer Color</label>
-                <div className="flex gap-3">
+                <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">AI Answer Color</label>
+                <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'white', name: 'White', color: 'bg-white' },
-                    { id: 'slate', name: 'Slate', color: 'bg-slate-300' },
-                    { id: 'indigo', name: 'Indigo', color: 'bg-indigo-300' }
+                    { id: 'white', name: 'Glass', color: 'bg-white' },
+                    { id: 'slate', name: 'Slate', color: 'bg-slate-400' },
+                    { id: 'indigo', name: 'Indigo', color: 'bg-indigo-400' },
+                    { id: 'zinc', name: 'Zinc', color: 'bg-zinc-400' },
+                    { id: 'stone', name: 'Stone', color: 'bg-stone-400' },
+                    { id: 'neutral', name: 'Neutral', color: 'bg-neutral-400' }
                   ].map(c => (
                     <button
                       key={c.id}
                       onClick={() => setAiBubbleColor(c.id)}
-                      className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-colors border flex items-center justify-center gap-2 ${
+                      className={`py-1.5 px-2 rounded-lg text-[11px] font-medium transition-colors border flex items-center gap-1.5 ${
                         aiBubbleColor === c.id 
                           ? 'bg-white/10 border-white/20 text-white' 
                           : 'bg-dark-900 border-white/5 text-slate-400 hover:border-white/20'
                       }`}
                     >
-                      <div className={`w-3 h-3 rounded-full ${c.color}`} />
-                      {c.name}
+                      <div className={`w-2.5 h-2.5 rounded-full ${c.color} shrink-0`} />
+                      <span className="truncate">{c.name}</span>
                     </button>
                   ))}
                 </div>

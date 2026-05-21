@@ -68,11 +68,17 @@ export default function MessageBubble({ message, onEditSubmit, textSize = 'md', 
   const userBgClass = 
       userBubbleColor === 'emerald' ? 'bg-emerald-600/30 border-emerald-500/30' :
       userBubbleColor === 'violet' ? 'bg-violet-600/30 border-violet-500/30' :
+      userBubbleColor === 'teal' ? 'bg-teal-600/30 border-teal-500/30' :
+      userBubbleColor === 'orange' ? 'bg-orange-600/30 border-orange-500/30' :
+      userBubbleColor === 'fuchsia' ? 'bg-fuchsia-600/30 border-fuchsia-500/30' :
       'bg-brand-600/30 border-brand-500/30'; // blue default
 
   const aiBgClass = 
       aiBubbleColor === 'slate' ? 'bg-slate-800/80 border border-slate-700/50' :
       aiBubbleColor === 'indigo' ? 'bg-indigo-900/40 border border-indigo-500/30' :
+      aiBubbleColor === 'zinc' ? 'bg-zinc-800/80 border border-zinc-700/50' :
+      aiBubbleColor === 'stone' ? 'bg-stone-800/80 border border-stone-700/50' :
+      aiBubbleColor === 'neutral' ? 'bg-neutral-800/80 border border-neutral-700/50' :
       'glass-card'; // white default
 
   if (isUser) {

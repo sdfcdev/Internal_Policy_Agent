@@ -71,10 +71,12 @@ export default function App() {
   const [textSize, setTextSize] = useState(() => localStorage.getItem('sdf_text_size') || 'md');
   const [userBubbleColor, setUserBubbleColor] = useState(() => localStorage.getItem('sdf_user_color') || 'blue');
   const [aiBubbleColor, setAiBubbleColor] = useState(() => localStorage.getItem('sdf_ai_color') || 'white');
+  const [fontStyle, setFontStyle] = useState(() => localStorage.getItem('sdf_font_style') || 'Inter');
 
   useEffect(() => { localStorage.setItem('sdf_text_size', textSize); }, [textSize]);
   useEffect(() => { localStorage.setItem('sdf_user_color', userBubbleColor); }, [userBubbleColor]);
   useEffect(() => { localStorage.setItem('sdf_ai_color', aiBubbleColor); }, [aiBubbleColor]);
+  useEffect(() => { localStorage.setItem('sdf_font_style', fontStyle); }, [fontStyle]);
 
 
 
@@ -231,7 +233,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen bg-dark-900 text-white">
+    <div className="flex min-h-screen bg-dark-900 text-white" style={{ fontFamily: `"${fontStyle}", system-ui, sans-serif` }}>
       {/* Ambient gradient blobs */}
       <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-brand-600/8 blur-3xl" />
@@ -285,6 +287,7 @@ export default function App() {
             textSize={textSize} setTextSize={setTextSize}
             userBubbleColor={userBubbleColor} setUserBubbleColor={setUserBubbleColor}
             aiBubbleColor={aiBubbleColor} setAiBubbleColor={setAiBubbleColor}
+            fontStyle={fontStyle} setFontStyle={setFontStyle}
           />
 
           <main className="flex flex-col flex-1 h-screen overflow-hidden relative z-10 w-full min-w-0">
