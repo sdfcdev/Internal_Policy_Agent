@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, MessageSquare, RefreshCw } from 'lucide-react';
-import { saveHistorySession } from '../api';
+import ReactMarkdown from 'react-markdown';
+import { API_URL, saveHistorySession } from '../api';
 import MessageBubble, { TypingIndicator } from './MessageBubble';
 
 const PLACEHOLDER_HINTS = [
@@ -87,7 +88,7 @@ export default function ChatView({
     setLoading(true);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/chat/stream`, {
+      const res = await fetch(`${API_URL}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: q, employee_id: user.username, session_id: sessionId, save_chat: saveChat })
