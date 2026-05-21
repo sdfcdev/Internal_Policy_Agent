@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, MessageSquare, DownloadCloud, Edit2, X, Check, ChevronDown, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
-import { renameHistorySession, API_URL } from '../api';
+import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, MessageSquare, DownloadCloud, Edit2, X, Check, ChevronDown, PanelLeftClose, PanelLeftOpen, Settings, Pin, Trash2 } from 'lucide-react';
+import { renameHistorySession, togglePinSession, deleteSession, API_URL } from '../api';
 
 const NAV = [
   { id: 'chat',  label: 'AI Copilot',       icon: BotMessageSquare },
@@ -26,7 +26,20 @@ export default function Sidebar({
       acc[h.session_id].push(h);
       return acc;
   }, {});
-  const sessionList = Object.keys(groupedHistory).sort((a,b) => b.localeCompare(a)); 
+  const sessionList = Object.keys(groupedHistory).sort((a,b) => {
+      const getLatest = (sId) => groupedHistory[sId].reduce((latest, msg) => {
+          return new Date(msg.created_at) > new Date(latest) ? msg.created_at : latest;
+      }, groupedHistory[sId][0].created_at);
+
+      const aPinned = groupedHistory[a][0].pinned_at;
+      const bPinned = groupedHistory[b][0].pinned_at;
+      
+      if (aPinned && bPinned) return new Date(bPinned) - new Date(aPinned);
+      if (aPinned) return -1;
+      if (bPinned) return 1;
+
+      return new Date(getLatest(b)) - new Date(getLatest(a));
+  });
   
   const filteredSessionList = sessionList.filter(sId => {
       if (!historySearch.trim()) return true;
@@ -43,6 +56,28 @@ export default function Sidebar({
           if (onRefreshData) onRefreshData();
       } catch (e) {
           alert('Failed to rename session.');
+      }
+  }
+
+  async function handleTogglePin(e, sId, isPinned) {
+      e.stopPropagation();
+      try {
+          await togglePinSession(sId, !isPinned);
+          if (onRefreshData) onRefreshData();
+      } catch (err) {
+          alert('Failed to pin session.');
+      }
+  }
+
+  async function handleDelete(e, sId) {
+      e.stopPropagation();
+      if (!window.confirm("Are you sure you want to remove this chat from your history?")) return;
+      try {
+          await deleteSession(sId);
+          if (onRefreshData) onRefreshData();
+          if (activeSessionId === sId) onNewChat();
+      } catch (err) {
+          alert('Failed to delete session.');
       }
   }
 
@@ -158,18 +193,38 @@ export default function Sidebar({
                           </div>
                         ) : (
                           <>
-                            <p className="text-xs text-slate-200 line-clamp-2 pr-4 leading-relaxed font-medium">
-                              {firstQ.session_title || firstQ.query}
-                            </p>
+                            <div className="flex justify-between items-start">
+                              <p className="text-xs text-slate-200 line-clamp-2 pr-4 leading-relaxed font-medium">
+                                {firstQ.pinned_at && <Pin className="w-3 h-3 inline mr-1 text-amber-400 rotate-45" />}
+                                {firstQ.session_title || firstQ.query}
+                              </p>
+                            </div>
                             <div className="flex items-center gap-2 mt-1.5 opacity-60">
                               <span className="text-[10px] text-slate-500 font-mono">{new Date(firstQ.created_at).toLocaleDateString()}</span>
                             </div>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); setEditingSessionTitle(firstQ.session_title || firstQ.query); setEditingSessionId(sId); }}
-                              className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-brand-400"
-                            >
-                              <Edit2 className="w-3 h-3"/>
-                            </button>
+                            <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+                              <button 
+                                onClick={(e) => handleTogglePin(e, sId, !!firstQ.pinned_at)}
+                                className={`p-1 hover:text-amber-400 ${firstQ.pinned_at ? 'text-amber-400 opacity-100' : 'text-slate-400'}`}
+                                title={firstQ.pinned_at ? "Unpin Chat" : "Pin Chat"}
+                              >
+                                <Pin className="w-3 h-3"/>
+                              </button>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setEditingSessionTitle(firstQ.session_title || firstQ.query); setEditingSessionId(sId); }}
+                                className="p-1 hover:text-brand-400 text-slate-400"
+                                title="Rename Chat"
+                              >
+                                <Edit2 className="w-3 h-3"/>
+                              </button>
+                              <button 
+                                onClick={(e) => handleDelete(e, sId)}
+                                className="p-1 hover:text-red-400 text-slate-400"
+                                title="Delete Chat"
+                              >
+                                <Trash2 className="w-3 h-3"/>
+                              </button>
+                            </div>
                           </>
                         )}
                       </div>

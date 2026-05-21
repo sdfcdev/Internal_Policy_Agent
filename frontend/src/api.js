@@ -63,6 +63,16 @@ export async function renameHistorySession(sessionId, title) {
   return data;
 }
 
+export async function togglePinSession(sessionId, pin) {
+  const { data } = await API.put(`/history/pin/${sessionId}`, { pin });
+  return data;
+}
+
+export async function deleteSession(sessionId) {
+  const { data } = await API.delete(`/history/delete/${sessionId}`);
+  return data;
+}
+
 export async function getAdminLogs() {
   const { data } = await API.get('/admin/logs');
   return data;

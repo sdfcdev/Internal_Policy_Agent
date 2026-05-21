@@ -2,7 +2,7 @@
  * Chat message bubble – handles both user and AI messages.
  */
 import { useState, useRef, useEffect } from 'react';
-import { User, Bot, ShieldCheck, AlertTriangle, Download, Activity, Save, X } from 'lucide-react';
+import { User, Bot, ShieldCheck, AlertTriangle, Download, Activity, Save, X, Copy, Check } from 'lucide-react';
 import { API_URL } from '../api';
 /** Typing indicator shown while waiting for the AI */
 export function TypingIndicator() {
@@ -28,7 +28,14 @@ export default function MessageBubble({ message, onEditSubmit }) {
   
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(message.content);
+  const [copied, setCopied] = useState(false);
   const inputRef = useRef(null);
+
+  const handleCopy = () => {
+      navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
      if (isEditing) {
@@ -149,26 +156,39 @@ export default function MessageBubble({ message, onEditSubmit }) {
             </div>
           )}
 
-          {/* Audit meta row */}
-          {hasMeta && (
-            <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-white/10">
-              <span className={`badge ${isPass ? 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/40' : 'bg-amber-900/50 text-amber-300 border border-amber-700/40'}`}>
-                {isPass
-                  ? <><ShieldCheck className="w-3 h-3" /> Verified {message.accuracy_score && `(${message.accuracy_score})`}</>
-                  : <><AlertTriangle className="w-3 h-3" /> Unverified</>
-                }
-              </span>
-              {message.rewrite_count > 0 && (
-                <span className="badge bg-brand-900/50 text-brand-300 border border-brand-700/40">
-                  {message.rewrite_count} rewrite{message.rewrite_count > 1 ? 's' : ''}
+          {/* Meta and Copy Footer */}
+          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-white/10">
+            {hasMeta && (
+              <>
+                <span className={`badge ${isPass ? 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/40' : 'bg-amber-900/50 text-amber-300 border border-amber-700/40'}`}>
+                  {isPass
+                    ? <><ShieldCheck className="w-3 h-3" /> Verified {message.accuracy_score && `(${message.accuracy_score})`}</>
+                    : <><AlertTriangle className="w-3 h-3" /> Unverified</>
+                  }
                 </span>
-              )}
-              {message.active_agent === 'CacheHit' && (
-                <span className="badge bg-indigo-900/50 text-indigo-300 border border-indigo-700/40">⚡ Cache Hit</span>
-              )}
-              <span className="ml-auto text-[11px] text-slate-600">{message.time}</span>
+                {message.rewrite_count > 0 && (
+                  <span className="badge bg-brand-900/50 text-brand-300 border border-brand-700/40">
+                    {message.rewrite_count} rewrite{message.rewrite_count > 1 ? 's' : ''}
+                  </span>
+                )}
+                {message.active_agent === 'CacheHit' && (
+                  <span className="badge bg-indigo-900/50 text-indigo-300 border border-indigo-700/40">⚡ Cache Hit</span>
+                )}
+              </>
+            )}
+            
+            <div className="ml-auto flex items-center gap-3">
+              <button 
+                onClick={handleCopy}
+                className={`p-1 transition-colors flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold ${copied ? 'text-emerald-400' : 'text-slate-500 hover:text-brand-300'}`}
+                title="Copy answer"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+              <span className="text-[11px] text-slate-600">{message.time}</span>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

@@ -171,6 +171,8 @@ def ensure_audit_table():
         except: pass
         try: cursor.execute("ALTER TABLE Accounts ADD PreferredName NVARCHAR(100) NULL")
         except: pass
+        try: cursor.execute("ALTER TABLE AuditTrail ADD PinnedAt DATETIME NULL")
+        except: pass
         
         conn.commit()
     except pyodbc.Error as exc:
@@ -736,8 +738,8 @@ async def get_history(employee_id: str):
     if not conn: return []
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT SessionID, QueryText, AIResponse, CreatedAt, IsSaved, SessionTitle FROM AuditTrail WHERE EmployeeID=? ORDER BY CreatedAt DESC", employee_id)
-        return [{"session_id": r[0], "query": r[1], "response": r[2], "created_at": r[3].isoformat(), "is_saved": r[4], "session_title": r[5]} for r in cursor.fetchall()]
+        cursor.execute("SELECT SessionID, QueryText, AIResponse, CreatedAt, IsSaved, SessionTitle, PinnedAt FROM AuditTrail WHERE EmployeeID=? ORDER BY PinnedAt DESC, CreatedAt DESC", employee_id)
+        return [{"session_id": r[0], "query": r[1], "response": r[2], "created_at": r[3].isoformat(), "is_saved": r[4], "session_title": r[5], "pinned_at": r[6].isoformat() if r[6] else None} for r in cursor.fetchall()]
     finally: conn.close()
 
 @app.put("/history/save/{session_id}")
@@ -758,6 +760,30 @@ async def rename_chat_session(session_id: str, data: Dict[str, str]):
         cursor.execute("UPDATE AuditTrail SET SessionTitle = ? WHERE SessionID = ?", data['title'], session_id)
         conn.commit()
         return {"message": "Session renamed"}
+    finally: conn.close()
+
+@app.put("/history/pin/{session_id}")
+async def pin_chat_session(session_id: str, data: Dict[str, bool]):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        if data.get('pin'):
+            cursor.execute("UPDATE AuditTrail SET PinnedAt = GETDATE() WHERE SessionID = ?", session_id)
+        else:
+            cursor.execute("UPDATE AuditTrail SET PinnedAt = NULL WHERE SessionID = ?", session_id)
+        conn.commit()
+        return {"message": "Session pin status updated"}
+    finally: conn.close()
+
+@app.delete("/history/delete/{session_id}")
+async def delete_chat_session(session_id: str):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        # Instead of actually deleting, we set IsSaved = 0 so it disappears from the user's history but remains for auditing
+        cursor.execute("UPDATE AuditTrail SET IsSaved = 0 WHERE SessionID = ?", session_id)
+        conn.commit()
+        return {"message": "Session removed from history"}
     finally: conn.close()
 
 # ─────────────────────────────────────────────
