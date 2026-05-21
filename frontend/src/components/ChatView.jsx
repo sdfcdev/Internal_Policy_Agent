@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, MessageSquare, Square } from 'lucide-react';
+import { Send, MessageSquare, Square, Download } from 'lucide-react';
 import { API_URL, saveHistorySession } from '../api';
 import MessageBubble, { TypingIndicator } from './MessageBubble';
 
@@ -185,7 +185,7 @@ export default function ChatView({
   }
 
   const handleDownloadPDF = () => {
-    const sessionName = activeSessionId ? (historyData.find(h => h.id === activeSessionId)?.session_title || 'Chat Session') : 'Current Chat Session';
+    const sessionName = sessionId ? (historyData.find(h => h.id === sessionId)?.session_title || 'Chat Session') : 'Current Chat Session';
     const dateStr = new Date().toLocaleString();
     
     const printWindow = window.open('', '_blank');
