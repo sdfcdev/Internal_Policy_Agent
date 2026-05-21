@@ -162,7 +162,18 @@ export default function App() {
   }
 
   const handleDownloadPDF = async () => {
-    const sessionName = sessionId ? (historyData.find(h => h.id === sessionId)?.session_title || 'Chat Session') : 'Current Chat Session';
+    let sessionName = 'Current Chat Session';
+    if (sessionId) {
+      const savedSession = historyData.find(h => h.id === sessionId);
+      if (savedSession && savedSession.session_title) {
+        sessionName = savedSession.session_title;
+      } else if (messages.length > 0) {
+        const firstUserMsg = messages.find(m => m.role === 'user');
+        if (firstUserMsg) {
+          sessionName = firstUserMsg.content.substring(0, 60) + (firstUserMsg.content.length > 60 ? '...' : '');
+        }
+      }
+    }
     const dateStr = new Date().toLocaleString();
 
     if (!window.html2pdf) {
