@@ -135,12 +135,12 @@ export default function Sidebar({
                             : 'bg-white/2 border-white/5 hover:bg-white/5'
                         }`}
                         onClick={() => {
-                          const restoredMsgs = [
-                            { id: "intro_"+sId, role: 'assistant', content: `Continuing chat... loaded previous context.`, time: '', active_agent: 'Done' }
-                          ];
+                          const restoredMsgs = [];
                           qs.forEach((h) => {
-                             restoredMsgs.push({ id: h.id + "_u", role: 'user', content: h.query, time: new Date(h.created_at).toLocaleTimeString() });
-                             restoredMsgs.push({ id: h.id + "_a", role: 'assistant', content: h.response, time: new Date(h.created_at).toLocaleTimeString(), active_agent: 'Done', hallucination_check: 'pass' });
+                             const isGreeting = h.response.startsWith('Hi ') && h.response.includes('How can I help you');
+                             const dateStr = h.created_at.endsWith('Z') ? h.created_at : h.created_at + 'Z';
+                             restoredMsgs.push({ id: h.id + "_u", role: 'user', content: h.query, time: new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+                             restoredMsgs.push({ id: h.id + "_a", role: 'assistant', content: h.response, time: new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), active_agent: 'Done', hallucination_check: isGreeting ? '' : 'pass' });
                           });
                           onSelectSession({ id: sId, messages: restoredMsgs });
                         }}
