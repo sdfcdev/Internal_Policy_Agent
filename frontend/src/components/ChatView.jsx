@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, MessageSquare, RefreshCw } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 import { API_URL, saveHistorySession } from '../api';
 import MessageBubble, { TypingIndicator } from './MessageBubble';
 
