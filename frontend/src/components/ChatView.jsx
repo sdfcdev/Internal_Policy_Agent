@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, MessageSquare, RefreshCw } from 'lucide-react';
+import { Send, MessageSquare, Square } from 'lucide-react';
 import { API_URL, saveHistorySession } from '../api';
 import MessageBubble, { TypingIndicator } from './MessageBubble';
 
@@ -51,6 +51,14 @@ export default function ChatView({
   
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
+  const abortControllerRef = useRef(null);
+
+  function stopGeneration() {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }
 
   useEffect(() => {
     if (user && !sessionId) {
@@ -86,11 +94,15 @@ export default function ChatView({
     setError('');
     setLoading(true);
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       const res = await fetch(`${API_URL}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q, employee_id: user.username, session_id: sessionId, save_chat: saveChat })
+        body: JSON.stringify({ query: q, employee_id: user.username, session_id: sessionId, save_chat: saveChat }),
+        signal: controller.signal
       });
 
       if (!res.ok) throw new Error('Network response was not ok');
@@ -141,6 +153,10 @@ export default function ChatView({
 
       if (onRefreshHistory) onRefreshHistory();
     } catch (err) {
+      if (err.name === 'AbortError') {
+        setMessages(prev => prev.map(msg => msg.id === tempAssistantId ? { ...msg, active_agent: 'Stopped' } : msg));
+        return;
+      }
       setError(`Agent pipeline error: ${err.message}`);
     } finally {
       setLoading(false);
@@ -185,32 +201,36 @@ export default function ChatView({
           />
           <button 
             type="button"
-            onClick={startNewChat}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-500 hover:text-brand-400 hover:bg-white/5 transition-all"
-            title="Start New Chat"
+            onClick={loading ? stopGeneration : undefined}
+            disabled={!loading}
+            className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all flex items-center justify-center ${
+              loading 
+                ? 'text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 bg-dark-900 shadow-sm border border-rose-500/20 cursor-pointer' 
+                : 'text-slate-600 bg-transparent border border-transparent cursor-default'
+            }`}
+            title={loading ? "Stop Generation" : ""}
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <Square className="w-3.5 h-3.5 fill-current" />
           </button>
         </div>
         <button 
           type="submit" 
           disabled={loading || !query.trim()} 
-          className="btn-primary px-6 h-12 flex items-center justify-center gap-2 rounded-2xl shadow-lg shadow-brand-600/20 active:scale-95 transition-transform"
+          className="btn-primary w-12 h-12 flex items-center justify-center rounded-2xl shadow-lg shadow-brand-600/20 active:scale-95 transition-transform shrink-0"
         >
-          <Send className="w-4 h-4" /> 
-          <span className="hidden sm:inline">Send</span>
+          <Send className="w-5 h-5" /> 
         </button>
       </form>
       
       {messages.length > 0 && (
         <div className="flex flex-wrap items-center justify-end gap-4 mt-4 px-2">
            <label className="flex items-center gap-3 cursor-pointer group">
-             <span className={`text-[10px] font-bold tracking-tight transition-colors ${saveChat ? 'text-emerald-400' : 'text-slate-500'}`}>
-               SAVE HISTORY
+             <span className={`text-[10px] font-bold tracking-tight transition-colors ${saveChat ? 'text-brand-400' : 'text-slate-500'}`}>
+               SAVE CHAT
              </span>
              <div className="relative">
                <input type="checkbox" className="sr-only peer" checked={saveChat} onChange={e => handleToggleSave(e.target.checked)} />
-               <div className={`block w-9 h-5 rounded-full transition-all ${saveChat ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-dark-600 border border-white/10 group-hover:border-white/20'}`}></div>
+               <div className={`block w-9 h-5 rounded-full transition-all ${saveChat ? 'bg-brand-500 shadow-[0_0_10px_rgba(139,92,246,0.3)]' : 'bg-dark-600 border border-white/10 group-hover:border-white/20'}`}></div>
                <div className={`absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform duration-200 ${saveChat ? 'translate-x-4' : 'translate-x-0'}`}></div>
              </div>
            </label>
