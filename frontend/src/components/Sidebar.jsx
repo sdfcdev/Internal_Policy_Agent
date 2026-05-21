@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, MessageSquare, DownloadCloud, Edit2, X, Check, ChevronDown, PanelLeftClose, PanelLeftOpen, Settings, Pin, Trash2 } from 'lucide-react';
+import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, MessageSquare, DownloadCloud, Edit2, X, Check, ChevronDown, PanelLeftClose, PanelLeftOpen, Settings, Pin, Trash2, MoreVertical } from 'lucide-react';
 import { renameHistorySession, togglePinSession, deleteSession, API_URL } from '../api';
 
 const NAV = [
@@ -194,7 +194,7 @@ export default function Sidebar({
                         ) : (
                           <>
                             <div className="flex justify-between items-start">
-                              <p className="text-xs text-slate-200 line-clamp-2 pr-4 leading-relaxed font-medium">
+                              <p className="text-xs text-slate-300 line-clamp-2 pr-6 leading-relaxed font-normal">
                                 {firstQ.pinned_at && <Pin className="w-3 h-3 inline mr-1 text-amber-400 rotate-45" />}
                                 {firstQ.session_title || firstQ.query}
                               </p>
@@ -202,28 +202,21 @@ export default function Sidebar({
                             <div className="flex items-center gap-2 mt-1.5 opacity-60">
                               <span className="text-[10px] text-slate-500 font-mono">{new Date(firstQ.created_at).toLocaleDateString()}</span>
                             </div>
-                            <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
-                              <button 
-                                onClick={(e) => handleTogglePin(e, sId, !!firstQ.pinned_at)}
-                                className={`p-1 hover:text-amber-400 ${firstQ.pinned_at ? 'text-amber-400 opacity-100' : 'text-slate-400'}`}
-                                title={firstQ.pinned_at ? "Unpin Chat" : "Pin Chat"}
-                              >
-                                <Pin className="w-3 h-3"/>
+                            <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 group/menu">
+                              <button className="p-1 text-slate-400 hover:text-white" onClick={e => e.stopPropagation()}>
+                                <MoreVertical className="w-4 h-4"/>
                               </button>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); setEditingSessionTitle(firstQ.session_title || firstQ.query); setEditingSessionId(sId); }}
-                                className="p-1 hover:text-brand-400 text-slate-400"
-                                title="Rename Chat"
-                              >
-                                <Edit2 className="w-3 h-3"/>
-                              </button>
-                              <button 
-                                onClick={(e) => handleDelete(e, sId)}
-                                className="p-1 hover:text-red-400 text-slate-400"
-                                title="Delete Chat"
-                              >
-                                <Trash2 className="w-3 h-3"/>
-                              </button>
+                              <div className="absolute right-0 top-full bg-dark-800 border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all flex flex-col min-w-[110px] overflow-hidden">
+                                <button onClick={(e) => handleTogglePin(e, sId, !!firstQ.pinned_at)} className="flex items-center gap-2 px-3 py-2.5 text-xs text-slate-300 hover:bg-white/5 text-left w-full">
+                                  <Pin className="w-3 h-3"/> {firstQ.pinned_at ? "Unpin" : "Pin"}
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); setEditingSessionTitle(firstQ.session_title || firstQ.query); setEditingSessionId(sId); }} className="flex items-center gap-2 px-3 py-2.5 text-xs text-slate-300 hover:bg-white/5 text-left w-full">
+                                  <Edit2 className="w-3 h-3"/> Rename
+                                </button>
+                                <button onClick={(e) => handleDelete(e, sId)} className="flex items-center gap-2 px-3 py-2.5 text-xs text-red-400 hover:bg-red-500/10 text-left w-full border-t border-white/5">
+                                  <Trash2 className="w-3 h-3"/> Delete
+                                </button>
+                              </div>
                             </div>
                           </>
                         )}

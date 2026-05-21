@@ -32,7 +32,20 @@ export default function MessageBubble({ message, onEditSubmit }) {
   const inputRef = useRef(null);
 
   const handleCopy = () => {
-      navigator.clipboard.writeText(message.content);
+      const text = message.content;
+      if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text);
+      } else {
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          textArea.style.position = "fixed";
+          textArea.style.left = "-999999px";
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          try { document.execCommand('copy'); } catch (err) { console.error('Fallback copy failed', err); }
+          document.body.removeChild(textArea);
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
   };
