@@ -193,11 +193,10 @@ export default function MessageBubble({ message, onEditSubmit }) {
             <div className="ml-auto flex items-center gap-3">
               <button 
                 onClick={handleCopy}
-                className={`p-1 transition-colors flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold ${copied ? 'text-emerald-400' : 'text-slate-500 hover:text-brand-300'}`}
-                title="Copy answer"
+                className={`p-1.5 rounded transition-all flex items-center justify-center ${copied ? 'text-brand-400 bg-brand-500/10' : 'text-slate-500 hover:text-brand-300 hover:bg-white/5'}`}
+                title={copied ? "Copied!" : "Copy answer"}
               >
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                {copied ? 'Copied' : 'Copy'}
               </button>
               <span className="text-[11px] text-slate-600">{message.time}</span>
             </div>
