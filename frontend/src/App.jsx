@@ -34,21 +34,21 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
       <div className="glass-card p-8 w-full max-w-sm glow-ring animate-fade-in">
         <div className="text-center mb-6">
           <img src="/logo.png" alt="SDF Logo" className="h-12 w-auto mx-auto mb-4 brightness-110" />
-          <h2 className="text-xl font-bold text-white tracking-tight">AI Internal Policy Agent</h2>
-          <p className="text-xs text-slate-400 mt-1">Authorized Staff Access Only</p>
+          <h2 className="text-2xl font-medium text-white tracking-tight">Internal Policy Agent</h2>
+          <p className="text-sm text-slate-400 mt-1">Authorized Staff Access Only</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-[10px] text-slate-400 mb-1">Employee Number</label>
-            <input type="text" value={username} onChange={e=>setUsername(e.target.value)} disabled={loading} required className="input-field py-2 text-sm w-full" autoFocus />
+            <label className="block text-[13px] text-slate-400 mb-1">Employee Number</label>
+            <input type="text" value={username} onChange={e=>setUsername(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full" autoFocus />
           </div>
           <div>
-            <label className="block text-[10px] text-slate-400 mb-1">Password</label>
-            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} disabled={loading} required className="input-field py-2 text-sm w-full" />
+            <label className="block text-[13px] text-slate-400 mb-1">Password</label>
+            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full" />
           </div>
-          <div className="flex justify-between items-center">
-            <button type="button" onClick={onRegister} className="text-[10px] text-brand-400 hover:text-brand-300 underline transition">New Staff? Register</button>
-            <button type="button" onClick={onForgotPassword} className="text-[10px] text-slate-400 hover:text-white underline transition">Forgot Password?</button>
+          <div className="flex justify-between items-center mt-2">
+            <button type="button" onClick={onRegister} className="text-xs text-brand-400 hover:text-brand-300 underline transition">New Staff? Register</button>
+            <button type="button" onClick={onForgotPassword} className="text-xs text-slate-400 hover:text-white underline transition">Forgot Password?</button>
           </div>
           {error && <div className="text-xs text-red-400 bg-red-900/20 border border-red-500/30 p-2 rounded">{error}</div>}
           <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 mt-2 rounded-lg font-medium shadow-sm transition">
@@ -202,51 +202,35 @@ export default function App() {
                setMessages(session.messages);
                setSaveChat(true);
             }}
+            onNewChat={() => {
+               setSessionId('');
+               setMessages([]);
+               setSaveChat(false);
+            }}
             onRefreshData={loadChatData}
             user={user}
+            theme={theme}
+            onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+            onLogout={() => {setUser(null); setView('chat'); setSessionId(''); setMessages([]); setSaveChat(false);}}
           />
 
           <main className="flex flex-col flex-1 h-screen overflow-hidden relative z-10 w-full min-w-0">
             {/* Top Header Bar */}
             <header className="h-20 flex items-center justify-between px-8 bg-dark-900/50 backdrop-blur-md border-b border-white/5 shrink-0">
               <div className="flex items-center gap-4">
-                <div className="h-10 w-[3px] bg-brand-500 rounded-full hidden lg:block" />
-                <div>
-                  <h1 className="text-sm font-bold text-white tracking-widest uppercase">
-                    {view === 'admin' 
-                      ? (user.role === 'subadmin' ? 'Sub-Administrative Dashboard' : 'Administrative Dashboard') 
-                      : 'User Dashboard'}
-                  </h1>
-                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                    {view === 'admin' 
-                      ? 'Manage knowledge base documents and system logs' 
-                      : 'Access policy documents, query history, and generated responses'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="hidden sm:flex flex-col items-end mr-2">
-                  <span className="text-xs font-semibold text-white leading-none">{user.preferred_name || user.name || user.username}</span>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-tighter mt-1">{user.role}</span>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                   <button 
-                    onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-                    className="p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition group"
-                    title="Toggle Theme"
-                  >
-                    {theme === 'dark' ? <span className="text-sm">☀️</span> : <span className="text-sm">🌙</span>}
-                  </button>
-                  
-                  <button 
-                    onClick={() => {setUser(null); setView('chat');}} 
-                    className="px-4 py-1.5 text-xs font-bold rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white transition shadow-sm"
-                  >
-                    LOGOUT
-                  </button>
-                </div>
+                {view === 'admin' && (
+                  <>
+                    <div className="h-10 w-[3px] bg-brand-500 rounded-full hidden lg:block" />
+                    <div>
+                      <h1 className="text-sm font-bold text-white tracking-widest uppercase">
+                        {user.role === 'subadmin' ? 'Sub-Administrative Dashboard' : 'Administrative Dashboard'}
+                      </h1>
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        Manage knowledge base documents and system logs
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </header>
 

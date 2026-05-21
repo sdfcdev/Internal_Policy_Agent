@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, MessageSquare, DownloadCloud, Edit2, X, Check, ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, MessageSquare, DownloadCloud, Edit2, X, Check, ChevronDown, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
 import { renameHistorySession } from '../api';
 
 const NAV = [
@@ -9,13 +9,17 @@ const NAV = [
 
 export default function Sidebar({ 
   activeView, onViewChange, backendOk, role, 
-  historyData = [], libraryDocs = [], activeSessionId, onSelectSession, onRefreshData, user 
+  historyData = [], libraryDocs = [], activeSessionId, onSelectSession, onRefreshData, user,
+  onNewChat, theme, onToggleTheme, onLogout
 }) {
   const [leftTab, setLeftTab] = useState('history'); // 'history' | 'library'
   const [historySearch, setHistorySearch] = useState('');
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editingSessionTitle, setEditingSessionTitle] = useState('');
   const [expandedDepts, setExpandedDepts] = useState({});
+  const [isOpen, setIsOpen] = useState(true); // Default to expanded
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isStatusExpanded, setIsStatusExpanded] = useState(false);
 
   const groupedHistory = historyData.filter(d => d.is_saved).reduce((acc, h) => {
       if (!acc[h.session_id]) acc[h.session_id] = [];
@@ -42,27 +46,38 @@ export default function Sidebar({
       }
   }
 
+  const isSidebarExpanded = activeView === 'admin' ? true : isOpen;
+
   return (
-    <aside className="flex flex-col w-72 min-h-screen bg-dark-800 border-r border-white/10 shrink-0 overflow-hidden">
+    <aside className={`flex flex-col min-h-screen bg-dark-800 border-r border-white/10 shrink-0 z-20 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-72' : 'w-[88px]'}`}>
       {/* Logo Area */}
-      <div className="flex flex-col items-start gap-2 px-6 py-6 border-b border-white/5 bg-dark-900/20">
+      <div className="flex flex-col items-center gap-3 px-4 py-6 border-b border-white/5 bg-dark-900/20">
         <img 
           src="/logo.png" 
           alt="Sarvodaya Logo" 
           className="h-10 w-auto object-contain brightness-110 contrast-110"
         />
-        <div className="mt-1">
-          <p className="text-xs font-semibold text-white tracking-wide uppercase">AI Copilot</p>
-          <p className="text-[10px] text-slate-500 font-medium">Internal Policy Agent</p>
+        <div className={`mt-4 text-center transition-all duration-300 ${isSidebarExpanded ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden m-0'}`}>
+          <p className="text-base font-semibold text-white tracking-wide whitespace-nowrap">SDF COPILOT</p>
+          <p className="text-sm text-slate-500 font-medium whitespace-nowrap">Internal Policy Agent</p>
         </div>
+        {activeView === 'chat' && (
+          <button 
+            onClick={() => setIsOpen(!isOpen)}
+            className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:text-brand-400 transition-colors text-slate-400 mt-2"
+            title={isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+          >
+            {isOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+          </button>
+        )}
       </div>
 
       {/* Navigation Switcher (ONLY FOR PRIVILEGED USERS IN CHAT VIEW) */}
       {activeView === 'chat' && user && (user.role === 'master' || user.role === 'admin' || user.role === 'subadmin') && (
-        <div className="px-4 py-3 border-b border-white/5 bg-brand-600/5">
+        <div className={`px-4 py-3 border-b border-white/5 bg-brand-600/5 transition-opacity duration-300 ${isSidebarExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none hidden'}`}>
            <button 
              onClick={() => onViewChange('admin')}
-             className="w-full py-2.5 bg-dark-900 border border-white/10 rounded-xl text-[10px] font-black text-brand-400 tracking-widest uppercase hover:bg-brand-600 hover:text-white transition-all shadow-lg"
+             className="w-full py-2.5 bg-dark-900 border border-white/10 rounded-xl text-[10px] font-black text-brand-400 tracking-widest uppercase hover:bg-brand-600 hover:text-white transition-all shadow-lg whitespace-nowrap"
            >
              SWITCH TO ADMIN DASHBOARD
            </button>
@@ -71,19 +86,28 @@ export default function Sidebar({
 
       {/* Dynamic Content Area (History/Library - ONLY IN CHAT VIEW) */}
       {activeView === 'chat' ? (
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className={`flex flex-col flex-1 overflow-hidden transition-opacity duration-300 ${isSidebarExpanded ? 'opacity-100' : 'opacity-0 hidden pointer-events-none'}`}>
+          <div className="p-3 border-b border-white/5">
+            <button 
+               onClick={() => { if(onNewChat) onNewChat(); }}
+               className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-600/20 text-brand-300 hover:bg-brand-600 hover:text-white border border-brand-500/30 rounded-xl transition-all font-bold text-sm shadow-sm tracking-wide"
+            >
+               <BotMessageSquare className="w-4 h-4" />
+               New chat
+            </button>
+          </div>
           <div className="flex items-center gap-1 p-2 border-b border-white/5 select-none bg-dark-900/10">
              <button 
                onClick={()=>setLeftTab('history')} 
-               className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${leftTab==='history' ? 'bg-brand-600/20 text-brand-300' : 'text-slate-500 hover:bg-white/5'}`}
+               className={`flex-1 py-1.5 text-sm font-bold rounded transition-colors whitespace-nowrap ${leftTab==='history' ? 'bg-brand-600/20 text-brand-300' : 'text-slate-500 hover:bg-white/5'}`}
              >
-               PAST CHATS
+               Past Chats
              </button>
              <button 
                onClick={()=>setLeftTab('library')} 
-               className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${leftTab==='library' ? 'bg-brand-600/20 text-brand-300' : 'text-slate-500 hover:bg-white/5'}`}
+               className={`flex-1 py-1.5 text-sm font-bold rounded transition-colors whitespace-nowrap ${leftTab==='library' ? 'bg-brand-600/20 text-brand-300' : 'text-slate-500 hover:bg-white/5'}`}
              >
-               LIBRARY
+               Library
              </button>
           </div>
 
@@ -95,7 +119,7 @@ export default function Sidebar({
                    placeholder="Search chats..."
                    value={historySearch}
                    onChange={e => setHistorySearch(e.target.value)}
-                   className="input-field text-[11px] py-1.5 px-3 w-full bg-dark-900 border-white/5 placeholder-slate-600"
+                   className="input-field text-xs py-2 px-3 w-full bg-dark-900 border-white/5 placeholder-slate-600"
                 />
                 <div className="space-y-2">
                   {filteredSessionList.map(sId => {
@@ -134,11 +158,11 @@ export default function Sidebar({
                           </div>
                         ) : (
                           <>
-                            <p className="text-[11px] text-slate-200 line-clamp-2 pr-4 leading-relaxed font-medium">
+                            <p className="text-xs text-slate-200 line-clamp-2 pr-4 leading-relaxed font-medium">
                               {firstQ.session_title || firstQ.query}
                             </p>
                             <div className="flex items-center gap-2 mt-1.5 opacity-60">
-                              <span className="text-[9px] text-slate-500 font-mono">{new Date(firstQ.created_at).toLocaleDateString()}</span>
+                              <span className="text-[10px] text-slate-500 font-mono">{new Date(firstQ.created_at).toLocaleDateString()}</span>
                             </div>
                             <button 
                               onClick={(e) => { e.stopPropagation(); setEditingSessionTitle(firstQ.session_title || firstQ.query); setEditingSessionId(sId); }}
@@ -152,7 +176,7 @@ export default function Sidebar({
                     );
                   })}
                   {filteredSessionList.length === 0 && (
-                    <p className="text-[10px] text-slate-600 text-center py-10 italic">No history found.</p>
+                    <p className="text-xs text-slate-600 text-center py-10 italic">No history found.</p>
                   )}
                 </div>
               </div>
@@ -174,15 +198,15 @@ export default function Sidebar({
                     <div key={dept} className="flex flex-col border border-white/5 rounded-xl bg-white/2 overflow-hidden shadow-sm shadow-black/20">
                       <button 
                         onClick={() => setExpandedDepts(prev => ({ ...prev, [dept]: !prev[dept] }))}
-                        className={`flex items-center justify-between px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${isExpanded ? 'bg-brand-600/30 text-brand-300' : 'text-slate-400 hover:bg-white/5'}`}
+                        className={`flex items-center justify-between px-3 py-3 text-xs font-medium uppercase tracking-widest transition-all duration-300 ${isExpanded ? 'bg-brand-600/30 text-brand-300' : 'text-slate-400 hover:bg-white/5'}`}
                       >
                         <div className="flex items-center gap-2">
-                           <LayoutDashboard className={`w-3.5 h-3.5 transition-transform duration-300 ${isExpanded ? 'scale-110' : 'opacity-40'}`} />
+                           <LayoutDashboard className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'scale-110' : 'opacity-40'}`} />
                            {dept}
                         </div>
                         <div className="flex items-center gap-2">
-                           <span className="text-[9px] bg-dark-900/50 px-1.5 py-0.5 rounded-md border border-white/10">{docsInDept.length}</span>
-                           <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-brand-400' : 'text-slate-600'}`} />
+                           <span className="text-[10px] bg-dark-900/50 px-1.5 py-0.5 rounded-md border border-white/10">{docsInDept.length}</span>
+                           <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-brand-400' : 'text-slate-600'}`} />
                         </div>
                       </button>
                       
@@ -199,7 +223,7 @@ export default function Sidebar({
                               <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
                                 <FileText className="w-3.5 h-3.5 text-emerald-500/60" />
                               </div>
-                              <span className="text-[10px] text-slate-400 truncate flex-1 font-semibold group-hover:text-slate-200">{doc.filename}</span>
+                              <span className="text-[11px] text-slate-400 truncate flex-1 font-semibold group-hover:text-slate-200">{doc.filename}</span>
                               <DownloadCloud className="w-3.5 h-3.5 text-slate-600 group-hover:text-emerald-400 transition-colors" />
                             </a>
                           ))}
@@ -237,41 +261,60 @@ export default function Sidebar({
         </div>
       )}
 
-      {/* Backend status - Reveal on Hover */}
-      <div className="mt-auto p-4 border-t border-white/10 group cursor-help bg-dark-900/20 transition-all duration-500 hover:bg-brand-600/5">
-        <div className="flex flex-col gap-2 transition-all duration-500">
-           {/* Simple indicator always visible (small dot) */}
-           <div className="flex items-center justify-center opacity-30 group-hover:opacity-0 transition-opacity absolute inset-x-0 bottom-4">
-              <div className={`w-1.5 h-1.5 rounded-full ${backendOk ? 'bg-emerald-400' : 'bg-red-500'}`} />
-           </div>
-
-           {/* Hidden content that pops up on hover */}
-           <div className="opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 pointer-events-none group-hover:pointer-events-auto">
-              <div className="flex items-center gap-2 px-2 py-1 mb-1">
-                <Activity className="w-3.5 h-3.5 text-slate-500" />
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">System Status</span>
-                <span className={`ml-auto w-2 h-2 rounded-full flex-shrink-0 ${
-                  backendOk === null  ? 'bg-yellow-500 animate-pulse' :
-                  backendOk           ? 'bg-emerald-400 animate-pulse-slow' :
-                                        'bg-red-500'
-                }`} />
-                <span className={`text-[10px] font-black ${
-                  backendOk === null  ? 'text-yellow-400' :
-                  backendOk           ? 'text-emerald-400' :
-                                        'text-red-400'
-                }`}>
-                  {backendOk === null ? 'SYNC' : backendOk ? 'ONLINE' : 'OFFLINE'}
-                </span>
-              </div>
-              
-              <div className="px-2 mt-1 h-0 overflow-hidden group-hover:h-auto transition-all duration-300">
-                <p className="text-[9px] text-slate-600 leading-relaxed border-t border-white/5 pt-2 font-mono">
-                  LLM: GEMINI 1.5 PRO<br />
-                  PARSING: LLAMAPARSE<br />
-                  INDEX: CHROMADB
-                </p>
-              </div>
-           </div>
+      {/* User Profile Area */}
+      <div className={`mt-auto border-t border-white/5 bg-dark-900/30 transition-all duration-300 ${isSidebarExpanded ? 'p-4' : 'p-3 flex flex-col items-center gap-3'} relative`}>
+        <div className={`flex ${isSidebarExpanded ? 'items-center justify-between' : 'flex-col items-center gap-3'}`}>
+          <div className={`flex flex-col ${isSidebarExpanded ? '' : 'hidden'}`}>
+            <span className="text-sm font-semibold text-white truncate max-w-[120px]">{user?.preferred_name || user?.name || user?.username}</span>
+            <span className="text-xs text-slate-500 uppercase tracking-tighter mt-0.5">{user?.role}</span>
+          </div>
+          
+          <div className="relative">
+             <button 
+              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition group flex-shrink-0 text-slate-400 hover:text-white"
+              title="Settings"
+            >
+              <Settings className={`w-4 h-4 transition-transform duration-300 ${isSettingsOpen ? 'rotate-90 text-white' : ''}`} />
+            </button>
+            
+            {/* Settings Popover */}
+            {isSettingsOpen && (
+               <>
+                 <div className="fixed inset-0 z-40" onClick={() => setIsSettingsOpen(false)} />
+                 <div className={`absolute bottom-full mb-3 w-44 bg-dark-800 border border-white/10 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 z-50 animate-slide-up ${isSidebarExpanded ? 'right-0' : 'left-0'}`}>
+                    <div 
+                      onClick={(e) => { e.stopPropagation(); onToggleTheme(); }}
+                      className="flex items-center justify-between px-3 py-2 mb-1 group cursor-pointer hover:bg-white/5 rounded-xl transition-colors"
+                    >
+                      <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider group-hover:text-white transition-colors">
+                        {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
+                      </span>
+                      <div
+                        className={`relative flex items-center h-6 w-12 rounded-full p-1 transition-colors duration-500 ${
+                          theme === 'dark' ? 'bg-brand-600/80 border border-brand-400/50' : 'bg-slate-600 border border-slate-500'
+                        }`}
+                      >
+                        <div
+                          className={`absolute w-4 h-4 rounded-full shadow-md transform transition-transform duration-500 flex items-center justify-center bg-white ${
+                            theme === 'dark' ? 'translate-x-6' : 'translate-x-0'
+                          }`}
+                        >
+                          {theme === 'dark' ? <span className="text-[10px] leading-none">🌙</span> : <span className="text-[10px] leading-none">☀️</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => { onLogout(); setIsSettingsOpen(false); }}
+                      className="flex items-center justify-between px-3 py-2.5 text-[11px] font-bold text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-colors mt-0.5 uppercase tracking-wider"
+                    >
+                      <span>LOGOUT</span>
+                      <span className="text-sm leading-none">⏏</span>
+                    </button>
+                 </div>
+               </>
+            )}
+          </div>
         </div>
       </div>
     </aside>

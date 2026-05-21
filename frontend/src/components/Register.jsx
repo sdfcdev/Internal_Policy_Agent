@@ -70,27 +70,27 @@ export default function Register({ onBack, onComplete }) {
     <div className="flex flex-1 items-center justify-center p-8 z-10 w-full relative h-[100vh]">
       <div className="glass-card p-8 w-full max-w-lg glow-ring animate-fade-in">
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-white">Staff Registration</h2>
-          <p className="text-xs text-slate-400 mt-1">Please enter your Employee Number and set up your security credentials</p>
+          <h2 className="text-2xl font-medium text-white">Staff Registration</h2>
+          <p className="text-sm text-slate-400 mt-1">Please enter your Employee Number and set up your security credentials</p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] text-slate-400 mb-1">Employee Number</label>
-              <input type="text" value={username} onChange={e=>setUsername(e.target.value)} required className="input-field py-2 text-sm w-full" autoFocus />
+              <label className="block text-[13px] text-slate-400 mb-1">Employee Number</label>
+              <input type="text" value={username} onChange={e=>setUsername(e.target.value)} required className="input-field py-2.5 text-base w-full" autoFocus />
             </div>
             <div>
-              <label className="block text-[10px] text-slate-400 mb-1">Preferred Display Name</label>
-              <input type="text" value={name} onChange={e=>setName(e.target.value)} required className="input-field py-2 text-sm w-full" placeholder="e.g. Manoj" />
+              <label className="block text-[13px] text-slate-400 mb-1">Preferred Display Name</label>
+              <input type="text" value={name} onChange={e=>setName(e.target.value)} required className="input-field py-2.5 text-base w-full" placeholder="e.g. Manoj" />
             </div>
             <div>
-              <label className="block text-[10px] text-slate-400 mb-1">Password</label>
-              <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required className="input-field py-2 text-sm w-full" />
+              <label className="block text-[13px] text-slate-400 mb-1">Password</label>
+              <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required className="input-field py-2.5 text-base w-full" />
             </div>
             <div>
-              <label className="block text-[10px] text-slate-400 mb-1">Confirm Password</label>
-              <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required className="input-field py-2 text-sm w-full" />
+              <label className="block text-[13px] text-slate-400 mb-1">Confirm Password</label>
+              <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required className="input-field py-2.5 text-base w-full" />
             </div>
 
             {password && (
@@ -116,28 +116,28 @@ export default function Register({ onBack, onComplete }) {
           </div>
           
           <div className="pt-2 border-t border-white/5 space-y-4">
-            <p className="text-[10px] text-brand-400 font-semibold uppercase tracking-wider">Choose 3 Security Questions</p>
+            <p className="text-xs text-brand-400 font-semibold uppercase tracking-wider">Choose 3 Security Questions</p>
             
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
-                <select value={q1} onChange={e=>setQ1(e.target.value)} className="input-field py-1.5 text-xs w-full bg-dark-800">
+                <select value={q1} onChange={e=>setQ1(e.target.value)} className="input-field py-2 text-sm w-full bg-dark-800">
                   {SECURITY_QUESTIONS.map(q => <option key={q} value={q}>{q}</option>)}
                 </select>
-                <input type="text" value={a1} onChange={e=>setA1(e.target.value)} required placeholder="Your answer" className="input-field py-1.5 text-xs w-full" />
+                <input type="text" value={a1} onChange={e=>setA1(e.target.value)} required placeholder="Your answer" className="input-field py-2 text-sm w-full" />
               </div>
 
               <div className="space-y-2">
-                <select value={q2} onChange={e=>setQ2(e.target.value)} className="input-field py-1.5 text-xs w-full bg-dark-800">
+                <select value={q2} onChange={e=>setQ2(e.target.value)} className="input-field py-2 text-sm w-full bg-dark-800">
                   {SECURITY_QUESTIONS.map(q => <option key={q} value={q}>{q}</option>)}
                 </select>
-                <input type="text" value={a2} onChange={e=>setA2(e.target.value)} required placeholder="Your answer" className="input-field py-1.5 text-xs w-full" />
+                <input type="text" value={a2} onChange={e=>setA2(e.target.value)} required placeholder="Your answer" className="input-field py-2 text-sm w-full" />
               </div>
 
               <div className="space-y-2">
-                <select value={q3} onChange={e=>setQ3(e.target.value)} className="input-field py-1.5 text-xs w-full bg-dark-800">
+                <select value={q3} onChange={e=>setQ3(e.target.value)} className="input-field py-2 text-sm w-full bg-dark-800">
                   {SECURITY_QUESTIONS.map(q => <option key={q} value={q}>{q}</option>)}
                 </select>
-                <input type="text" value={a3} onChange={e=>setA3(e.target.value)} required placeholder="Your answer" className="input-field py-1.5 text-xs w-full" />
+                <input type="text" value={a3} onChange={e=>setA3(e.target.value)} required placeholder="Your answer" className="input-field py-2 text-sm w-full" />
               </div>
             </div>
           </div>
@@ -150,7 +150,7 @@ export default function Register({ onBack, onComplete }) {
           </button>
           
           <div className="text-center mt-2">
-            <button type="button" onClick={onBack} className="text-[10px] text-slate-400 hover:text-white underline transition">Already have an account? Login</button>
+            <button type="button" onClick={onBack} className="text-xs text-slate-400 hover:text-white underline transition">Already have an account? Login</button>
           </div>
         </form>
       </div>

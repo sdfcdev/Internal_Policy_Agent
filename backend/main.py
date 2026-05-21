@@ -345,7 +345,41 @@ class ChatRequest(BaseModel):
 
 @app.post("/chat/stream")
 async def stream_chat(request: ChatRequest):
-    # Check Cache
+    q_lower = request.query.strip().lower()
+    
+    # 1. Fast Greeting Interception
+    if q_lower in ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "hi there", "hello there"]:
+        conn = get_db_connection()
+        user_name = "there"
+        if conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT PreferredName, Name FROM Accounts WHERE Username = ?", request.employee_id)
+                row = cursor.fetchone()
+                if row:
+                    full_name = row[0] or row[1]
+                    if full_name: user_name = full_name.split(' ')[0]
+                    
+                greeting = f"Hi {user_name}! How can I help you today?"
+                
+                # Save to AuditTrail if required
+                if request.save_chat:
+                    cursor.execute("INSERT INTO AuditTrail (EmployeeID, SessionID, QueryText, AIResponse, IsSaved) VALUES (?, ?, ?, ?, ?)",
+                                   request.employee_id, request.session_id, request.query, greeting, 1)
+                    conn.commit()
+            except Exception as e:
+                logger.error(f"Greeting DB error: {e}")
+            finally:
+                conn.close()
+        else:
+            greeting = "Hi there! How can I help you today?"
+            
+        async def greeting_gen():
+            yield f"data: {json.dumps({'agent': 'Done', 'status': 'done', 'response': greeting, 'accuracy_score': '', 'hallucination_check': ''})}\n\n"
+            yield "data: [DONE]\n\n"
+        return StreamingResponse(greeting_gen(), media_type="text/event-stream")
+
+    # 2. Check Cache
     conn = get_db_connection()
     if conn:
         try:

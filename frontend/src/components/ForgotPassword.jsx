@@ -64,8 +64,8 @@ export default function ForgotPassword({ onBack }) {
     <div className="flex flex-1 items-center justify-center p-8 z-10 w-full relative h-[100vh]">
       <div className="glass-card p-8 w-full max-w-md glow-ring animate-fade-in">
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-white">Reset Password</h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <h2 className="text-2xl font-medium text-white">Reset Password</h2>
+          <p className="text-sm text-slate-400 mt-1">
             {step === 1 && 'Enter your Employee Number to begin'}
             {step === 2 && 'Answer your selected security questions'}
             {step === 3 && 'Set your new password'}
@@ -81,32 +81,32 @@ export default function ForgotPassword({ onBack }) {
           <form onSubmit={step === 1 ? handleIdentify : (step === 2 ? handleVerify : handleReset)} className="space-y-4">
             {step === 1 && (
               <div>
-                <label className="block text-[10px] text-slate-400 mb-1">Employee Number</label>
-                <input type="text" value={username} onChange={e=>setUsername(e.target.value)} required className="input-field py-2 text-sm w-full" autoFocus />
+                <label className="block text-[13px] text-slate-400 mb-1">Employee Number</label>
+                <input type="text" value={username} onChange={e=>setUsername(e.target.value)} required className="input-field py-2.5 text-base w-full" autoFocus />
               </div>
             )}
 
             {step === 2 && questions && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">{questions.q1}</label>
-                  <input type="text" value={a1} onChange={e=>setA1(e.target.value)} required className="input-field py-2 text-xs w-full" autoFocus />
+                  <label className="block text-[13px] text-slate-400 mb-1">{questions.q1}</label>
+                  <input type="text" value={a1} onChange={e=>setA1(e.target.value)} required className="input-field py-2.5 text-base w-full" autoFocus />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">{questions.q2}</label>
-                  <input type="text" value={a2} onChange={e=>setA2(e.target.value)} required className="input-field py-2 text-xs w-full" />
+                  <label className="block text-[13px] text-slate-400 mb-1">{questions.q2}</label>
+                  <input type="text" value={a2} onChange={e=>setA2(e.target.value)} required className="input-field py-2.5 text-base w-full" />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">{questions.q3}</label>
-                  <input type="text" value={a3} onChange={e=>setA3(e.target.value)} required className="input-field py-2 text-xs w-full" />
+                  <label className="block text-[13px] text-slate-400 mb-1">{questions.q3}</label>
+                  <input type="text" value={a3} onChange={e=>setA3(e.target.value)} required className="input-field py-2.5 text-base w-full" />
                 </div>
               </div>
             )}
 
             {step === 3 && (
               <div>
-                <label className="block text-[10px] text-slate-400 mb-1">New Password</label>
-                <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required className="input-field py-2 text-sm w-full" autoFocus />
+                <label className="block text-[13px] text-slate-400 mb-1">New Password</label>
+                <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required className="input-field py-2.5 text-base w-full" autoFocus />
               </div>
             )}
 
@@ -117,7 +117,7 @@ export default function ForgotPassword({ onBack }) {
             </button>
             
             <div className="text-center mt-4">
-              <button type="button" onClick={onBack} className="text-[10px] text-slate-400 hover:text-white underline transition">Back to Login</button>
+              <button type="button" onClick={onBack} className="text-xs text-slate-400 hover:text-white underline transition">Back to Login</button>
             </div>
           </form>
         )}

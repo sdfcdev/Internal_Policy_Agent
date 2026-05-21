@@ -55,7 +55,7 @@ export default function MessageBubble({ message, onEditSubmit }) {
                     value={editValue} 
                     onChange={e => setEditValue(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave(); } }}
-                    className="w-full bg-dark-700/50 text-white text-sm border border-brand-500/50 rounded p-2 focus:outline-none focus:ring-1 focus:ring-brand-400 min-w-[250px] resize-none"
+                    className="w-full bg-dark-700/50 text-white text-base border border-brand-500/50 rounded p-2 focus:outline-none focus:ring-1 focus:ring-brand-400 min-w-[250px] resize-none"
                     rows={Math.max(1, editValue.split('\n').length)}
                  />
                  <div className="flex items-center justify-end gap-2">
@@ -64,7 +64,7 @@ export default function MessageBubble({ message, onEditSubmit }) {
                  </div>
                </div>
             ) : (
-               <p className="text-slate-100 text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+               <p className="text-slate-100 text-base leading-relaxed whitespace-pre-wrap">{message.content}</p>
             )}
           </div>
           {!isEditing && (
@@ -124,7 +124,7 @@ export default function MessageBubble({ message, onEditSubmit }) {
           )}
 
           <div
-            className="text-sm text-slate-200 leading-relaxed ai-prose"
+            className="text-base text-slate-200 leading-relaxed ai-prose"
             dangerouslySetInnerHTML={{ __html: formattedContent || '...' }}
           />
 
