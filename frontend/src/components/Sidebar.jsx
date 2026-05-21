@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, MessageSquare, DownloadCloud, Edit2, X, Check, ChevronDown, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
-import { renameHistorySession } from '../api';
+import { renameHistorySession, API_URL } from '../api';
 
 const NAV = [
   { id: 'chat',  label: 'AI Copilot',       icon: BotMessageSquare },
@@ -215,8 +215,8 @@ export default function Sidebar({
                           {docsInDept.map(doc => (
                             <a 
                               key={doc.id} 
-                              href={`http://127.0.0.1:8000/download/${doc.filename}`} 
-                              target="_blank" 
+                              href={`${API_URL}/download/${doc.filename}`} 
+                              target="_blank"  
                               rel="noreferrer"
                               className="flex items-center gap-3 p-3 hover:bg-brand-600/10 transition-all group border-b border-white/5 last:border-0"
                             >
