@@ -68,15 +68,26 @@ export default function App() {
   const [theme, setTheme]       = useState('light');
 
   // Personalization State
-  const [textSize, setTextSize] = useState(() => localStorage.getItem('sdf_text_size') || 'md');
-  const [userBubbleColor, setUserBubbleColor] = useState(() => localStorage.getItem('sdf_user_color') || 'blue');
-  const [aiBubbleColor, setAiBubbleColor] = useState(() => localStorage.getItem('sdf_ai_color') || 'white');
-  const [fontStyle, setFontStyle] = useState(() => localStorage.getItem('sdf_font_style') || 'Inter');
+  const [textSize, setTextSize] = useState('md');
+  const [userBubbleColor, setUserBubbleColor] = useState('blue');
+  const [aiBubbleColor, setAiBubbleColor] = useState('white');
+  const [fontStyle, setFontStyle] = useState('Inter');
 
-  useEffect(() => { localStorage.setItem('sdf_text_size', textSize); }, [textSize]);
-  useEffect(() => { localStorage.setItem('sdf_user_color', userBubbleColor); }, [userBubbleColor]);
-  useEffect(() => { localStorage.setItem('sdf_ai_color', aiBubbleColor); }, [aiBubbleColor]);
-  useEffect(() => { localStorage.setItem('sdf_font_style', fontStyle); }, [fontStyle]);
+  // Load user-specific preferences on login
+  useEffect(() => {
+    if (user?.username) {
+      setTextSize(localStorage.getItem(`sdf_text_size_${user.username}`) || 'md');
+      setUserBubbleColor(localStorage.getItem(`sdf_user_color_${user.username}`) || 'blue');
+      setAiBubbleColor(localStorage.getItem(`sdf_ai_color_${user.username}`) || 'white');
+      setFontStyle(localStorage.getItem(`sdf_font_style_${user.username}`) || 'Inter');
+    }
+  }, [user?.username]);
+
+  // Save user-specific preferences
+  useEffect(() => { if (user?.username) localStorage.setItem(`sdf_text_size_${user.username}`, textSize); }, [textSize, user?.username]);
+  useEffect(() => { if (user?.username) localStorage.setItem(`sdf_user_color_${user.username}`, userBubbleColor); }, [userBubbleColor, user?.username]);
+  useEffect(() => { if (user?.username) localStorage.setItem(`sdf_ai_color_${user.username}`, aiBubbleColor); }, [aiBubbleColor, user?.username]);
+  useEffect(() => { if (user?.username) localStorage.setItem(`sdf_font_style_${user.username}`, fontStyle); }, [fontStyle, user?.username]);
 
 
 

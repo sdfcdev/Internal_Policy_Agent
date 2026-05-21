@@ -234,8 +234,8 @@ export default function ChatView({
       {messages.length > 0 && (
         <div className="flex flex-wrap items-center justify-end gap-4 mt-4 px-2">
            <label className="flex items-center gap-3 cursor-pointer group">
-             <span className={`text-[10px] font-bold tracking-tight transition-colors ${saveChat ? 'text-brand-400' : 'text-slate-500'}`}>
-               SAVE CHAT
+             <span className={`text-[11px] font-semibold tracking-wide transition-colors ${saveChat ? 'text-brand-400' : 'text-slate-500'}`}>
+               Save Chat
              </span>
              <div className="relative">
                <input type="checkbox" className="sr-only peer" checked={saveChat} onChange={e => handleToggleSave(e.target.checked)} />

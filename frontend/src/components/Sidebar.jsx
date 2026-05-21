@@ -359,7 +359,7 @@ export default function Sidebar({
                       onClick={() => { setIsPersonalizeOpen(true); setIsSettingsOpen(false); }}
                       className="w-full flex items-center justify-between px-3 py-2 mb-1 group cursor-pointer hover:bg-white/5 rounded-xl transition-colors"
                     >
-                      <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">
+                      <span className="text-sm font-normal text-slate-300 group-hover:text-white transition-colors">
                         Personalize
                       </span>
                     </button>
@@ -367,7 +367,7 @@ export default function Sidebar({
                       onClick={(e) => { e.stopPropagation(); onToggleTheme(); }}
                       className="flex items-center justify-between px-3 py-2 mb-1 group cursor-pointer hover:bg-white/5 rounded-xl transition-colors"
                     >
-                      <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">
+                      <span className="text-sm font-normal text-slate-300 group-hover:text-white transition-colors">
                         {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
                       </span>
                       <div
@@ -386,7 +386,7 @@ export default function Sidebar({
                     </div>
                     <button 
                       onClick={() => { onLogout(); setIsSettingsOpen(false); }}
-                      className="flex items-center justify-center px-3 py-2 text-sm font-semibold text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-colors mt-0.5"
+                      className="flex items-center justify-center px-3 py-2 text-sm font-normal text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-colors mt-0.5"
                     >
                       <span>Log out</span>
                     </button>
@@ -412,9 +412,9 @@ export default function Sidebar({
             <div className="p-5 flex flex-col gap-5">
               {/* Font Style */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Font Family</label>
+                <label className="block text-sm text-slate-300 mb-2">Font Family</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {['Inter', 'Roboto', 'Poppins', 'Outfit'].map(font => (
+                  {['Inter', 'Comic Sans MS', 'Poppins', 'Outfit'].map(font => (
                     <button
                       key={font}
                       onClick={() => setFontStyle(font)}
@@ -433,7 +433,7 @@ export default function Sidebar({
 
               {/* Text Size */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Text Size</label>
+                <label className="block text-sm text-slate-300 mb-2">Text Size</label>
                 <div className="flex gap-2">
                   {['sm', 'md', 'lg'].map(size => (
                     <button
@@ -453,7 +453,7 @@ export default function Sidebar({
 
               {/* User Bubble Color */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">User Chat Color</label>
+                <label className="block text-sm text-slate-300 mb-2">User Chat Color</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'blue', name: 'Blue', color: 'bg-blue-500' },
@@ -481,7 +481,7 @@ export default function Sidebar({
 
               {/* AI Bubble Color */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">AI Answer Color</label>
+                <label className="block text-sm text-slate-300 mb-2">AI Answer Color</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'white', name: 'Glass', color: 'bg-white' },
@@ -506,6 +506,19 @@ export default function Sidebar({
                   ))}
                 </div>
               </div>
+
+              {/* Reset to Default */}
+              <button
+                onClick={() => {
+                  setFontStyle('Inter');
+                  setTextSize('md');
+                  setUserBubbleColor('blue');
+                  setAiBubbleColor('white');
+                }}
+                className="mt-2 w-full py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white bg-dark-900 border border-white/5 hover:border-white/20 transition-colors flex items-center justify-center gap-2"
+              >
+                Reset to Default
+              </button>
             </div>
           </div>
         </>
