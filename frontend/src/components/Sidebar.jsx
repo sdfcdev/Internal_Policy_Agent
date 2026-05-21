@@ -7,6 +7,23 @@ const NAV = [
   { id: 'admin', label: 'Admin Dashboard',   icon: LayoutDashboard  },
 ];
 
+const getAvatarGradient = (username) => {
+  const gradients = [
+    'from-blue-400 to-indigo-500',
+    'from-emerald-400 to-teal-500',
+    'from-amber-400 to-orange-500',
+    'from-rose-400 to-pink-500',
+    'from-fuchsia-400 to-purple-500',
+    'from-cyan-400 to-blue-500'
+  ];
+  if (!username) return gradients[0];
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return gradients[Math.abs(hash) % gradients.length];
+};
+
 export default function Sidebar({ 
   activeView, onViewChange, backendOk, role, 
   historyData = [], libraryDocs = [], activeSessionId, onSelectSession, onRefreshData, user,
@@ -313,7 +330,7 @@ export default function Sidebar({
       <div className={`mt-auto border-t border-white/5 bg-dark-900/30 transition-all duration-300 ${isSidebarExpanded ? 'p-4' : 'p-3 flex flex-col items-center gap-3'} relative`}>
         <div className={`flex ${isSidebarExpanded ? 'items-center justify-between' : 'flex-col items-center gap-3'}`}>
           <div className={`flex items-center gap-2.5 ${isSidebarExpanded ? '' : 'hidden'}`}>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-lg shadow-brand-500/20 border border-white/10">
+            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarGradient(user?.username)} flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-lg border border-white/20`}>
               {(user?.preferred_name || user?.name || user?.username || '?').charAt(0).toUpperCase()}
             </div>
             <div className="flex flex-col min-w-0">
@@ -345,7 +362,7 @@ export default function Sidebar({
                       </span>
                       <div
                         className={`relative flex items-center h-6 w-11 rounded-full p-1 transition-colors duration-500 ${
-                          theme === 'dark' ? 'bg-brand-600 border border-brand-400/50' : 'bg-slate-400 border border-slate-300/50'
+                          theme === 'dark' ? 'bg-brand-500' : 'bg-slate-300'
                         }`}
                       >
                         <div
