@@ -312,9 +312,14 @@ export default function Sidebar({
       {/* User Profile Area */}
       <div className={`mt-auto border-t border-white/5 bg-dark-900/30 transition-all duration-300 ${isSidebarExpanded ? 'p-4' : 'p-3 flex flex-col items-center gap-3'} relative`}>
         <div className={`flex ${isSidebarExpanded ? 'items-center justify-between' : 'flex-col items-center gap-3'}`}>
-          <div className={`flex flex-col ${isSidebarExpanded ? '' : 'hidden'}`}>
-            <span className="text-sm font-semibold text-white truncate max-w-[120px]">{user?.preferred_name || user?.name || user?.username}</span>
-            <span className="text-xs text-slate-500 uppercase tracking-tighter mt-0.5">{user?.role}</span>
+          <div className={`flex items-center gap-2.5 ${isSidebarExpanded ? '' : 'hidden'}`}>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-lg shadow-brand-500/20 border border-white/10">
+              {(user?.preferred_name || user?.name || user?.username || '?').charAt(0).toUpperCase()}
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-semibold text-white truncate max-w-[100px] leading-tight">{user?.preferred_name || user?.name || user?.username}</span>
+              <span className="text-[10px] text-slate-500 uppercase tracking-tighter mt-0.5">{user?.role}</span>
+            </div>
           </div>
           
           <div className="relative">
@@ -335,17 +340,17 @@ export default function Sidebar({
                       onClick={(e) => { e.stopPropagation(); onToggleTheme(); }}
                       className="flex items-center justify-between px-3 py-2 mb-1 group cursor-pointer hover:bg-white/5 rounded-xl transition-colors"
                     >
-                      <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider group-hover:text-white transition-colors">
+                      <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">
                         {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
                       </span>
                       <div
-                        className={`relative flex items-center h-6 w-12 rounded-full p-1 transition-colors duration-500 ${
-                          theme === 'dark' ? 'bg-brand-600/80 border border-brand-400/50' : 'bg-slate-600 border border-slate-500'
+                        className={`relative flex items-center h-6 w-11 rounded-full p-1 transition-colors duration-500 ${
+                          theme === 'dark' ? 'bg-brand-600 border border-brand-400/50' : 'bg-slate-400 border border-slate-300/50'
                         }`}
                       >
                         <div
                           className={`absolute w-4 h-4 rounded-full shadow-md transform transition-transform duration-500 flex items-center justify-center bg-white ${
-                            theme === 'dark' ? 'translate-x-6' : 'translate-x-0'
+                            theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
                           }`}
                         >
                           {theme === 'dark' ? <span className="text-[10px] leading-none">🌙</span> : <span className="text-[10px] leading-none">☀️</span>}
@@ -354,10 +359,9 @@ export default function Sidebar({
                     </div>
                     <button 
                       onClick={() => { onLogout(); setIsSettingsOpen(false); }}
-                      className="flex items-center justify-between px-3 py-2.5 text-[11px] font-bold text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-colors mt-0.5 uppercase tracking-wider"
+                      className="flex items-center justify-center px-3 py-2 text-sm font-semibold text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-colors mt-0.5"
                     >
-                      <span>LOGOUT</span>
-                      <span className="text-sm leading-none">⏏</span>
+                      <span>Log out</span>
                     </button>
                  </div>
                </>
