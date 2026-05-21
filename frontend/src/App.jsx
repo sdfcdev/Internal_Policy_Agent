@@ -31,8 +31,17 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8 z-10 w-full relative min-h-screen py-12">
-      <div className="glass-card p-8 w-full max-w-sm glow-ring animate-fade-in">
+    <div className="flex flex-1 items-center justify-center p-8 w-full relative min-h-screen py-12"
+         style={{
+           backgroundImage: `url('/login-bg.jpg')`,
+           backgroundSize: 'cover',
+           backgroundPosition: 'center'
+         }}
+    >
+      {/* Overlay to darken and blur the background image slightly so the login box pops */}
+      <div className="absolute inset-0 bg-dark-900/70 backdrop-blur-[2px] z-0 pointer-events-none"></div>
+
+      <div className="glass-card p-8 w-full max-w-sm glow-ring animate-fade-in z-10 relative">
         <div className="text-center mb-6">
           <img src="/logo.png" alt="SDF Logo" className="h-12 w-auto mx-auto mb-4 brightness-110" />
           <h2 className="text-2xl font-medium text-white tracking-tight">Internal Policy Agent</h2>
