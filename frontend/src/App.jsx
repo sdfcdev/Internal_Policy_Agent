@@ -194,8 +194,8 @@ export default function App() {
 
     const htmlContent = `
       <div style="font-family: 'Inter', system-ui, sans-serif; color: #1e293b; background: #ffffff; padding: 30px;">
-        <h1 style="color: #4f46e5; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 5px;">${sessionName}</h1>
-        <div style="color: #64748b; font-size: 13px; margin-bottom: 30px;">Exported on: ${dateStr}</div>
+        <h1 style="color: #4f46e5; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 5px; font-size: 24px;">Chat Session Name: ${sessionName}</h1>
+        <div style="color: #64748b; font-size: 13px; margin-bottom: 30px;">Date & Time Exported: ${dateStr}</div>
         ${messages.map(msg => `
           <div style="margin-bottom: 24px; padding: 16px; border-radius: 12px; ${msg.role === 'user' ? 'background: #f8fafc; border: 1px solid #e2e8f0;' : 'background: #ffffff; border-left: 4px solid #8b5cf6; border-top: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;'}">
             <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px; display: flex; justify-content: space-between;">
@@ -297,10 +297,10 @@ export default function App() {
                    <button 
                      onClick={handleDownloadPDF} 
                      className="p-2.5 bg-dark-800 border border-white/10 rounded-xl shadow-xl hover:bg-white/10 transition flex items-center gap-2"
-                     title="Download Chat as PDF"
+                     title="Download Chat"
                    >
                      <Download className="w-4 h-4 text-brand-400" />
-                     <span className="text-xs text-slate-300 font-semibold hidden sm:inline">Download PDF</span>
+                     <span className="text-xs text-slate-300 font-semibold hidden sm:inline">Download Chat</span>
                    </button>
                 )}
               </div>
