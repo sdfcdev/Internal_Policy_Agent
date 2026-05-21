@@ -199,26 +199,34 @@ export default function ChatView({
             disabled={loading} 
             className="input-field w-full text-base py-3.5 px-5 bg-white/5 border-white/10 focus:border-brand-500/50 transition-all rounded-2xl" 
           />
-          <button 
-            type="button"
-            onClick={loading ? stopGeneration : undefined}
-            disabled={!loading}
-            className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all flex items-center justify-center ${
-              loading 
-                ? 'text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 bg-dark-900 shadow-sm border border-rose-500/20 cursor-pointer' 
-                : 'text-slate-600 bg-transparent border border-transparent cursor-default'
-            }`}
-            title={loading ? "Stop Generation" : ""}
-          >
-            <Square className="w-3.5 h-3.5 fill-current" />
-          </button>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8">
+            {loading && (
+              <svg className="animate-spin absolute inset-0 w-8 h-8 text-rose-500/50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            <button 
+              type="button"
+              onClick={loading ? stopGeneration : undefined}
+              disabled={!loading}
+              className={`relative p-1.5 rounded-lg transition-all flex items-center justify-center z-10 ${
+                loading 
+                  ? 'text-rose-500 hover:text-rose-400 bg-dark-900 shadow-sm cursor-pointer' 
+                  : 'text-slate-600 bg-transparent cursor-default'
+              }`}
+              title={loading ? "Stop Generation" : ""}
+            >
+              <Square className="w-3 h-3 fill-current" />
+            </button>
+          </div>
         </div>
         <button 
           type="submit" 
           disabled={loading || !query.trim()} 
-          className="btn-primary w-12 h-12 flex items-center justify-center rounded-2xl shadow-lg shadow-brand-600/20 active:scale-95 transition-transform shrink-0"
+          className="btn-primary w-14 h-14 flex items-center justify-center rounded-2xl shadow-lg shadow-brand-600/20 active:scale-95 transition-transform shrink-0"
         >
-          <Send className="w-5 h-5" /> 
+          <Send className="w-6 h-6 ml-0.5" /> 
         </button>
       </form>
       
@@ -242,7 +250,7 @@ export default function ChatView({
   return (
     <div className="flex flex-col flex-1 min-w-0 h-full relative bg-dark-900/40">
       
-      {messages.length > 0 && <AgentPipeline activeAgent={activeAgentNav} />}
+      {messages.length > 0 && user?.role !== 'user' && <AgentPipeline activeAgent={activeAgentNav} />}
 
       {messages.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center p-8 animate-fade-in overflow-y-auto custom-scrollbar">
