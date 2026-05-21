@@ -67,6 +67,17 @@ export default function App() {
   const [backendOk, setBackend] = useState(null);
   const [theme, setTheme]       = useState('light');
 
+  // Personalization State
+  const [textSize, setTextSize] = useState(() => localStorage.getItem('sdf_text_size') || 'md');
+  const [userBubbleColor, setUserBubbleColor] = useState(() => localStorage.getItem('sdf_user_color') || 'blue');
+  const [aiBubbleColor, setAiBubbleColor] = useState(() => localStorage.getItem('sdf_ai_color') || 'white');
+
+  useEffect(() => { localStorage.setItem('sdf_text_size', textSize); }, [textSize]);
+  useEffect(() => { localStorage.setItem('sdf_user_color', userBubbleColor); }, [userBubbleColor]);
+  useEffect(() => { localStorage.setItem('sdf_ai_color', aiBubbleColor); }, [aiBubbleColor]);
+
+
+
   // Lifted Chat State
   const [historyData, setHistoryData] = useState([]);
   const [libraryDocs, setLibraryDocs] = useState([]);
@@ -271,6 +282,9 @@ export default function App() {
             theme={theme}
             onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
             onLogout={() => {setUser(null); setView('chat'); setSessionId(''); setMessages([]); setSaveChat(false);}}
+            textSize={textSize} setTextSize={setTextSize}
+            userBubbleColor={userBubbleColor} setUserBubbleColor={setUserBubbleColor}
+            aiBubbleColor={aiBubbleColor} setAiBubbleColor={setAiBubbleColor}
           />
 
           <main className="flex flex-col flex-1 h-screen overflow-hidden relative z-10 w-full min-w-0">
@@ -318,6 +332,9 @@ export default function App() {
                 saveChat={saveChat}
                 setSaveChat={setSaveChat}
                 onRefreshHistory={loadChatData}
+                textSize={textSize}
+                userBubbleColor={userBubbleColor}
+                aiBubbleColor={aiBubbleColor}
               />
             </div>
             

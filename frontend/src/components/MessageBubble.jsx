@@ -23,7 +23,7 @@ export function TypingIndicator() {
   );
 }
 
-export default function MessageBubble({ message, onEditSubmit }) {
+export default function MessageBubble({ message, onEditSubmit, textSize = 'md', userBubbleColor = 'blue', aiBubbleColor = 'white' }) {
   const isUser = message.role === 'user';
   
   const [isEditing, setIsEditing] = useState(false);
@@ -64,11 +64,22 @@ export default function MessageBubble({ message, onEditSubmit }) {
       setIsEditing(false);
   };
 
+  const textSizeClass = textSize === 'sm' ? 'text-sm' : textSize === 'lg' ? 'text-lg' : 'text-base';
+  const userBgClass = 
+      userBubbleColor === 'emerald' ? 'bg-emerald-600/30 border-emerald-500/30' :
+      userBubbleColor === 'violet' ? 'bg-violet-600/30 border-violet-500/30' :
+      'bg-brand-600/30 border-brand-500/30'; // blue default
+
+  const aiBgClass = 
+      aiBubbleColor === 'slate' ? 'bg-slate-800/80 border border-slate-700/50' :
+      aiBubbleColor === 'indigo' ? 'bg-indigo-900/40 border border-indigo-500/30' :
+      'glass-card'; // white default
+
   if (isUser) {
     return (
       <div className="flex items-end justify-end gap-3 w-full animate-slide-up group">
         <div className="max-w-[72%] relative">
-          <div className="bg-brand-600/30 border border-brand-500/30 rounded-2xl rounded-br-sm px-4 py-3">
+          <div className={`${userBgClass} border rounded-2xl rounded-br-sm px-4 py-3`}>
             {isEditing ? (
                <div className="flex flex-col gap-2">
                  <textarea 
@@ -85,7 +96,7 @@ export default function MessageBubble({ message, onEditSubmit }) {
                  </div>
                </div>
             ) : (
-               <p className="text-slate-100 text-base leading-relaxed whitespace-pre-wrap">{message.content}</p>
+               <p className={`text-slate-100 leading-relaxed whitespace-pre-wrap ${textSizeClass}`}>{message.content}</p>
             )}
           </div>
           {!isEditing && (
@@ -136,16 +147,16 @@ export default function MessageBubble({ message, onEditSubmit }) {
         <Bot className="w-4 h-4 text-brand-400" />
       </div>
       <div className="max-w-[78%]">
-        <div className="glass-card px-4 py-3.5">
+        <div className={`${aiBgClass} rounded-2xl rounded-bl-sm px-4 py-3.5 shadow-xl`}>
           {isWorking && (
-            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/5 text-[11px] text-brand-300">
-               <Activity className="w-3.5 h-3.5 animate-pulse" /> Agent actively working: <span className="font-semibold px-1.5 py-0.5 bg-brand-900/40 rounded">{message.active_agent}</span>
-               <span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" />
-            </div>
+             <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-brand-900/20 rounded-md w-max border border-brand-500/20">
+                <Activity className="w-3.5 h-3.5 text-brand-400 animate-pulse" />
+                <span className="text-[11px] font-medium text-brand-300">Agent {message.active_agent} is working...</span>
+             </div>
           )}
 
           <div
-            className="text-base text-slate-200 leading-relaxed ai-prose"
+            className={`text-slate-200 leading-relaxed ai-prose ${textSizeClass === 'text-sm' ? 'text-sm' : textSizeClass === 'text-lg' ? 'text-lg' : 'text-base'}`}
             dangerouslySetInnerHTML={{ __html: formattedContent || '...' }}
           />
 

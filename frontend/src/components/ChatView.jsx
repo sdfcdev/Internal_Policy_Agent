@@ -43,7 +43,8 @@ function AgentPipeline({ activeAgent }) {
 }
 
 export default function ChatView({ 
-    user, sessionId, setSessionId, messages, setMessages, saveChat, setSaveChat, onRefreshHistory 
+    user, sessionId, setSessionId, messages, setMessages, saveChat, setSaveChat, onRefreshHistory,
+    textSize, userBubbleColor, aiBubbleColor
 }) {
   const [query, setQuery]           = useState('');
   const [loading, setLoading]       = useState(false);
@@ -274,6 +275,9 @@ export default function ChatView({
                 key={`${msg.id}-${i}`} 
                 message={msg} 
                 onEditSubmit={handleEditSubmit} 
+                textSize={textSize}
+                userBubbleColor={userBubbleColor}
+                aiBubbleColor={aiBubbleColor}
              />
           ))}
           {loading && <TypingIndicator />}

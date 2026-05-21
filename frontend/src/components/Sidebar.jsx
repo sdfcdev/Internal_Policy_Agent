@@ -27,7 +27,8 @@ const getAvatarGradient = (username) => {
 export default function Sidebar({ 
   activeView, onViewChange, backendOk, role, 
   historyData = [], libraryDocs = [], activeSessionId, onSelectSession, onRefreshData, user,
-  onNewChat, theme, onToggleTheme, onLogout
+  onNewChat, theme, onToggleTheme, onLogout,
+  textSize, setTextSize, userBubbleColor, setUserBubbleColor, aiBubbleColor, setAiBubbleColor
 }) {
   const [leftTab, setLeftTab] = useState('history'); // 'history' | 'library'
   const [historySearch, setHistorySearch] = useState('');
@@ -37,6 +38,7 @@ export default function Sidebar({
   const [isOpen, setIsOpen] = useState(true); // Default to expanded
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStatusExpanded, setIsStatusExpanded] = useState(false);
+  const [isPersonalizeOpen, setIsPersonalizeOpen] = useState(false);
 
   const groupedHistory = historyData.filter(d => d.is_saved).reduce((acc, h) => {
       if (!acc[h.session_id]) acc[h.session_id] = [];
@@ -353,6 +355,14 @@ export default function Sidebar({
                <>
                  <div className="fixed inset-0 z-40" onClick={() => setIsSettingsOpen(false)} />
                  <div className={`absolute bottom-full mb-3 w-44 bg-dark-800 border border-white/10 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 z-50 animate-slide-up ${isSidebarExpanded ? 'right-0' : 'left-0'}`}>
+                    <button 
+                      onClick={() => { setIsPersonalizeOpen(true); setIsSettingsOpen(false); }}
+                      className="w-full flex items-center justify-between px-3 py-2 mb-1 group cursor-pointer hover:bg-white/5 rounded-xl transition-colors"
+                    >
+                      <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">
+                        Personalize
+                      </span>
+                    </button>
                     <div 
                       onClick={(e) => { e.stopPropagation(); onToggleTheme(); }}
                       className="flex items-center justify-between px-3 py-2 mb-1 group cursor-pointer hover:bg-white/5 rounded-xl transition-colors"
@@ -386,6 +396,93 @@ export default function Sidebar({
           </div>
         </div>
       </div>
+      
+      {/* Personalize Modal */}
+      {isPersonalizeOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" onClick={() => setIsPersonalizeOpen(false)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-dark-800 border border-white/10 rounded-2xl shadow-2xl z-[101] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-white/5">
+              <h2 className="text-lg font-bold text-white">Personalize UI</h2>
+              <button onClick={() => setIsPersonalizeOpen(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-5 flex flex-col gap-6">
+              {/* Text Size */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-3">Text Size</label>
+                <div className="flex gap-3">
+                  {['sm', 'md', 'lg'].map(size => (
+                    <button
+                      key={size}
+                      onClick={() => setTextSize(size)}
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors border ${
+                        textSize === size 
+                          ? 'bg-brand-500/20 border-brand-500 text-brand-400' 
+                          : 'bg-dark-900 border-white/5 text-slate-400 hover:border-white/20'
+                      }`}
+                    >
+                      {size === 'sm' ? 'Small' : size === 'md' ? 'Medium' : 'Large'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* User Bubble Color */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-3">User Chat Color</label>
+                <div className="flex gap-3">
+                  {[
+                    { id: 'blue', name: 'Blue', color: 'bg-blue-500' },
+                    { id: 'emerald', name: 'Emerald', color: 'bg-emerald-500' },
+                    { id: 'violet', name: 'Violet', color: 'bg-violet-500' }
+                  ].map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => setUserBubbleColor(c.id)}
+                      className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-colors border flex items-center justify-center gap-2 ${
+                        userBubbleColor === c.id 
+                          ? 'bg-white/10 border-white/20 text-white' 
+                          : 'bg-dark-900 border-white/5 text-slate-400 hover:border-white/20'
+                      }`}
+                    >
+                      <div className={`w-3 h-3 rounded-full ${c.color}`} />
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Bubble Color */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-3">AI Answer Color</label>
+                <div className="flex gap-3">
+                  {[
+                    { id: 'white', name: 'White', color: 'bg-white' },
+                    { id: 'slate', name: 'Slate', color: 'bg-slate-300' },
+                    { id: 'indigo', name: 'Indigo', color: 'bg-indigo-300' }
+                  ].map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => setAiBubbleColor(c.id)}
+                      className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-colors border flex items-center justify-center gap-2 ${
+                        aiBubbleColor === c.id 
+                          ? 'bg-white/10 border-white/20 text-white' 
+                          : 'bg-dark-900 border-white/5 text-slate-400 hover:border-white/20'
+                      }`}
+                    >
+                      <div className={`w-3 h-3 rounded-full ${c.color}`} />
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </aside>
   );
 }
