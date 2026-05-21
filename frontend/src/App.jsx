@@ -188,9 +188,9 @@ export default function App() {
   const handleDownloadPDF = async () => {
     let sessionName = 'Current Chat Session';
     if (sessionId) {
-      const savedSession = historyData.find(h => h.id === sessionId);
-      if (savedSession && savedSession.session_title) {
-        sessionName = savedSession.session_title;
+      const savedSessionMsg = historyData.find(h => h.session_id === sessionId);
+      if (savedSessionMsg && savedSessionMsg.session_title) {
+        sessionName = savedSessionMsg.session_title;
       } else if (messages.length > 0) {
         const firstUserMsg = messages.find(m => m.role === 'user');
         if (firstUserMsg) {
