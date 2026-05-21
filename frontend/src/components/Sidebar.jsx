@@ -336,7 +336,7 @@ export default function Sidebar({
               {(user?.preferred_name || user?.name || user?.username || '?').charAt(0).toUpperCase()}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-semibold text-white truncate max-w-[100px] leading-tight">{user?.preferred_name || user?.name || user?.username}</span>
+              <span className="text-sm font-medium text-white truncate max-w-[100px] leading-tight">{user?.preferred_name || user?.name || user?.username}</span>
               <span className="text-[10px] text-slate-500 uppercase tracking-tighter mt-0.5">{user?.role}</span>
             </div>
           </div>
