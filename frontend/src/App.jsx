@@ -31,47 +31,40 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
   }
 
   return (
-    <div className="flex flex-1 w-full min-h-screen relative bg-white overflow-hidden">
-      {/* Right side image background that blends into the white */}
-      <div 
-        className="absolute inset-y-0 right-0 w-full lg:w-[60%] z-0 pointer-events-none"
-        style={{
-          backgroundImage: `url('/login-bg.jpg')`,
-          backgroundSize: 'contain',
-          backgroundPosition: 'right center',
-          backgroundRepeat: 'no-repeat',
-          mixBlendMode: 'multiply'
-        }}
-      ></div>
+    <div className="flex flex-1 items-center justify-center p-8 w-full relative min-h-screen py-12"
+         style={{
+           backgroundImage: `url('/login-bg.jpg')`,
+           backgroundSize: 'cover',
+           backgroundPosition: 'center'
+         }}
+    >
 
-      {/* Login Box Container */}
-      <div className="flex flex-1 items-center justify-center z-10 relative w-full h-full p-8">
-        <div className="bg-white/90 backdrop-blur-md p-8 w-full max-w-sm rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 animate-fade-in relative z-10">
+
+      <div className="glass-card p-8 w-full max-w-sm glow-ring animate-fade-in z-10 relative">
         <div className="text-center mb-6">
-          <img src="/logo.png" alt="SDF Logo" className="h-12 w-auto mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Internal Policy Agent</h2>
-          <p className="text-sm text-slate-500 mt-1">Authorized Staff Access Only</p>
+          <img src="/logo.png" alt="SDF Logo" className="h-12 w-auto mx-auto mb-4 brightness-110" />
+          <h2 className="text-2xl font-medium text-white tracking-tight">Internal Policy Agent</h2>
+          <p className="text-sm text-slate-400 mt-1">Authorized Staff Access Only</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-[13px] font-medium text-slate-600 mb-1">Employee Number</label>
-            <input type="text" value={username} onChange={e=>setUsername(e.target.value)} disabled={loading} required className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all" autoFocus />
+            <label className="block text-[13px] text-slate-400 mb-1">Employee Number</label>
+            <input type="text" value={username} onChange={e=>setUsername(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full" autoFocus />
           </div>
           <div>
-            <label className="block text-[13px] font-medium text-slate-600 mb-1">Password</label>
-            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} disabled={loading} required className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all" />
+            <label className="block text-[13px] text-slate-400 mb-1">Password</label>
+            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full" />
           </div>
           <div className="flex justify-between items-center mt-2">
-            <button type="button" onClick={onRegister} className="text-xs font-medium text-brand-600 hover:text-brand-500 underline transition">New Staff? Register</button>
-            <button type="button" onClick={onForgotPassword} className="text-xs font-medium text-slate-500 hover:text-slate-800 underline transition">Forgot Password?</button>
+            <button type="button" onClick={onRegister} className="text-xs text-brand-400 hover:text-brand-300 underline transition">New Staff? Register</button>
+            <button type="button" onClick={onForgotPassword} className="text-xs text-slate-400 hover:text-white underline transition">Forgot Password?</button>
           </div>
-          {error && <div className="text-xs text-red-600 bg-red-50 border border-red-200 p-2.5 rounded-lg font-medium">{error}</div>}
-          <button type="submit" disabled={loading} className="w-full bg-brand-600 hover:bg-brand-500 text-white py-2.5 mt-2 rounded-lg font-semibold shadow-md transition-all active:scale-[0.98]">
+          {error && <div className="text-xs text-red-400 bg-red-900/20 border border-red-500/30 p-2 rounded">{error}</div>}
+          <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 mt-2 rounded-lg font-medium shadow-sm transition">
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
       </div>
-     </div>
     </div>
   );
 }
