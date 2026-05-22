@@ -38,7 +38,7 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
       {/* Login Box - Made dark so the white text is clearly readable against the white background */}
       <div className="bg-dark-900/95 backdrop-blur-md p-8 w-full max-w-sm glow-ring animate-fade-in z-10 relative rounded-2xl border border-dark-700 shadow-2xl">
         <div className="text-center mb-6">
-          <img src="/logo.png" alt="SDF Logo" className="h-12 w-auto mx-auto mb-4 brightness-110" />
+          <img src="/logo.png" alt="SDF Logo" className="h-10 w-auto mx-auto mb-4 brightness-110" />
           <h2 className="text-2xl font-medium text-white tracking-tight">Internal Policy Agent</h2>
           <p className="text-sm text-slate-400 mt-1">Authorized Staff Access Only</p>
         </div>
