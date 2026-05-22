@@ -71,6 +71,7 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
           </button>
         </form>
       </div>
+     </div>
     </div>
   );
 }
