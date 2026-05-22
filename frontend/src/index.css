@@ -104,3 +104,18 @@ html.light-theme video {
   0%, 100% { opacity: 1; }
   50% { opacity: .4; }
 }
+
+@keyframes slideUpBg {
+  from {
+    transform: translateY(80px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up-bg {
+  animation: slideUpBg 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

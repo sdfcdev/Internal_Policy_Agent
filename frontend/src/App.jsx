@@ -33,7 +33,7 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
   return (
     <div className="flex flex-1 items-center justify-center p-8 w-full relative min-h-screen py-12 overflow-hidden" style={{ backgroundColor: '#ffffff' }}>
       {/* Background Image shifted right using object-position instead of translate to avoid scrollbars/gaps */}
-      <img src="/login-bg.jpg" alt="background" className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none" style={{ objectPosition: 'calc(100% + 150px) center', backgroundColor: '#ffffff' }} />
+      <img src="/login-bg.jpg" alt="background" className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none animate-slide-up-bg" style={{ objectPosition: 'calc(100% + 150px) center', backgroundColor: '#ffffff' }} />
 
       {/* Login Box - Made dark so the white text is clearly readable against the white background */}
       <div className="bg-dark-900/95 backdrop-blur-md p-8 w-full max-w-sm glow-ring animate-fade-in z-10 relative rounded-2xl border border-dark-700 shadow-2xl">
