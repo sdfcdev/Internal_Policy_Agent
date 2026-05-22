@@ -31,9 +31,13 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
   }
 
   return (
-    <div className="bg-white flex flex-1 items-center justify-center p-8 w-full relative min-h-screen py-12"
+    <div className="flex flex-1 items-center justify-center p-8 w-full relative min-h-screen py-12"
          style={{
-           background: `#ffffff url('/login-bg.jpg') center / cover no-repeat`,
+           backgroundColor: '#ffffff',
+           backgroundImage: `url('/login-bg.png')`,
+           backgroundPosition: 'right center',
+           backgroundSize: 'contain',
+           backgroundRepeat: 'no-repeat'
          }}
     >
 
