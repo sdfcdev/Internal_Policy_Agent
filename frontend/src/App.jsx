@@ -31,17 +31,12 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8 w-full relative min-h-screen py-12"
-         style={{
-           backgroundColor: '#ffffff',
-           backgroundImage: `url('/login-bg.png')`,
-           backgroundPosition: 'right center',
-           backgroundSize: 'contain',
-           backgroundRepeat: 'no-repeat'
-         }}
-    >
+    <div className="flex flex-1 items-center justify-center p-8 w-full relative min-h-screen py-12 overflow-hidden" style={{ backgroundColor: '#ffffff' }}>
+      {/* Background Image shifted right using object-position instead of translate to avoid scrollbars/gaps */}
+      <img src="/login-bg.jpg" alt="background" className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none" style={{ objectPosition: 'calc(100% + 150px) center', backgroundColor: '#ffffff' }} />
 
-      <div className="glass-card p-8 w-full max-w-sm glow-ring animate-fade-in z-10 relative">
+      {/* Login Box - Made dark so the white text is clearly readable against the white background */}
+      <div className="bg-dark-900/95 backdrop-blur-md p-8 w-full max-w-sm glow-ring animate-fade-in z-10 relative rounded-2xl border border-dark-700 shadow-2xl">
         <div className="text-center mb-6">
           <img src="/logo.png" alt="SDF Logo" className="h-12 w-auto mx-auto mb-4 brightness-110" />
           <h2 className="text-2xl font-medium text-white tracking-tight">Internal Policy Agent</h2>
@@ -253,7 +248,7 @@ export default function App() {
   };
 
   return (
-    <div className={`flex min-h-screen ${!user ? 'bg-white' : 'bg-dark-900'} text-white`} style={{ fontFamily: `"${fontStyle}", system-ui, sans-serif` }}>
+    <div className={`flex w-full min-h-screen ${!user ? 'bg-white' : 'bg-dark-900'} text-white`} style={{ fontFamily: `"${fontStyle}", system-ui, sans-serif` }}>
       {/* Ambient gradient blobs (only show in dark mode / when logged in) */}
       {user && (
         <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
