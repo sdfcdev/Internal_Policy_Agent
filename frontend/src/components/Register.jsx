@@ -67,8 +67,10 @@ export default function Register({ onBack, onComplete }) {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8 z-10 w-full relative min-h-screen py-12">
-      <div className="glass-card p-8 w-full max-w-lg glow-ring animate-fade-in">
+    <div className="flex flex-1 items-center justify-center p-8 z-10 w-full relative min-h-screen py-12 overflow-hidden" style={{ backgroundColor: '#ffffff' }}>
+      <img src="/login-bg.jpg" alt="background" className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none animate-slide-up-bg" style={{ objectPosition: 'calc(100% + 150px) center', backgroundColor: '#ffffff' }} />
+
+      <div className="bg-dark-900/95 backdrop-blur-md p-8 w-full max-w-lg glow-ring animate-fade-in z-10 relative rounded-2xl border border-dark-700 shadow-2xl">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-medium text-white">Staff Registration</h2>
           <p className="text-sm text-slate-400 mt-1">Please enter your Employee Number and set up your security credentials</p>
