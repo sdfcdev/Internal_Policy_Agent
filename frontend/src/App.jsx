@@ -252,12 +252,14 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen bg-dark-900 text-white" style={{ fontFamily: `"${fontStyle}", system-ui, sans-serif` }}>
-      {/* Ambient gradient blobs */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-brand-600/8 blur-3xl" />
-        <div className="absolute -bottom-40 -right-20 w-[500px] h-[500px] rounded-full bg-purple-700/6 blur-3xl" />
-      </div>
+    <div className={`flex min-h-screen ${!user ? 'bg-white' : 'bg-dark-900'} text-white`} style={{ fontFamily: `"${fontStyle}", system-ui, sans-serif` }}>
+      {/* Ambient gradient blobs (only show in dark mode / when logged in) */}
+      {user && (
+        <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
+          <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-brand-600/8 blur-3xl" />
+          <div className="absolute -bottom-40 -right-20 w-[500px] h-[500px] rounded-full bg-purple-700/6 blur-3xl" />
+        </div>
+      )}
 
       {(!user && view !== 'forgot-password' && view !== 'register') && (
         <LoginScreen 
