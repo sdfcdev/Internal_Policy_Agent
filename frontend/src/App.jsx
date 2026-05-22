@@ -31,16 +31,22 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8 w-full relative min-h-screen py-12"
-         style={{
-           backgroundImage: `url('/login-bg.jpg')`,
-           backgroundSize: 'cover',
-           backgroundPosition: 'center'
-         }}
-    >
+    <div className="flex flex-1 w-full min-h-screen relative bg-white overflow-hidden">
+      {/* Right side image background that blends into the white */}
+      <div 
+        className="absolute inset-y-0 right-0 w-full lg:w-[60%] z-0 pointer-events-none"
+        style={{
+          backgroundImage: `url('/login-bg.jpg')`,
+          backgroundSize: 'contain',
+          backgroundPosition: 'right center',
+          backgroundRepeat: 'no-repeat',
+          mixBlendMode: 'multiply'
+        }}
+      ></div>
 
-
-      <div className="glass-card p-8 w-full max-w-sm glow-ring animate-fade-in z-10 relative">
+      {/* Login Box Container */}
+      <div className="flex flex-1 items-center justify-center lg:justify-start lg:pl-[10%] xl:pl-[15%] z-10 relative w-full h-full p-8">
+        <div className="glass-card bg-dark-900 p-8 w-full max-w-sm glow-ring animate-fade-in shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
         <div className="text-center mb-6">
           <img src="/logo.png" alt="SDF Logo" className="h-12 w-auto mx-auto mb-4 brightness-110" />
           <h2 className="text-2xl font-medium text-white tracking-tight">Internal Policy Agent</h2>
