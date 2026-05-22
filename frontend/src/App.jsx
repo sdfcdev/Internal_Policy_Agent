@@ -31,7 +31,7 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8 w-full relative min-h-screen py-12"
+    <div className="bg-white flex flex-1 items-center justify-center p-8 w-full relative min-h-screen py-12"
          style={{
            backgroundImage: `url('/login-bg.jpg')`,
            backgroundSize: 'contain',
@@ -39,7 +39,6 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
            backgroundRepeat: 'no-repeat'
          }}
     >
-
 
       <div className="glass-card p-8 w-full max-w-sm glow-ring animate-fade-in z-10 relative">
         <div className="text-center mb-6">
