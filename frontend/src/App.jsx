@@ -38,8 +38,8 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
            backgroundPosition: 'center'
          }}
     >
-      {/* Overlay to darken and blur the background image slightly so the login box pops */}
-      <div className="absolute inset-0 bg-dark-900/70 backdrop-blur-[2px] z-0 pointer-events-none"></div>
+      {/* Overlay: No blur, just a dark layer to reduce brightness so the original image is clear but text remains readable */}
+      <div className="absolute inset-0 bg-black/60 z-0 pointer-events-none"></div>
 
       <div className="glass-card p-8 w-full max-w-sm glow-ring animate-fade-in z-10 relative">
         <div className="text-center mb-6">
