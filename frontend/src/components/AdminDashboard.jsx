@@ -640,7 +640,7 @@ export default function AdminDashboard({ user, role }) {
                                     </span>
                                 )}
                               </td>
-                              <td className="px-3 py-2 truncate">
+                              <td className="px-3 py-2 max-w-[200px] break-words whitespace-normal">
                                 {isEditing ? (
                                     <div className="flex flex-col gap-1">
                                        <input type="text" value={editAccName} onChange={e=>setEditAccName(e.target.value)} placeholder="Full Name" className="input-field py-1 px-2 text-[10px] w-full"/>
@@ -649,7 +649,7 @@ export default function AdminDashboard({ user, role }) {
                                     </div>
                                 ) : (
                                     <div className="flex flex-col">
-                                       <span>{acc.name} <span className="text-[10px] text-slate-500 ml-1">({acc.emp_num})</span></span>
+                                       <span className="leading-snug">{acc.name} <span className="text-[10px] text-slate-500 ml-1 whitespace-nowrap">({acc.emp_num})</span></span>
                                        {acc.preferred_name && <span className="text-[10px] text-brand-400 font-semibold mt-0.5">Display Name: {acc.preferred_name}</span>}
                                     </div>
                                 )}
