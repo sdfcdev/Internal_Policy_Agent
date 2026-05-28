@@ -630,7 +630,7 @@ async def add_user(user_data: Dict[str, str]):
                        user_data["username"], user_data["role"], user_data["name"])
         
         conn.commit()
-        return {"message": "User authorized successfully. They can now register using their EPF."}
+        return {"message": "User authorized successfully. They can now register using their Employee Number."}
     finally: conn.close()
 
 @app.delete("/admin/account/{username}")
@@ -807,12 +807,12 @@ async def register_user(req: RegisterRequest):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        # පරීක්ෂා කරනවා EPF එක ලිස්ට් එකේ තියෙනවද සහ දැනටමත් රෙජිස්ටර් වෙලාද කියලා
+        # Check if the EPF exists in the list and if it is already registered
         cursor.execute("SELECT IsRegistered FROM Accounts WHERE Username = ?", req.username)
         row = cursor.fetchone()
         
         if not row:
-            raise HTTPException(status_code=403, detail="EPF Number not authorized for registration. Contact IT.")
+            raise HTTPException(status_code=403, detail="Employee Number not authorized for registration. Contact IT.")
         if row[0] == 1:
             raise HTTPException(status_code=400, detail="Account already registered. Please login or reset password.")
             

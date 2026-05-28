@@ -11,13 +11,13 @@ MSSQL_USER = os.getenv("MSSQL_USER")
 MSSQL_PASS = os.getenv("MSSQL_PASSWORD")
 
 # ────────────────────────────────────────────────────────────
-# 1. පල්ලෙහා තියෙන List එකට ඔයාගේ EPF Numbers ටික දාන්න (උදාහරණ විදිහට මම කිහිපයක් දාලා ඇති)
+# 1. Add your Employee Numbers to the list below (I have added a few as examples)
 # ────────────────────────────────────────────────────────────
 EPF_LIST = [
-    "2958", "2959", "2960", "2961","2966", # මේ වගේ ඔයාගේ 700 දෙනාගේම අංක මෙතනට දාන්න
+    "2958", "2959", "2960", "2961","2966", # Add all 700 employee numbers here like this
 ]
 
-DEFAULT_PASSWORD = "SDF@2025" # හැමෝටම දෙන පොදු පාස්වර්ඩ් එක
+DEFAULT_PASSWORD = "SDF@2025" # Common default password for everyone
 DEFAULT_ROLE = "staff"
 
 def get_db_connection():
@@ -46,7 +46,7 @@ def import_users():
 
     for epf in EPF_LIST:
         try:
-            # පරීක්ෂා කරනවා දැනටමත් ඉන්නවද කියලා
+            # Check if the user already exists in the database
             cursor.execute("SELECT COUNT(*) FROM Accounts WHERE Username = ?", epf)
             if cursor.fetchone()[0] == 0:
                 cursor.execute(

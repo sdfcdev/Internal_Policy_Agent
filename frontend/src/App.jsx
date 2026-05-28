@@ -59,6 +59,12 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
           <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 mt-2 rounded-lg font-medium shadow-sm transition">
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
+          
+          <div className="text-center mt-8">
+            <p className="text-[13px] font-medium text-[#ff6b6b] tracking-wide">
+              IT Help Desk Support : 2626
+            </p>
+          </div>
         </form>
       </div>
     </div>
