@@ -16,7 +16,7 @@ function nowTime(dateStr) {
 }
 
 function AgentPipeline({ activeAgent }) {
-  const agents = ['Starting', 'Researcher', 'Compliance', 'Communicator', 'Reviewer', 'Done'];
+  const agents = ['Starting', 'Researcher', 'Communicator', 'Reviewer', 'Done'];
   let currentIndex = agents.indexOf(activeAgent);
   if (currentIndex === -1) currentIndex = 0;
 
@@ -99,6 +99,26 @@ export default function ChatView({
     abortControllerRef.current = controller;
 
     try {
+      // OPTIMIZATION #6 (Cost & Security): 3-Second Debounce Delay (Edit Grace Period)
+      // Gives the user 3 seconds to realize a typo and click Stop before ANY API calls are made.
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempAssistantId ? { ...msg, active_agent: 'Waiting (3s)... Click Stop to edit' } : msg
+      ));
+      
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // If user clicked the Stop button during the 3 seconds
+      if (controller.signal.aborted) {
+        setMessages(currentHist); // Remove the pending messages
+        if (overrideQuery === null) setQuery(q); // Put the text back in the box so they can edit
+        setLoading(false);
+        return; // Exit immediately, saving API cost!
+      }
+
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempAssistantId ? { ...msg, active_agent: 'Initializing...' } : msg
+      ));
+
       const res = await fetch(`${API_URL}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -191,14 +211,26 @@ export default function ChatView({
     <div className="w-full">
       <form onSubmit={handleSend} className="flex items-center gap-3 w-full">
         <div className="flex-1 relative group">
-          <input 
+          {/* 
+            OPTIMIZATION #8 (UI/UX): Enter Key Behavior
+            Changed from <input> to <textarea> to allow multiline questions.
+            Pressing Enter simply adds a new line. The form is ONLY submitted
+            when the user clicks the physical Send button.
+          */}
+          <textarea 
             ref={inputRef} 
-            type="text" 
             value={query} 
             onChange={e => setQuery(e.target.value)} 
+            onKeyDown={e => {
+              // Prevent default enter behavior only if we want to force button click
+              // Actually, default textarea behavior IS to add a newline.
+              // We just do nothing here to let it add a newline!
+            }}
             placeholder="Ask SDF Policy Agent..." 
             disabled={loading} 
-            className="input-field w-full text-base py-3.5 px-5 bg-white/5 border-white/10 focus:border-brand-500/50 transition-all rounded-2xl" 
+            rows={query.split('\n').length > 3 ? 3 : query.split('\n').length || 1}
+            style={{ minHeight: '52px', resize: 'none' }}
+            className="input-field w-full text-base py-3.5 px-5 pr-14 bg-white/5 border-white/10 focus:border-brand-500/50 transition-all rounded-2xl custom-scrollbar" 
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8">
             {loading && (
@@ -222,10 +254,20 @@ export default function ChatView({
             </button>
           </div>
         </div>
+        
+        {/* 
+          OPTIMIZATION #7 (Spam Prevention): 
+          The Send button is completely disabled while loading (isGenerating).
+          Users can only send a new query after the current one finishes or is stopped.
+        */}
         <button 
           type="submit" 
           disabled={loading || !query.trim()} 
-          className="btn-primary w-14 h-14 flex items-center justify-center rounded-2xl shadow-lg shadow-brand-600/20 active:scale-95 transition-transform shrink-0"
+          className={`w-14 h-[52px] flex items-center justify-center rounded-2xl shadow-lg transition-all shrink-0 self-end ${
+            loading || !query.trim() 
+              ? 'bg-dark-600 text-slate-500 border border-white/5 shadow-none cursor-not-allowed' 
+              : 'btn-primary shadow-brand-600/20 active:scale-95'
+          }`}
         >
           <Send className="w-6 h-6 ml-0.5" /> 
         </button>
