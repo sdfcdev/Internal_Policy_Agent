@@ -100,6 +100,18 @@ def get_vectorstore():
         )
     return _vectorstore
 
+_semantic_cache = None
+def get_semantic_cache():
+    global _semantic_cache
+    if _semantic_cache is None:
+        logger.info("Initializing Semantic Cache in ChromaDB…")
+        _semantic_cache = Chroma(
+            collection_name="semantic_cache",
+            embedding_function=get_embeddings(),
+            persist_directory=str(CHROMA_DIR),
+        )
+    return _semantic_cache
+
 def get_llm(model_name: str = "gemini-2.0-flash"):
     """Returns a Gemini model. Optimized for gemini-2.0-flash."""
     key = os.getenv("GOOGLE_API_KEY")
@@ -223,13 +235,23 @@ class AgentState(TypedDict):
 # ─────────────────────────────────────────────
 
 def researcher_node(state: AgentState) -> AgentState:
-    """Researcher Agent: Finds relevant chunks from ChromaDB."""
+    """Researcher Agent: Finds relevant chunks from ChromaDB and applies Distance Guardrail."""
     logger.info("[RESEARCHER] Finding relevant document chunks…")
     vs = get_vectorstore()
-    docs = vs.similarity_search(state["query"], k=5)
-    chunks = [doc.page_content for doc in docs]
-    if not chunks:
-        chunks = ["No relevant documents found in the knowledge base."]
+    
+    # 1. Use similarity_search_with_score to evaluate document relevance
+    results = vs.similarity_search_with_score(state["query"], k=5)
+    
+    # 2. Distance Threshold Guardrail (Blocks off-topic queries locally)
+    DISTANCE_THRESHOLD = 0.65
+    
+    if not results or results[0][1] > DISTANCE_THRESHOLD:
+        best_dist = results[0][1] if results else "N/A"
+        logger.warning(f"[RESEARCHER] GUARDRAIL REJECT! Best match distance {best_dist} exceeds threshold. Query is off-topic.")
+        return {**state, "retrieved_chunks": ["GUARDRAIL_REJECT"], "current_agent": "Researcher"}
+        
+    logger.info(f"[RESEARCHER] Query accepted. Best chunk distance: {results[0][1]:.4f}")
+    chunks = [doc.page_content for doc, score in results]
     return {**state, "retrieved_chunks": chunks, "current_agent": "Researcher"}
 
 # OPTIMIZATION #1 (Architecture): Compliance Agent has been removed.
@@ -241,6 +263,15 @@ def researcher_node(state: AgentState) -> AgentState:
 def communicator_node(state: AgentState) -> AgentState:
     """Communicator Agent: Uses Gemini Flash for high-speed response drafting."""
     logger.info("[COMMUNICATOR] Drafting response with Gemini 2.0 Flash…")
+    
+    # Intercept Guardrail Rejects to save LLM cost
+    if state["retrieved_chunks"] and state["retrieved_chunks"][0] == "GUARDRAIL_REJECT":
+        return {
+            **state,
+            "draft_response": "I apologize, but this system is restricted to answering questions based strictly on the bank's internal documents and HR policies. I could not find any relevant information for your query.",
+            "current_agent": "Communicator"
+        }
+        
     llm = get_llm("gemini-2.0-flash")
     context = "\n\n---\n\n".join(state["retrieved_chunks"])
     history = state.get("history", "")
@@ -275,6 +306,17 @@ def communicator_node(state: AgentState) -> AgentState:
 
 def reviewer_node(state: AgentState) -> AgentState:
     """Reviewer Agent: Dynamic Model Fallback - Flash first, Pro on escalation."""
+    
+    # Bypass review if the query was rejected locally by the Guardrail
+    if state["retrieved_chunks"] and state["retrieved_chunks"][0] == "GUARDRAIL_REJECT":
+        logger.info("[REVIEWER] Skipping review due to Guardrail Reject.")
+        return {
+            **state,
+            "hallucination_check": "pass", # Force pass to exit the LangGraph loop immediately
+            "accuracy_score": "Rejected",
+            "reviewer_feedback": "Blocked by Distance Threshold Guardrail.",
+            "current_agent": "Reviewer"
+        }
 
     # OPTIMIZATION #4 (Cost): Dynamic Model Fallback.
     # - First attempt (rewrite_count == 0): Use cheap Gemini Flash for review.
@@ -334,9 +376,18 @@ def audit_node(state: AgentState) -> AgentState:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO AuditTrail (EmployeeID, SessionID, QueryText, AIResponse, IsSaved) VALUES (?, ?, ?, ?, ?)",
                            state["employee_id"], state.get("session_id", ""), state["query"], final, 1 if state.get("save_chat") else 0)
-            cursor.execute("INSERT INTO QueryCache (QueryText, AIResponse, Accuracy) VALUES (?, ?, ?)",
-                           state["query"].strip().lower(), final, state.get("accuracy_score", "0%"))
             
+            # Save to Semantic Cache
+            try:
+                sc = get_semantic_cache()
+                sc.add_texts(
+                    texts=[state["query"]],
+                    metadatas=[{"answer": final, "accuracy": state.get("accuracy_score", "0%"), "source": "semantic_cache"}],
+                    ids=[str(uuid.uuid4())]
+                )
+            except Exception as e:
+                logger.error(f"Failed to update semantic cache: {e}")
+                
             # Intelligence Audit (Log ONLY if multiple attempts were needed)
             if state.get("rewrite_count", 0) > 0:
                 model_info = "Gemini 1.5 Flash (Writer) | Gemini 1.5 Pro (Reviewer)"
@@ -428,25 +479,35 @@ async def stream_chat(request: ChatRequest):
             yield "data: [DONE]\n\n"
         return StreamingResponse(greeting_gen(), media_type="text/event-stream")
 
-    # 2. Check Cache
-    conn = get_db_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT AIResponse, Accuracy FROM QueryCache WHERE QueryText = ?", request.query.strip().lower())
-            row = cursor.fetchone()
-            if row:
+    # 2. Check Semantic Cache
+    try:
+        sc = get_semantic_cache()
+        results = sc.similarity_search_with_score(request.query, k=1)
+        if results:
+            doc, distance = results[0]
+            # Lower distance means higher semantic similarity. Threshold 0.15 is very strict.
+            if distance < 0.15:
+                logger.info(f"SEMANTIC CACHE HIT! Distance: {distance:.4f}")
+                ai_response = doc.metadata.get("answer", "")
+                accuracy_score = doc.metadata.get("accuracy", "Cached")
+                
                 # Save to AuditTrail so it exists if toggled later
-                is_saved = 1 if request.save_chat else 0
-                cursor.execute("INSERT INTO AuditTrail (EmployeeID, SessionID, QueryText, AIResponse, IsSaved) VALUES (?, ?, ?, ?, ?)",
-                               request.employee_id, request.session_id, request.query, row[0], is_saved)
-                conn.commit()
+                conn = get_db_connection()
+                if conn:
+                    try:
+                        cursor = conn.cursor()
+                        is_saved = 1 if request.save_chat else 0
+                        cursor.execute("INSERT INTO AuditTrail (EmployeeID, SessionID, QueryText, AIResponse, IsSaved) VALUES (?, ?, ?, ?, ?)",
+                                       request.employee_id, request.session_id, request.query, ai_response, is_saved)
+                        conn.commit()
+                    finally: conn.close()
                 
                 async def cache_gen():
-                    yield f"data: {json.dumps({'agent': 'Cache', 'status': 'done', 'response': row[0], 'accuracy_score': row[1], 'hallucination_check': 'pass'})}\n\n"
+                    yield f"data: {json.dumps({'agent': 'Semantic Cache', 'status': 'done', 'response': ai_response, 'accuracy_score': accuracy_score, 'hallucination_check': 'pass'})}\n\n"
                     yield "data: [DONE]\n\n"
                 return StreamingResponse(cache_gen(), media_type="text/event-stream")
-        finally: conn.close()
+    except Exception as e:
+        logger.warning(f"Semantic Cache check failed: {e}")
 
     initial_state = {
         "query": request.query, "employee_id": request.employee_id, "session_id": request.session_id, "save_chat": request.save_chat,
@@ -513,9 +574,19 @@ async def upload_pdf(
                 cursor = conn.cursor()
                 cursor.execute("INSERT INTO KnowledgeDocuments (Filename, Department, StartDate, ExpireDate, AdminID) VALUES (?, ?, ?, ?, ?)",
                                file.filename, department, start_date, expire_date, admin_id)
-                cursor.execute("TRUNCATE TABLE QueryCache")
                 conn.commit()
             finally: conn.close()
+            
+        # Flush Semantic Cache since knowledge base changed
+        try:
+            sc = get_semantic_cache()
+            sc._client.delete_collection("semantic_cache")
+            global _semantic_cache
+            _semantic_cache = None
+            get_semantic_cache() # Re-initialize empty cache
+            logger.info("Semantic Cache flushed due to document upload.")
+        except Exception as e:
+            logger.warning(f"Could not flush semantic cache: {e}")
 
         return {"message": "Success", "filename": file.filename, "chunks_added": len(chunks), "department": department}
     except Exception as e:

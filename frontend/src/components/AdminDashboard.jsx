@@ -50,6 +50,9 @@ export default function AdminDashboard({ user, role }) {
   const [editStart, setEditStart]       = useState('');
   const [editExpire, setEditExpire]     = useState('');
 
+  // Department filter for documents list
+  const [docFilterDept, setDocFilterDept] = useState('All');
+
   // Expand state for chunks
   const [expandedDocs, setExpandedDocs] = useState({});
 
@@ -143,6 +146,14 @@ export default function AdminDashboard({ user, role }) {
   async function handleUpload(e) {
     e.preventDefault();
     if (!selectedFile || uploading) return;
+    
+    // Validate file size (Max 15MB)
+    const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB in bytes
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setError(`File is too large (${(selectedFile.size / (1024*1024)).toFixed(1)}MB). Maximum allowed size is 15MB. Please split the document.`);
+      return;
+    }
+
     setUploading(true);
     setError('');
     setResult(null);
@@ -405,7 +416,7 @@ export default function AdminDashboard({ user, role }) {
             {result && <div className="mt-4 flex items-start gap-2.5 glass-card border-emerald-500/30 bg-emerald-900/10 px-4 py-3"><CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" /><div><p className="text-sm font-semibold text-emerald-300 break-words">{result.message}</p></div></div>}
 
             <button onClick={handleUpload} disabled={!selectedFile || uploading} className="btn-primary w-full mt-auto mt-4 flex items-center justify-center gap-2 shrink-0">
-              {uploading ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</> : <><UploadCloud className="w-4 h-4" /> Ingest into Knowledge Base</>}
+              {uploading ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</> : <><UploadCloud className="w-4 h-4" /> Upload Document</>}
             </button>
           </div>
 
@@ -430,7 +441,7 @@ export default function AdminDashboard({ user, role }) {
                    {role === 'master' && (
                      <button 
                        onClick={() => setLogView(logView === 'document' ? 'intelligence' : 'document')}
-                       className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all border ${
+                       className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all border ${
                          logView === 'document' 
                            ? 'bg-purple-600/10 text-purple-400 border-purple-500/30 hover:bg-purple-600 hover:text-white' 
                            : 'bg-brand-600/10 text-brand-400 border-brand-500/30 hover:bg-brand-600 hover:text-white'
@@ -686,14 +697,49 @@ export default function AdminDashboard({ user, role }) {
                 <AlignLeft className="w-5 h-5 text-emerald-400"/>
                 <h2 className="text-base font-semibold text-white">Stored Knowledge by Document</h2>
              </div>
-             <span className="text-xs bg-dark-400 text-slate-300 px-3 py-1 rounded-full border border-white/10 font-mono">Total Embedded Chunks: {docCount ?? 0}</span>
+             <div className="flex items-center gap-3">
+               <select 
+                  value={docFilterDept} 
+                  onChange={e => setDocFilterDept(e.target.value)} 
+                  className="input-field py-1 px-3 text-xs bg-dark-900 border-white/5 rounded-lg text-slate-300 focus:border-emerald-500/50"
+               >
+                  <option value="All">All Departments</option>
+                  <option value="General">General / Other</option>
+                  <option value="AUDIT">AUDIT</option>
+                  <option value="COMPLIANCE">COMPLIANCE</option>
+                  <option value="CREDIT AND LEASING">CREDIT AND LEASING</option>
+                  <option value="FINANCE">FINANCE</option>
+                  <option value="GOLD LOAN">GOLD LOAN</option>
+                  <option value="HR">HR</option>
+                  <option value="IT">IT</option>
+                  <option value="LEGAL">LEGAL</option>
+                  <option value="MARKETING">MARKETING</option>
+                  <option value="OPERATION">OPERATION</option>
+                  <option value="RECOVERY">RECOVERY</option>
+                  <option value="RISK">RISK</option>
+               </select>
+               <span className="text-xs bg-dark-400 text-slate-300 px-3 py-1 rounded-full border border-white/10 font-mono">Total Embedded Chunks: {docCount ?? 0}</span>
+             </div>
            </div>
            
            <div className="space-y-4 w-full block">
              {documents.length === 0 ? (
                  <p className="text-sm text-slate-500 text-center py-6">No documents tracked.</p>
              ) : (
-                 documents.map((doc) => {
+                 documents.filter(doc => {
+                    if (docFilterDept === 'All') return true;
+                    // Check by document department, or fallback to checking its chunks
+                    if (doc.department && doc.department !== docFilterDept) return false;
+                    
+                    const docChunks = chunks.filter(c => 
+                       c.metadata?.source_filename === doc.filename ||
+                       (c.metadata?.source && c.metadata.source.endsWith(doc.filename))
+                    );
+                    if (docChunks.length > 0 && docChunks[0].metadata?.department && docChunks[0].metadata.department !== docFilterDept) {
+                        return false;
+                    }
+                    return true;
+                 }).map((doc) => {
                      // Check matching source filenames robustly
                      const docChunks = chunks.filter(c => 
                         c.metadata?.source_filename === doc.filename ||

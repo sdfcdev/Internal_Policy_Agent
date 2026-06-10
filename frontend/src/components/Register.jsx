@@ -84,7 +84,7 @@ export default function Register({ onBack, onComplete }) {
             </div>
             <div>
               <label className="block text-[13px] text-slate-400 mb-1">Preferred Display Name</label>
-              <input type="text" value={name} onChange={e=>setName(e.target.value)} required className="input-field py-2.5 text-base w-full" placeholder="e.g. Manoj" />
+              <input type="text" value={name} onChange={e=>setName(e.target.value)} required className="input-field py-2.5 text-base w-full" />
             </div>
             <div>
               <label className="block text-[13px] text-slate-400 mb-1">Password</label>
@@ -148,7 +148,7 @@ export default function Register({ onBack, onComplete }) {
           {error && <div className="text-xs text-red-400 bg-red-900/20 border border-red-500/30 p-2 rounded">{error}</div>}
           
           <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 mt-2 rounded-lg font-medium shadow-sm transition">
-            {loading ? 'Processing...' : 'Register Account'}
+            {loading ? 'Processing...' : 'Register'}
           </button>
           
           <div className="text-center mt-2">

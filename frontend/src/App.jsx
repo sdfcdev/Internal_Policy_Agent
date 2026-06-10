@@ -233,7 +233,7 @@ export default function App() {
         ${messages.map(msg => `
           <div style="margin-bottom: 24px; padding: 16px; border-radius: 12px; ${msg.role === 'user' ? 'background: #f8fafc; border: 1px solid #e2e8f0;' : 'background: #ffffff; border-left: 4px solid #8b5cf6; border-top: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;'}">
             <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px; display: flex; justify-content: space-between;">
-              <span style="color: ${msg.role === 'user' ? '#3b82f6' : '#8b5cf6'}">${msg.role === 'user' ? (user?.preferred_name || user?.name || 'User') : 'SDF AI Copilot'}</span>
+              <span style="color: ${msg.role === 'user' ? '#3b82f6' : '#8b5cf6'}">${msg.role === 'user' ? (user?.preferred_name || user?.name || 'User') : 'Internal Policy Agent'}</span>
               <span style="font-size: 12px; color: #94a3b8; font-weight: normal;">${msg.time || ''}</span>
             </div>
             <div style="white-space: pre-wrap; font-size: 14px; color: #334155; line-height: 1.6;">${msg.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>

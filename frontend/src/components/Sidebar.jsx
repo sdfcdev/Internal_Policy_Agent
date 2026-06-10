@@ -112,8 +112,7 @@ export default function Sidebar({
           className="h-10 w-auto object-contain brightness-110 contrast-110"
         />
         <div className={`mt-4 text-center transition-all duration-300 ${isSidebarExpanded ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden m-0'}`}>
-          <p className="text-base font-semibold text-white tracking-wide whitespace-nowrap">SDF COPILOT</p>
-          <p className="text-sm text-slate-500 font-medium whitespace-nowrap">Internal Policy Agent</p>
+          <p className="text-lg font-black text-slate-300 tracking-wider whitespace-nowrap">Internal Policy Agent</p>
         </div>
         {activeView === 'chat' && (
           <button 
@@ -131,9 +130,9 @@ export default function Sidebar({
         <div className={`px-4 py-3 border-b border-white/5 bg-brand-600/5 transition-opacity duration-300 ${isSidebarExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none hidden'}`}>
            <button 
              onClick={() => onViewChange('admin')}
-             className="w-full py-2.5 bg-dark-900 border border-white/10 rounded-xl text-[10px] font-black text-brand-400 tracking-widest uppercase hover:bg-brand-600 hover:text-white transition-all shadow-lg whitespace-nowrap"
+             className="w-full py-2.5 bg-dark-900 border border-white/10 rounded-xl text-xs font-black text-brand-400 tracking-wide hover:bg-brand-600 hover:text-white transition-all shadow-lg whitespace-nowrap"
            >
-             SWITCH TO ADMIN DASHBOARD
+             Switch to Admin View
            </button>
         </div>
       )}
@@ -320,9 +319,9 @@ export default function Sidebar({
            <div className="w-full px-2">
               <button 
                 onClick={() => onViewChange('chat')}
-                className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-[10px] font-black tracking-[0.2em] uppercase transition-all shadow-xl shadow-brand-600/20"
+                className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-black tracking-wide transition-all shadow-xl shadow-brand-600/20"
               >
-                SWITCH TO AI COPILOT
+                Switch to Agent View
               </button>
            </div>
         </div>

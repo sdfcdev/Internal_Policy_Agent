@@ -4,7 +4,7 @@ export const API_URL = import.meta.env.VITE_API_URL || `http://${window.location
 
 const API = axios.create({
   baseURL: API_URL,
-  timeout: 120_000,
+  timeout: 600_000, // 10 minutes to allow large PDFs to parse
 });
 
 export async function sendChat(query, employeeId) {
