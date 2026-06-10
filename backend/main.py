@@ -185,6 +185,8 @@ def ensure_audit_table():
         except: pass
         try: cursor.execute("ALTER TABLE AuditTrail ADD PinnedAt DATETIME NULL")
         except: pass
+        try: cursor.execute("ALTER TABLE AuditTrail ADD SessionTitle NVARCHAR(255) NULL")
+        except: pass
         
         conn.commit()
     except pyodbc.Error as exc:
