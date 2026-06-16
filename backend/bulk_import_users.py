@@ -32,6 +32,8 @@ def get_db_connection():
         except: continue
     return None
 
+import csv
+
 def import_users():
     conn = get_db_connection()
     if not conn:
@@ -42,9 +44,21 @@ def import_users():
     success_count = 0
     skip_count = 0
 
-    print(f"Starting import for {len(EPF_LIST)} users...")
+    epfs_to_add = EPF_LIST.copy()
+    if os.path.exists("users.csv"):
+        print("Reading from users.csv...")
+        with open("users.csv", "r", encoding="utf-8-sig") as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if row and row[0].strip():
+                    epfs_to_add.append(row[0].strip())
+    
+    # Remove duplicates and header if present
+    epfs_to_add = list(set([e for e in epfs_to_add if e.lower() not in ('epf', 'employee', 'id', 'emp_no')]))
 
-    for epf in EPF_LIST:
+    print(f"Starting import for {len(epfs_to_add)} users...")
+
+    for epf in epfs_to_add:
         try:
             # Check if the user already exists in the database
             cursor.execute("SELECT COUNT(*) FROM Accounts WHERE Username = ?", epf)
