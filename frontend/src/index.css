@@ -37,7 +37,7 @@ body {
   .btn-primary {
     @apply bg-brand-600 hover:bg-brand-500 active:bg-brand-700
            text-white font-semibold rounded-xl px-5 py-2.5
-           transition-all duration-200 shadow-lg shadow-brand-900/40
+           transition-colors duration-200
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-ghost {
@@ -89,9 +89,10 @@ html.light-theme {
   background-color: #f0f0f5; /* Lightened version of inverted dark bg */
 }
 
-/* Ensure images retain their original colors */
+/* Ensure images and buttons retain their original colors */
 html.light-theme img,
-html.light-theme video {
+html.light-theme video,
+html.light-theme .btn-primary {
   filter: invert(1) hue-rotate(180deg);
 }
 

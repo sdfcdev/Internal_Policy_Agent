@@ -189,7 +189,7 @@ export default function Sidebar({
                         }`}
                         onClick={() => {
                           const restoredMsgs = [];
-                          qs.forEach((h) => {
+                          [...qs].reverse().forEach((h) => {
                              const isGreeting = h.response.startsWith('Hi ') && h.response.includes('How can I help you');
                              const dateStr = h.created_at.endsWith('Z') ? h.created_at : h.created_at + 'Z';
                              restoredMsgs.push({ id: h.id + "_u", role: 'user', content: h.query, time: new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
