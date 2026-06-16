@@ -69,6 +69,7 @@ export default function AdminDashboard({ user, role }) {
   const [editAccPreferredName, setEditAccPreferredName] = useState('');
   const [editAccEmpNum, setEditAccEmpNum] = useState('');
   const [editAccPassword, setEditAccPassword] = useState('');
+  const [accSearch, setAccSearch] = useState('');
 
   const fileInputRef = useRef(null);
 
@@ -594,6 +595,16 @@ export default function AdminDashboard({ user, role }) {
                 <Users className="w-5 h-5 text-indigo-400"/>
                 <h2 className="text-base font-semibold text-white">User & Admin Management</h2>
               </div>
+              <div className="relative w-full max-w-[250px]">
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                 <input 
+                   type="text"
+                   placeholder="Search Emp No or Name..."
+                   value={accSearch}
+                   onChange={e => setAccSearch(e.target.value)}
+                   className="input-field w-full pl-9 py-1.5 text-xs bg-dark-900/50 border-white/5 rounded-lg"
+                 />
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
                <div className="col-span-1 bg-dark-800/50 p-4 rounded-xl border border-white/5 shadow-inner shrink-0">
@@ -630,7 +641,12 @@ export default function AdminDashboard({ user, role }) {
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-white/5">
-                        {accounts.map(acc => {
+                        {accounts.filter(acc => {
+                           if (!accSearch) return true;
+                           const searchLower = accSearch.toLowerCase();
+                           return (acc.username && acc.username.toLowerCase().includes(searchLower)) ||
+                                  (acc.name && acc.name.toLowerCase().includes(searchLower));
+                        }).map(acc => {
                            const isEditing = editingAcc === acc.username;
                            return (
                            <tr key={acc.id} className="hover:bg-white/5">
@@ -682,7 +698,12 @@ export default function AdminDashboard({ user, role }) {
                               </td>
                            </tr>
                         )})}
-                        {accounts.length === 0 && <tr><td colSpan="4" className="text-center py-4 text-slate-500">No accounts found.</td></tr>}
+                        {accounts.filter(acc => {
+                           if (!accSearch) return true;
+                           const searchLower = accSearch.toLowerCase();
+                           return (acc.username && acc.username.toLowerCase().includes(searchLower)) ||
+                                  (acc.name && acc.name.toLowerCase().includes(searchLower));
+                        }).length === 0 && <tr><td colSpan="4" className="text-center py-4 text-slate-500">No accounts found.</td></tr>}
                      </tbody>
                   </table>
                </div>

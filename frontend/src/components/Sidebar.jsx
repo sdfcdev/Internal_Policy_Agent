@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, MessageSquare, DownloadCloud, Edit2, X, Check, ChevronDown, PanelLeftClose, PanelLeftOpen, Settings, Pin, Trash2, MoreVertical } from 'lucide-react';
+import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, MessageSquare, DownloadCloud, Edit2, X, Check, ChevronDown, PanelLeftClose, PanelLeftOpen, Settings, Pin, Trash2, MoreVertical, Eye } from 'lucide-react';
 import { renameHistorySession, togglePinSession, deleteSession, API_URL } from '../api';
 
 const NAV = [
@@ -112,7 +112,7 @@ export default function Sidebar({
           className="h-10 w-auto object-contain brightness-110 contrast-110"
         />
         <div className={`mt-4 text-center transition-all duration-300 ${isSidebarExpanded ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden m-0'}`}>
-          <p className="text-lg font-black text-slate-300 tracking-wider whitespace-nowrap">Internal Policy Agent</p>
+          <p className="font-logo text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-300 via-indigo-300 to-purple-300 tracking-tight whitespace-nowrap">Internal Policy Agent</p>
         </div>
         {activeView === 'chat' && (
           <button 
@@ -130,7 +130,7 @@ export default function Sidebar({
         <div className={`px-4 py-3 border-b border-white/5 bg-brand-600/5 transition-opacity duration-300 ${isSidebarExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none hidden'}`}>
            <button 
              onClick={() => onViewChange('admin')}
-             className="w-full py-2.5 bg-dark-900 border border-white/10 rounded-xl text-xs font-black text-brand-400 tracking-wide hover:bg-brand-600 hover:text-white transition-all shadow-lg whitespace-nowrap"
+             className="true-color w-full py-2.5 bg-white border border-[#5D419B] rounded-xl text-xs font-black text-[#5D419B] tracking-wide hover:bg-[#F3E8FF] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg whitespace-nowrap"
            >
              Switch to Admin View
            </button>
@@ -143,7 +143,7 @@ export default function Sidebar({
           <div className="p-3 border-b border-white/5">
             <button 
                onClick={() => { if(onNewChat) onNewChat(); }}
-               className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-600/20 text-brand-300 hover:bg-brand-600 hover:text-white border border-brand-500/30 rounded-xl transition-all font-bold text-sm shadow-sm tracking-wide"
+               className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all font-bold text-sm shadow-sm tracking-wide"
             >
                <BotMessageSquare className="w-4 h-4" />
                New chat
@@ -281,7 +281,7 @@ export default function Sidebar({
                           {docsInDept.map(doc => (
                             <a 
                               key={doc.id} 
-                              href={`${API_URL}/download/${doc.filename}`} 
+                              href={`${API_URL}/uploads/${doc.filename}`} 
                               target="_blank"  
                               rel="noreferrer"
                               className="flex items-center gap-3 p-3 hover:bg-brand-600/10 transition-all group border-b border-white/5 last:border-0"
@@ -289,8 +289,8 @@ export default function Sidebar({
                               <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
                                 <FileText className="w-3.5 h-3.5 text-emerald-500/60" />
                               </div>
-                              <span className="text-[11px] text-slate-400 truncate flex-1 font-semibold group-hover:text-slate-200">{doc.filename}</span>
-                              <DownloadCloud className="w-3.5 h-3.5 text-slate-600 group-hover:text-emerald-400 transition-colors" />
+                              <span className="text-[11px] text-slate-400 truncate flex-1 font-semibold group-hover:text-slate-200" title={doc.filename}>{doc.filename}</span>
+                              <Eye className="w-3.5 h-3.5 text-slate-600 group-hover:text-emerald-400 transition-colors" />
                             </a>
                           ))}
                         </div>
@@ -319,7 +319,7 @@ export default function Sidebar({
            <div className="w-full px-2">
               <button 
                 onClick={() => onViewChange('chat')}
-                className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-black tracking-wide transition-all shadow-xl shadow-brand-600/20"
+                className="btn-primary w-full py-3 rounded-xl text-xs font-black tracking-wide shadow-xl shadow-brand-600/20"
               >
                 Switch to Agent View
               </button>

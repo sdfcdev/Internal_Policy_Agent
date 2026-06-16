@@ -18,6 +18,7 @@ import aiofiles
 import bcrypt
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Path as APIPath
 from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -70,6 +71,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount the uploads directory to serve files statically so users can view PDFs
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # ─────────────────────────────────────────────
 # Shared Singletons

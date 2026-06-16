@@ -39,7 +39,7 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
       <div className="bg-dark-900/95 backdrop-blur-md p-8 w-full max-w-sm glow-ring animate-fade-in z-10 relative rounded-2xl border border-dark-700 shadow-2xl">
         <div className="text-center mb-6">
           <img src="/logo.png" alt="SDF Logo" className="h-10 w-auto mx-auto mb-4 brightness-110" />
-          <h2 className="text-2xl font-medium text-white tracking-tight">Internal Policy Agent</h2>
+          <h2 className="text-2xl font-normal text-white tracking-tight">Internal Policy Agent</h2>
           <p className="text-sm text-slate-400 mt-1">Authorized Staff Access Only</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
@@ -52,7 +52,7 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
             <input type="password" value={password} onChange={e=>setPassword(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full" />
           </div>
           <div className="flex justify-between items-center mt-2">
-            <button type="button" onClick={onRegister} className="text-xs text-brand-400 hover:text-brand-300 underline transition">New Staff? Register</button>
+            <button type="button" onClick={onRegister} className="true-color text-xs text-[#5D419B] font-bold hover:opacity-80 underline transition">New Staff? Register</button>
             <button type="button" onClick={onForgotPassword} className="text-xs text-slate-400 hover:text-white underline transition">Forgot Password?</button>
           </div>
           {error && <div className="text-xs text-red-400 bg-red-900/20 border border-red-500/30 p-2 rounded">{error}</div>}
@@ -61,7 +61,7 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
           </button>
           
           <div className="text-center mt-8">
-            <p className="text-[13px] font-medium text-[#ff6b6b] tracking-wide">
+            <p className="true-color text-[13px] font-medium text-[#B7371F] tracking-wide">
               IT Help Desk Support : 2626
             </p>
           </div>
