@@ -44,28 +44,40 @@ def import_users():
     success_count = 0
     skip_count = 0
 
-    epfs_to_add = EPF_LIST.copy()
+    users_to_add = [] # List of tuples: (epf, name)
+    
+    # Add hardcoded EPF_LIST with default names
+    for epf in EPF_LIST:
+        users_to_add.append((epf, f"Staff {epf}"))
+
     if os.path.exists("users.csv"):
         print("Reading from users.csv...")
         with open("users.csv", "r", encoding="utf-8-sig") as f:
             reader = csv.reader(f)
             for row in reader:
                 if row and row[0].strip():
-                    epfs_to_add.append(row[0].strip())
+                    epf = row[0].strip()
+                    if epf.lower() in ('epf', 'employee', 'id', 'emp_no'):
+                        continue
+                    name = row[1].strip() if len(row) > 1 and row[1].strip() else f"Staff {epf}"
+                    users_to_add.append((epf, name))
     
-    # Remove duplicates and header if present
-    epfs_to_add = list(set([e for e in epfs_to_add if e.lower() not in ('epf', 'employee', 'id', 'emp_no')]))
+    # Remove duplicates based on EPF
+    unique_users = {}
+    for epf, name in users_to_add:
+        if epf not in unique_users:
+            unique_users[epf] = name
 
-    print(f"Starting import for {len(epfs_to_add)} users...")
+    print(f"Starting import for {len(unique_users)} users...")
 
-    for epf in epfs_to_add:
+    for epf, name in unique_users.items():
         try:
             # Check if the user already exists in the database
             cursor.execute("SELECT COUNT(*) FROM Accounts WHERE Username = ?", epf)
             if cursor.fetchone()[0] == 0:
                 cursor.execute(
                     "INSERT INTO Accounts (Username, Password, Role, Name, IsRegistered) VALUES (?, NULL, ?, ?, 0)",
-                    epf, DEFAULT_ROLE, f"Staff {epf}"
+                    epf, DEFAULT_ROLE, name
                 )
                 success_count += 1
             else:
