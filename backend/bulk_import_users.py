@@ -45,10 +45,6 @@ def import_users():
     skip_count = 0
 
     users_to_add = [] # List of tuples: (epf, name)
-    
-    # Add hardcoded EPF_LIST with default names
-    for epf in EPF_LIST:
-        users_to_add.append((epf, f"Staff {epf}"))
 
     if os.path.exists("users.csv"):
         print("Reading from users.csv...")
