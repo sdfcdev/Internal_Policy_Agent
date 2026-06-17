@@ -8,7 +8,7 @@ load_dotenv()
 MSSQL_SERVER = os.getenv("MSSQL_SERVER")
 MSSQL_DATABASE = os.getenv("MSSQL_DATABASE")
 MSSQL_USER = os.getenv("MSSQL_USER")
-MSSQL_PASS = os.getenv("MSSQL_PASSWORD")
+MSSQL_PASS = os.getenv("MSSQL_PASS") or os.getenv("MSSQL_PASSWORD")
 
 # ────────────────────────────────────────────────────────────
 # 1. Add your Employee Numbers to the list below (I have added a few as examples)
