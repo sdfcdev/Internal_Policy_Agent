@@ -18,7 +18,7 @@ EPF_LIST = [
 ]
 
 DEFAULT_PASSWORD = "SDF@2025" # Common default password for everyone
-DEFAULT_ROLE = "staff"
+DEFAULT_ROLE = "user"
 
 def get_db_connection():
     drivers = ["{ODBC Driver 17 for SQL Server}", "{ODBC Driver 18 for SQL Server}", "{SQL Server}"]
