@@ -644,7 +644,7 @@ export default function AdminDashboard({ user, role }) {
                         {accounts.filter(acc => {
                            if (!accSearch) return true;
                            const searchLower = accSearch.toLowerCase();
-                           return (acc.username && acc.username.toLowerCase().includes(searchLower)) ||
+                           return (acc.username && acc.username.toLowerCase().startsWith(searchLower)) ||
                                   (acc.name && acc.name.toLowerCase().includes(searchLower));
                         }).map(acc => {
                            const isEditing = editingAcc === acc.username;
@@ -701,7 +701,7 @@ export default function AdminDashboard({ user, role }) {
                         {accounts.filter(acc => {
                            if (!accSearch) return true;
                            const searchLower = accSearch.toLowerCase();
-                           return (acc.username && acc.username.toLowerCase().includes(searchLower)) ||
+                           return (acc.username && acc.username.toLowerCase().startsWith(searchLower)) ||
                                   (acc.name && acc.name.toLowerCase().includes(searchLower));
                         }).length === 0 && <tr><td colSpan="4" className="text-center py-4 text-slate-500">No accounts found.</td></tr>}
                      </tbody>
