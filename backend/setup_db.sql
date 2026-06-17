@@ -27,15 +27,23 @@ IF NOT EXISTS (
 )
 BEGIN
     CREATE TABLE dbo.Accounts (
-        ID          INT IDENTITY(1,1) PRIMARY KEY,
-        Username    NVARCHAR(100)   NOT NULL UNIQUE,
-        Password    NVARCHAR(200)   NOT NULL,
-        Role        NVARCHAR(50)    NOT NULL, -- 'master', 'admin', 'user', 'subadmin'
-        Name        NVARCHAR(150)   NULL,
-        EmpNum      NVARCHAR(100)   NULL,
-        Designation NVARCHAR(150)   NULL,
-        Department  NVARCHAR(150)   NULL,
-        CreatedAt   DATETIME        DEFAULT GETDATE()
+        ID            INT IDENTITY(1,1) PRIMARY KEY,
+        Username      NVARCHAR(100)   NOT NULL UNIQUE,
+        Password      NVARCHAR(200)   NULL,
+        Role          NVARCHAR(50)    NOT NULL, -- 'master', 'admin', 'user', 'subadmin'
+        Name          NVARCHAR(150)   NULL,
+        PreferredName NVARCHAR(100)   NULL,
+        EmpNum        NVARCHAR(100)   NULL,
+        Designation   NVARCHAR(150)   NULL,
+        Department    NVARCHAR(150)   NULL,
+        Q1            NVARCHAR(255)   NULL,
+        A1            NVARCHAR(255)   NULL,
+        Q2            NVARCHAR(255)   NULL,
+        A2            NVARCHAR(255)   NULL,
+        Q3            NVARCHAR(255)   NULL,
+        A3            NVARCHAR(255)   NULL,
+        IsRegistered  INT             DEFAULT 0,
+        CreatedAt     DATETIME        DEFAULT GETDATE()
     );
 
     PRINT 'Table Accounts created successfully.';
