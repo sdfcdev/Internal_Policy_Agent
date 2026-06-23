@@ -226,7 +226,7 @@ export default function ChatView({
               // Actually, default textarea behavior IS to add a newline.
               // We just do nothing here to let it add a newline!
             }}
-            placeholder="Ask SDF Policy Agent..." 
+            placeholder="Ask SDF Policy Assistant..." 
             disabled={loading} 
             rows={query.split('\n').length > 3 ? 3 : query.split('\n').length || 1}
             style={{ minHeight: '52px', resize: 'none' }}

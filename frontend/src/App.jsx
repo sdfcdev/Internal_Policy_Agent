@@ -39,7 +39,7 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
       <div className="bg-dark-900/95 backdrop-blur-md p-8 w-full max-w-sm glow-ring animate-fade-in z-10 relative rounded-2xl border border-dark-700 shadow-2xl">
         <div className="text-center mb-6">
           <img src="/logo.png" alt="SDF Logo" className="h-10 w-auto mx-auto mb-4 brightness-110" />
-          <h2 className="text-2xl font-normal text-white tracking-tight">Internal Policy Agent</h2>
+          <h2 className="text-2xl font-normal text-white tracking-tight">SDF Policy Assistant</h2>
           <p className="text-sm text-slate-400 mt-1">Authorized Staff Access Only</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
@@ -233,7 +233,7 @@ export default function App() {
         ${messages.map(msg => `
           <div style="margin-bottom: 24px; padding: 16px; border-radius: 12px; ${msg.role === 'user' ? 'background: #f8fafc; border: 1px solid #e2e8f0;' : 'background: #ffffff; border-left: 4px solid #8b5cf6; border-top: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;'}">
             <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px; display: flex; justify-content: space-between;">
-              <span style="color: ${msg.role === 'user' ? '#3b82f6' : '#8b5cf6'}">${msg.role === 'user' ? (user?.preferred_name || user?.name || 'User') : 'Internal Policy Agent'}</span>
+              <span style="color: ${msg.role === 'user' ? '#3b82f6' : '#8b5cf6'}">${msg.role === 'user' ? (user?.preferred_name || user?.name || 'User') : 'SDF Policy Assistant'}</span>
               <span style="font-size: 12px; color: #94a3b8; font-weight: normal;">${msg.time || ''}</span>
             </div>
             <div style="white-space: pre-wrap; font-size: 14px; color: #334155; line-height: 1.6;">${msg.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>

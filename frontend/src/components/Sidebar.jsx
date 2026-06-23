@@ -112,7 +112,7 @@ export default function Sidebar({
           className="h-10 w-auto object-contain brightness-110 contrast-110"
         />
         <div className={`mt-4 text-center transition-all duration-300 ${isSidebarExpanded ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden m-0'}`}>
-          <p className="font-logo text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-300 via-indigo-300 to-purple-300 tracking-tight whitespace-nowrap">Internal Policy Agent</p>
+          <p className="font-logo text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-300 via-indigo-300 to-purple-300 tracking-tight whitespace-nowrap">SDF Policy Assistant</p>
         </div>
         {activeView === 'chat' && (
           <button 
