@@ -24,7 +24,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 
 # LangChain / LangGraph
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_google_vertexai import ChatVertexAI, VertexAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
@@ -86,28 +86,11 @@ current_monthly_spend = 0.0 # This would ideally be in a DB table
 _embeddings = None
 _vectorstore = None
 
-def _get_google_credentials():
-    json_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-    if json_path and os.path.exists(json_path):
-        try:
-            from google.oauth2 import service_account
-            # Required scope for Vertex AI / Generative AI
-            scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-            return service_account.Credentials.from_service_account_file(json_path, scopes=scopes)
-        except Exception as e:
-            logger.error(f"Failed to load service account JSON: {e}")
-    return None
-
 def get_embeddings():
     global _embeddings
     if _embeddings is None:
-        logger.info("Initializing Google Generative AI Embeddings (gemini-embedding-001)…")
-        creds = _get_google_credentials()
-        key = os.getenv("GOOGLE_API_KEY")
-        if creds:
-            _embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001", credentials=creds)
-        else:
-            _embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001", google_api_key=key)
+        logger.info("Initializing Vertex AI Embeddings (text-embedding-004)…")
+        _embeddings = VertexAIEmbeddings(model_name="text-embedding-004", location="us-central1")
     return _embeddings
 
 def get_vectorstore():
@@ -134,23 +117,13 @@ def get_semantic_cache():
     return _semantic_cache
 
 def get_llm(model_name: str = "gemini-1.5-flash-001"):
-    """Returns a Gemini model. Optimized for gemini-1.5-flash-001."""
-    creds = _get_google_credentials()
-    key = os.getenv("GOOGLE_API_KEY")
-    logger.info(f"Connecting to Google Gemini ({model_name})…")
-    
-    if creds:
-        return ChatGoogleGenerativeAI(
-            model=model_name, 
-            credentials=creds, 
-            temperature=0.1
-        )
-    else:
-        return ChatGoogleGenerativeAI(
-            model=model_name, 
-            google_api_key=key, 
-            temperature=0.1
-        )
+    """Returns a Vertex AI Gemini model."""
+    logger.info(f"Connecting to Google Vertex AI ({model_name})…")
+    return ChatVertexAI(
+        model_name=model_name,
+        location="us-central1",
+        temperature=0.1
+    )
 
 # ─────────────────────────────────────────────
 # Database Setup (MSSQL)
