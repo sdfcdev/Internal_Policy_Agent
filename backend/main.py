@@ -116,12 +116,12 @@ def get_semantic_cache():
         )
     return _semantic_cache
 
-def get_llm(model_name: str = "gemini-1.5-flash-001"):
+def get_llm(model_name: str = "gemini-2.5-flash"):
     """Returns a Vertex AI Gemini model."""
     logger.info(f"Connecting to Google Vertex AI ({model_name})…")
     return ChatVertexAI(
         model_name=model_name,
-        location="us-central1",
+        location="global",
         temperature=0.1
     )
 
@@ -278,7 +278,7 @@ def communicator_node(state: AgentState) -> AgentState:
             "current_agent": "Communicator"
         }
         
-    llm = get_llm("gemini-1.5-flash-001")
+    llm = get_llm("gemini-2.5-flash")
     context = "\n\n---\n\n".join(state["retrieved_chunks"])
     history = state.get("history", "")
 
@@ -331,11 +331,11 @@ def reviewer_node(state: AgentState) -> AgentState:
     rewrite_count = state.get("rewrite_count", 0)
     if rewrite_count >= 2:
         # Flash has failed twice - bring in the heavy model
-        model_to_use = "gemini-1.5-pro-001"
-        logger.info("[REVIEWER] Escalating to Gemini 1.5 Pro (rewrite_count=%d)…", rewrite_count)
+        model_to_use = "gemini-2.5-pro"
+        logger.info("[REVIEWER] Escalating to Gemini 2.5 Pro (rewrite_count=%d)…", rewrite_count)
     else:
         # Default: use the cheap fast model
-        model_to_use = "gemini-1.5-flash-001"
+        model_to_use = "gemini-2.5-flash"
         logger.info("[REVIEWER] Fact-checking with Gemini 1.5 Flash (rewrite_count=%d)…", rewrite_count)
 
     llm = get_llm(model_to_use)
