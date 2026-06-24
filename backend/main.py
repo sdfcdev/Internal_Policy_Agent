@@ -133,8 +133,8 @@ def get_semantic_cache():
         )
     return _semantic_cache
 
-def get_llm(model_name: str = "gemini-2.0-flash"):
-    """Returns a Gemini model. Optimized for gemini-2.0-flash."""
+def get_llm(model_name: str = "gemini-1.5-flash"):
+    """Returns a Gemini model. Optimized for gemini-1.5-flash."""
     creds = _get_google_credentials()
     key = os.getenv("GOOGLE_API_KEY")
     logger.info(f"Connecting to Google Gemini ({model_name})…")
@@ -304,7 +304,7 @@ def communicator_node(state: AgentState) -> AgentState:
             "current_agent": "Communicator"
         }
         
-    llm = get_llm("gemini-2.0-flash")
+    llm = get_llm("gemini-1.5-flash")
     context = "\n\n---\n\n".join(state["retrieved_chunks"])
     history = state.get("history", "")
 
@@ -357,12 +357,12 @@ def reviewer_node(state: AgentState) -> AgentState:
     rewrite_count = state.get("rewrite_count", 0)
     if rewrite_count >= 2:
         # Flash has failed twice - bring in the heavy model
-        model_to_use = "gemini-2.5-pro"
-        logger.info("[REVIEWER] Escalating to Gemini 2.5 Pro (rewrite_count=%d)…", rewrite_count)
+        model_to_use = "gemini-1.5-pro"
+        logger.info("[REVIEWER] Escalating to Gemini 1.5 Pro (rewrite_count=%d)…", rewrite_count)
     else:
         # Default: use the cheap fast model
-        model_to_use = "gemini-2.0-flash"
-        logger.info("[REVIEWER] Fact-checking with Gemini 2.0 Flash (rewrite_count=%d)…", rewrite_count)
+        model_to_use = "gemini-1.5-flash"
+        logger.info("[REVIEWER] Fact-checking with Gemini 1.5 Flash (rewrite_count=%d)…", rewrite_count)
 
     llm = get_llm(model_to_use)
     context = "\n\n---\n\n".join(state["retrieved_chunks"])
