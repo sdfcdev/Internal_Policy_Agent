@@ -248,7 +248,8 @@ def researcher_node(state: AgentState) -> AgentState:
     results = vs.similarity_search_with_score(state["query"], k=5)
     
     # 2. Distance Threshold Guardrail (Blocks off-topic queries locally)
-    DISTANCE_THRESHOLD = 0.65
+    # Increased threshold for Vertex AI text-embedding-004 metric ranges
+    DISTANCE_THRESHOLD = 1.2
     
     if not results or results[0][1] > DISTANCE_THRESHOLD:
         best_dist = results[0][1] if results else "N/A"
