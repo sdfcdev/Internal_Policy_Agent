@@ -86,11 +86,26 @@ current_monthly_spend = 0.0 # This would ideally be in a DB table
 _embeddings = None
 _vectorstore = None
 
+def _get_google_credentials():
+    json_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    if json_path and os.path.exists(json_path):
+        try:
+            from google.oauth2 import service_account
+            return service_account.Credentials.from_service_account_file(json_path)
+        except Exception as e:
+            logger.error(f"Failed to load service account JSON: {e}")
+    return None
+
 def get_embeddings():
     global _embeddings
     if _embeddings is None:
         logger.info("Initializing Google Generative AI Embeddings (gemini-embedding-001)…")
-        _embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+        creds = _get_google_credentials()
+        key = os.getenv("GOOGLE_API_KEY")
+        if creds:
+            _embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001", credentials=creds)
+        else:
+            _embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001", google_api_key=key)
     return _embeddings
 
 def get_vectorstore():
@@ -118,13 +133,22 @@ def get_semantic_cache():
 
 def get_llm(model_name: str = "gemini-2.0-flash"):
     """Returns a Gemini model. Optimized for gemini-2.0-flash."""
+    creds = _get_google_credentials()
     key = os.getenv("GOOGLE_API_KEY")
     logger.info(f"Connecting to Google Gemini ({model_name})…")
-    return ChatGoogleGenerativeAI(
-        model=model_name, 
-        google_api_key=key, 
-        temperature=0.1
-    )
+    
+    if creds:
+        return ChatGoogleGenerativeAI(
+            model=model_name, 
+            credentials=creds, 
+            temperature=0.1
+        )
+    else:
+        return ChatGoogleGenerativeAI(
+            model=model_name, 
+            google_api_key=key, 
+            temperature=0.1
+        )
 
 # ─────────────────────────────────────────────
 # Database Setup (MSSQL)
