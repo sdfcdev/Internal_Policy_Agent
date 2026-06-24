@@ -91,7 +91,9 @@ def _get_google_credentials():
     if json_path and os.path.exists(json_path):
         try:
             from google.oauth2 import service_account
-            return service_account.Credentials.from_service_account_file(json_path)
+            # Required scope for Vertex AI / Generative AI
+            scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+            return service_account.Credentials.from_service_account_file(json_path, scopes=scopes)
         except Exception as e:
             logger.error(f"Failed to load service account JSON: {e}")
     return None
