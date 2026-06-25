@@ -338,14 +338,14 @@ def communicator_node(state: AgentState) -> AgentState:
 def reviewer_node(state: AgentState) -> AgentState:
     """Reviewer Agent: Dynamic Model Fallback - Flash first, Pro on escalation."""
     
-    # Bypass review if the query was rejected locally by the Guardrail
+    # Bypass review if the query was rejected locally by the Guardrail or is a follow-up
     if state["retrieved_chunks"] and state["retrieved_chunks"][0] == "GUARDRAIL_REJECT":
-        logger.info("[REVIEWER] Skipping review due to Guardrail Reject.")
+        logger.info("[REVIEWER] Skipping review due to Guardrail Reject / Follow-up bypass.")
         return {
             **state,
             "hallucination_check": "pass", # Force pass to exit the LangGraph loop immediately
-            "accuracy_score": "Rejected",
-            "reviewer_feedback": "Blocked by Distance Threshold Guardrail.",
+            "accuracy_score": "History Context",
+            "reviewer_feedback": "",
             "current_agent": "Reviewer"
         }
 
