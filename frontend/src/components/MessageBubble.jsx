@@ -176,7 +176,7 @@ export default function MessageBubble({ message, onEditSubmit, textSize = 'md', 
                    return (
                      <li key={idx} className="flex items-center gap-2 bg-brand-950/30 border border-brand-800/30 rounded-lg px-3 py-1.5">
                         <a href={`${API_URL}/uploads/${encodeURIComponent(r.file)}`} target="_blank" rel="noopener noreferrer" className="text-brand-400 hover:text-brand-300 hover:underline transition inline-flex items-center gap-1.5 font-medium text-xs">
-                          📄 {r.file}
+                          {r.file}
                         </a>
                         {pagesStr && <span className="ml-auto text-[10px] text-slate-500 tracking-wide bg-dark-700/60 px-2 py-0.5 rounded-full">{pagesStr}</span>}
                      </li>
@@ -188,29 +188,7 @@ export default function MessageBubble({ message, onEditSubmit, textSize = 'md', 
 
           {/* Meta and Copy Footer */}
           <div className="flex flex-wrap items-center gap-2 mt-3 pt-2.5 border-t border-white/10">
-            {hasMeta && (
-              <>
-                <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full border ${
-                  isPass 
-                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/40' 
-                    : 'bg-amber-950/60 text-amber-300 border-amber-700/40'
-                }`}>
-                  {isPass
-                    ? <><ShieldCheck className="w-3 h-3" /> Verified {message.accuracy_score && `· ${message.accuracy_score}`}</>
-                    : <><AlertTriangle className="w-3 h-3" /> Unverified</>
-                  }
-                </span>
-                {message.rewrite_count > 0 && (
-                  <span className="badge bg-brand-900/50 text-brand-300 border border-brand-700/40">
-                    {message.rewrite_count} rewrite{message.rewrite_count > 1 ? 's' : ''}
-                  </span>
-                )}
-                {message.active_agent === 'CacheHit' && (
-                  <span className="badge bg-indigo-900/50 text-indigo-300 border border-indigo-700/40">⚡ Cache Hit</span>
-                )}
-              </>
-            )}
-            
+
             <div className="ml-auto flex items-center gap-3">
               <button 
                 onClick={handleCopy}
