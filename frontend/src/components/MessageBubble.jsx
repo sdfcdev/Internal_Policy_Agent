@@ -166,19 +166,19 @@ export default function MessageBubble({ message, onEditSubmit, textSize = 'md', 
             dangerouslySetInnerHTML={{ __html: formattedContent || '...' }}
           />
 
-          {/* References Block per User Request */}
+          {/* References Block */}
           {references.length > 0 && (
-            <div className="mt-4 pt-3 border-t border-white/5 space-y-2">
-              <p className="text-[10px] text-slate-500 font-semibold mb-1">Sources Reference:</p>
-              <ul className="flex flex-col gap-1.5 list-disc list-inside">
+            <div className="mt-3 pt-3 border-t border-white/5">
+              <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-2">📎 Sources Reference</p>
+              <ul className="flex flex-col gap-1.5">
                  {references.map((r, idx) => {
                    const pagesStr = r.pages.size > 0 ? `(Pages: ${Array.from(r.pages).join(', ')})` : '';
                    return (
-                     <li key={idx} className="text-xs text-slate-400">
-                        <a href={`${API_URL}/uploads/${encodeURIComponent(r.file)}`} target="_blank" rel="noopener noreferrer" className="text-brand-400 hover:text-brand-300 hover:underline transition inline-flex items-center gap-1 font-medium">
+                     <li key={idx} className="flex items-center gap-2 bg-brand-950/30 border border-brand-800/30 rounded-lg px-3 py-1.5">
+                        <a href={`${API_URL}/uploads/${encodeURIComponent(r.file)}`} target="_blank" rel="noopener noreferrer" className="text-brand-400 hover:text-brand-300 hover:underline transition inline-flex items-center gap-1.5 font-medium text-xs">
                           📄 {r.file}
                         </a>
-                        {pagesStr && <span className="ml-1.5 text-[10px] opacity-70 tracking-wide">{pagesStr}</span>}
+                        {pagesStr && <span className="ml-auto text-[10px] text-slate-500 tracking-wide bg-dark-700/60 px-2 py-0.5 rounded-full">{pagesStr}</span>}
                      </li>
                    );
                  })}
@@ -187,12 +187,16 @@ export default function MessageBubble({ message, onEditSubmit, textSize = 'md', 
           )}
 
           {/* Meta and Copy Footer */}
-          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-white/10">
+          <div className="flex flex-wrap items-center gap-2 mt-3 pt-2.5 border-t border-white/10">
             {hasMeta && (
               <>
-                <span className={`badge ${isPass ? 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/40' : 'bg-amber-900/50 text-amber-300 border border-amber-700/40'}`}>
+                <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full border ${
+                  isPass 
+                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/40' 
+                    : 'bg-amber-950/60 text-amber-300 border-amber-700/40'
+                }`}>
                   {isPass
-                    ? <><ShieldCheck className="w-3 h-3" /> Verified {message.accuracy_score && `(${message.accuracy_score})`}</>
+                    ? <><ShieldCheck className="w-3 h-3" /> Verified {message.accuracy_score && `· ${message.accuracy_score}`}</>
                     : <><AlertTriangle className="w-3 h-3" /> Unverified</>
                   }
                 </span>

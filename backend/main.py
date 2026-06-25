@@ -257,7 +257,10 @@ def researcher_node(state: AgentState) -> AgentState:
         return {**state, "retrieved_chunks": ["GUARDRAIL_REJECT"], "current_agent": "Researcher"}
         
     logger.info(f"[RESEARCHER] Query accepted. Best chunk distance: {results[0][1]:.4f}")
-    chunks = [doc.page_content for doc, score in results]
+    chunks = [
+        f"[Source: {doc.metadata.get('source', 'Unknown')}, Page: {doc.metadata.get('page', '?')}]\n{doc.page_content}"
+        for doc, score in results
+    ]
     return {**state, "retrieved_chunks": chunks, "current_agent": "Researcher"}
 
 # OPTIMIZATION #1 (Architecture): Compliance Agent has been removed.
