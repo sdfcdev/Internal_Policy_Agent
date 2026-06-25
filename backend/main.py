@@ -247,7 +247,12 @@ def researcher_node(state: AgentState) -> AgentState:
     # 0. Follow-up Query Detection
     # If it's a short formatting/translation request, bypass DB search so we don't pull garbage chunks.
     query_lower = state["query"].lower()
-    follow_up_keywords = ["above", "number", "point", "format", "list", "bullet", "translate", "sinhala", "sinhla", "sinhalen", "sinhalin", "english", "short", "summarize", "kalin", "eka", "uda", "numbers", "explain"]
+    follow_up_keywords = [
+        "above", "abouv", "number", "point", "format", "list", "bullet", 
+        "translate", "translte", "translt", "trnslt", "trsanslte", 
+        "sinhala", "sinhla", "sinhalen", "sinhalin", "english", "tamil", "demala", "demalen",
+        "short", "summarize", "kalin", "eka", "uda", "numbers", "explain"
+    ]
     is_follow_up = any(kw in query_lower for kw in follow_up_keywords) and len(state["query"].split()) <= 15 and state.get("history", "").strip() != ""
     
     if is_follow_up:
@@ -290,7 +295,12 @@ def communicator_node(state: AgentState) -> AgentState:
     
     # COST OPTIMIZATION: Only pass rejects to LLM if it looks like a follow-up formatting request
     query_lower = state["query"].lower()
-    follow_up_keywords = ["above", "number", "point", "format", "list", "bullet", "translate", "sinhala", "sinhla", "sinhalen", "sinhalin", "english", "short", "summarize", "kalin", "eka", "uda", "numbers", "explain"]
+    follow_up_keywords = [
+        "above", "abouv", "number", "point", "format", "list", "bullet", 
+        "translate", "translte", "translt", "trnslt", "trsanslte", 
+        "sinhala", "sinhla", "sinhalen", "sinhalin", "english", "tamil", "demala", "demalen",
+        "short", "summarize", "kalin", "eka", "uda", "numbers", "explain"
+    ]
     is_follow_up = any(kw in query_lower for kw in follow_up_keywords) and state.get("history", "").strip() != ""
 
     if is_rejected and not is_follow_up:
@@ -548,7 +558,7 @@ async def stream_chat(request: ChatRequest):
             try:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "SELECT TOP 5 QueryText, AIResponse FROM AuditTrail WHERE SessionID = ? ORDER BY ID DESC", 
+                    "SELECT TOP 2 QueryText, AIResponse FROM AuditTrail WHERE SessionID = ? ORDER BY ID DESC", 
                     request.session_id
                 )
                 rows = cursor.fetchall()
