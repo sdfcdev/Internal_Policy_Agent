@@ -539,8 +539,30 @@ async def stream_chat(request: ChatRequest):
     except Exception as e:
         logger.warning(f"Semantic Cache check failed: {e}")
 
+    # Fetch chat history for context if session_id is provided
+    chat_history = ""
+    if request.session_id:
+        conn = get_db_connection()
+        if conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT TOP 5 QueryText, AIResponse FROM AuditTrail WHERE SessionID = ? ORDER BY AuditID DESC", 
+                    request.session_id
+                )
+                rows = cursor.fetchall()
+                if rows:
+                    # Reverse because we got DESC (newest first)
+                    history_lines = [f"User: {row[0]}\nAI: {row[1]}" for row in reversed(rows)]
+                    chat_history = "\n\n".join(history_lines)
+            except Exception as e:
+                logger.error(f"Failed to fetch history: {e}")
+            finally:
+                conn.close()
+
     initial_state = {
         "query": request.query, "employee_id": request.employee_id, "session_id": request.session_id, "save_chat": request.save_chat,
+        "history": chat_history,
         "retrieved_chunks": [], "draft_response": "", "final_response": "", "hallucination_check": "", "rewrite_count": 0, "current_agent": "Starting", "accuracy_score": ""
     }
 
