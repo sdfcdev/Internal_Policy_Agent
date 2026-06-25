@@ -548,7 +548,7 @@ async def stream_chat(request: ChatRequest):
             try:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "SELECT TOP 5 QueryText, AIResponse FROM AuditTrail WHERE SessionID = ? ORDER BY AuditID DESC", 
+                    "SELECT TOP 5 QueryText, AIResponse FROM AuditTrail WHERE SessionID = ? ORDER BY ID DESC", 
                     request.session_id
                 )
                 rows = cursor.fetchall()
