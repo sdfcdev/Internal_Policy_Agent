@@ -242,6 +242,17 @@ class AgentState(TypedDict):
 def researcher_node(state: AgentState) -> AgentState:
     """Researcher Agent: Finds relevant chunks from ChromaDB and applies Distance Guardrail."""
     logger.info("[RESEARCHER] Finding relevant document chunks…")
+    
+    # 0. Follow-up Query Detection
+    # If it's a short formatting/translation request, bypass DB search so we don't pull garbage chunks.
+    query_lower = state["query"].lower()
+    follow_up_keywords = ["above", "number", "point", "format", "list", "bullet", "translate", "sinhala", "english", "short", "summarize", "kalin", "eka", "uda", "numbers"]
+    is_follow_up = any(kw in query_lower for kw in follow_up_keywords) and len(state["query"].split()) <= 15 and state.get("history", "").strip() != ""
+    
+    if is_follow_up:
+        logger.info("[RESEARCHER] Query identified as follow-up formatting. Bypassing vector search.")
+        return {**state, "retrieved_chunks": ["GUARDRAIL_REJECT"], "current_agent": "Researcher"}
+
     vs = get_vectorstore()
     
     # 1. Use similarity_search_with_score to evaluate document relevance
