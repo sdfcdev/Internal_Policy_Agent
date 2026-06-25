@@ -127,18 +127,27 @@ export default function MessageBubble({ message, onEditSubmit, textSize = 'md', 
   const isWorking = message.active_agent && message.active_agent !== 'Done';
 
   // Extract and format citations to render at the bottom
-  const citationRegex = /\[Source:\s*([^,\]]+)(?:,\s*Page:\s*(\d+))?(?:,\s*(?:Paragraph|Paragraph\/Chunk|Chunk):\s*(\d+))?\]/gi;
+  // Updated regex to capture multiple pages like "Page: 6, 8, 9"
+  const citationRegex = /\[Source:\s*([^,\]]+)(?:,\s*Page:\s*([^\]]+))?\]/gi;
   let rawContent = message.content || '';
   
   const groupedReferences = {};
   
-  let formattedContent = rawContent.replace(citationRegex, (match, file, page, para) => {
+  let formattedContent = rawContent.replace(citationRegex, (match, file, pageStr) => {
       const f = file.trim();
       if (!groupedReferences[f]) {
-          groupedReferences[f] = { file: f, pages: new Set(), paras: new Set() };
+          groupedReferences[f] = { file: f, pages: new Set() };
       }
-      if (page) groupedReferences[f].pages.add(page);
-      if (para) groupedReferences[f].paras.add(para);
+      
+      // If there are pages like "6, 8, 9" or "6", split and add them
+      if (pageStr) {
+          pageStr.split(',').forEach(p => {
+              const cleanedPage = p.trim();
+              if (cleanedPage && cleanedPage !== '?') {
+                  groupedReferences[f].pages.add(cleanedPage);
+              }
+          });
+      }
       return ''; // Strip the blocky inline citations
   });
   
