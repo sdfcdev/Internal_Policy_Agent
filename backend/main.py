@@ -304,6 +304,7 @@ def communicator_node(state: AgentState) -> AgentState:
         "2. If the user is just saying 'Hi' or asking a general question NOT in the context, politely explain that you are the SDF AI Copilot and can only answer questions based on official internal documents.\n"
         "3. LANGUAGE: Detect the language of the USER QUERY and respond ONLY in that same language. If the user writes in Sinhala, respond in Sinhala only. If the user writes in English, respond in English only. Never mix languages unless the user explicitly asks for both.\n"
         "4. Keep it concise (under 100 words).\n"
+        "5. FORMATTING: DO NOT use markdown like asterisks (*) or bold text. DO NOT use emojis. Use clean, professional plain text with standard numbered lists (1., 2.) or simple dashes (-) for points.\n"
     )
     response = llm.invoke(prompt.format(
         context=context,
