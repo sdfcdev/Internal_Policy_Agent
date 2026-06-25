@@ -299,7 +299,7 @@ def communicator_node(state: AgentState) -> AgentState:
         "INSTRUCTIONS:\n"
         "1. If the answer is in the CONTEXT, provide a professional response with citations like [Source: file.pdf, Page: X].\n"
         "2. If the user is just saying 'Hi' or asking a general question NOT in the context, politely explain that you are the SDF AI Copilot and can only answer questions based on official internal documents.\n"
-        "3. BILINGUAL: Always respond in both English and Sinhala (Sinhala translation follows English).\n"
+        "3. LANGUAGE: Detect the language of the USER QUERY and respond ONLY in that same language. If the user writes in Sinhala, respond in Sinhala only. If the user writes in English, respond in English only. Never mix languages unless the user explicitly asks for both.\n"
         "4. Keep it concise (under 100 words).\n"
     )
     response = llm.invoke(prompt.format(
@@ -329,8 +329,8 @@ def reviewer_node(state: AgentState) -> AgentState:
     # - After 2 failed retries (rewrite_count >= 2): Escalate to Gemini Pro.
     # This alone cuts the monthly AI bill by ~80% since most queries pass on 1st try.
     rewrite_count = state.get("rewrite_count", 0)
-    if rewrite_count >= 2:
-        # Flash has failed twice - bring in the heavy model
+    if rewrite_count >= 4:
+        # Flash has failed four times - bring in the heavy model
         model_to_use = "gemini-2.5-pro"
         logger.info("[REVIEWER] Escalating to Gemini 2.5 Pro (rewrite_count=%d)…", rewrite_count)
     else:
