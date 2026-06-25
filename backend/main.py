@@ -273,8 +273,16 @@ def communicator_node(state: AgentState) -> AgentState:
     """Communicator Agent: Uses Gemini Flash for high-speed response drafting."""
     logger.info("[COMMUNICATOR] Drafting response with Gemini 2.0 Flash…")
     
-    # Intercept Guardrail Rejects to save LLM cost
-    if state["retrieved_chunks"] and state["retrieved_chunks"][0] == "GUARDRAIL_REJECT":
+    # Intercept Guardrail Rejects, but ALLOW follow-up formatting requests to hit the LLM
+    is_rejected = state["retrieved_chunks"] and state["retrieved_chunks"][0] == "GUARDRAIL_REJECT"
+    
+    # COST OPTIMIZATION: Only pass rejects to LLM if it looks like a follow-up formatting request
+    query_lower = state["query"].lower()
+    follow_up_keywords = ["above", "number", "point", "format", "list", "bullet", "translate", "sinhala", "english", "short", "summarize", "kalin", "eka", "uda"]
+    is_follow_up = any(kw in query_lower for kw in follow_up_keywords) and state.get("history", "").strip() != ""
+
+    if is_rejected and not is_follow_up:
+        logger.info("[COMMUNICATOR] Hard-rejecting off-topic query to save LLM cost.")
         return {
             **state,
             "draft_response": "I apologize, but this system is restricted to answering questions based strictly on the bank's internal documents and HR policies. I could not find any relevant information for your query.",
@@ -282,7 +290,7 @@ def communicator_node(state: AgentState) -> AgentState:
         }
         
     llm = get_llm("gemini-2.5-flash")
-    context = "\n\n---\n\n".join(state["retrieved_chunks"])
+    context = "NO NEW DOCUMENTS RELEVANT TO QUERY." if is_rejected else "\n\n---\n\n".join(state["retrieved_chunks"])
     history = state.get("history", "")
 
     # OPTIMIZATION #3 (Critique & Revise): If this is a retry (rewrite_count > 0),
@@ -301,8 +309,9 @@ def communicator_node(state: AgentState) -> AgentState:
         "USER QUERY: {query}\n\n"
         "INSTRUCTIONS:\n"
         "1. If the answer is in the CONTEXT, provide a professional response with citations like [Source: file.pdf, Page: X].\n"
-        "2. If the user is just saying 'Hi' or asking a general question NOT in the context, politely explain that you are the SDF AI Copilot and can only answer questions based on official internal documents.\n"
-        "3. LANGUAGE: Detect the language of the USER QUERY and respond ONLY in that same language. If the user writes in Sinhala, respond in Sinhala only. If the user writes in English, respond in English only. Never mix languages unless the user explicitly asks for both.\n"
+        "2. IF CONTEXT is 'NO NEW DOCUMENTS RELEVANT' BUT the user is asking a simple follow-up formatting request (like 'make it numbered', 'translate it') about the CHAT HISTORY, you MUST answer it by reformatting the CHAT HISTORY.\n"
+        "3. If the user is asking a general question NOT in the context AND not a follow-up to history, politely explain that you are the SDF AI Copilot and can only answer questions based on official internal documents.\n"
+        "4. LANGUAGE: Detect the language of the USER QUERY and respond ONLY in that same language. Never mix languages unless asked.\n"
         "4. Keep it concise (under 100 words).\n"
         "5. FORMATTING: DO NOT use markdown like asterisks (*) or bold text. DO NOT use emojis. Use clean, professional plain text with standard numbered lists (1., 2.) or simple dashes (-) for points.\n"
     )
