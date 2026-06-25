@@ -175,7 +175,7 @@ export default function MessageBubble({ message, onEditSubmit, textSize = 'md', 
                    const pagesStr = r.pages.size > 0 ? `(Pages: ${Array.from(r.pages).join(', ')})` : '';
                    return (
                      <li key={idx} className="text-xs text-slate-400">
-                        <a href={`${API_URL}/download/${encodeURIComponent(r.file)}`} target="_blank" rel="noopener noreferrer" className="text-brand-400 hover:text-brand-300 hover:underline transition inline-flex items-center gap-1 font-medium">
+                        <a href={`${API_URL}/uploads/${encodeURIComponent(r.file)}`} target="_blank" rel="noopener noreferrer" className="text-brand-400 hover:text-brand-300 hover:underline transition inline-flex items-center gap-1 font-medium">
                           📄 {r.file}
                         </a>
                         {pagesStr && <span className="ml-1.5 text-[10px] opacity-70 tracking-wide">{pagesStr}</span>}
