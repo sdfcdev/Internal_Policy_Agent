@@ -224,13 +224,14 @@ class AgentState(TypedDict):
     employee_id: str
     session_id: str
     save_chat: bool
+    history: str
     retrieved_chunks: List[str]
     draft_response: str
     final_response: str
     hallucination_check: str
-    accuracy_score: str
     rewrite_count: int
     current_agent: str
+    accuracy_score: str
     # OPTIMIZATION #3 (Accuracy): Stores the specific reason for a FAIL verdict.
     # Communicator reads this on retry so it fixes the exact mistake, not guess.
     reviewer_feedback: str
