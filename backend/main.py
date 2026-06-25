@@ -246,7 +246,7 @@ def researcher_node(state: AgentState) -> AgentState:
     # 0. Follow-up Query Detection
     # If it's a short formatting/translation request, bypass DB search so we don't pull garbage chunks.
     query_lower = state["query"].lower()
-    follow_up_keywords = ["above", "number", "point", "format", "list", "bullet", "translate", "sinhala", "english", "short", "summarize", "kalin", "eka", "uda", "numbers"]
+    follow_up_keywords = ["above", "number", "point", "format", "list", "bullet", "translate", "sinhala", "sinhla", "sinhalen", "sinhalin", "english", "short", "summarize", "kalin", "eka", "uda", "numbers", "explain"]
     is_follow_up = any(kw in query_lower for kw in follow_up_keywords) and len(state["query"].split()) <= 15 and state.get("history", "").strip() != ""
     
     if is_follow_up:
@@ -289,7 +289,7 @@ def communicator_node(state: AgentState) -> AgentState:
     
     # COST OPTIMIZATION: Only pass rejects to LLM if it looks like a follow-up formatting request
     query_lower = state["query"].lower()
-    follow_up_keywords = ["above", "number", "point", "format", "list", "bullet", "translate", "sinhala", "english", "short", "summarize", "kalin", "eka", "uda"]
+    follow_up_keywords = ["above", "number", "point", "format", "list", "bullet", "translate", "sinhala", "sinhla", "sinhalen", "sinhalin", "english", "short", "summarize", "kalin", "eka", "uda", "numbers", "explain"]
     is_follow_up = any(kw in query_lower for kw in follow_up_keywords) and state.get("history", "").strip() != ""
 
     if is_rejected and not is_follow_up:
