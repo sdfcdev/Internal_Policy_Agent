@@ -495,12 +495,14 @@ async def stream_chat(request: ChatRequest):
     greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "hi there", "hello there"]
     farewells = ["bye", "goodbye", "see you", "bye bye"]
     thanks = ["thanks", "thank you", "thanks a lot", "thank you very much", "tq"]
+    identity = ["who are you", "what are you", "what is your name", "who is this", "oy kowd", "oya kowd", "oya kauda", "oy kawd", "oya kawda", "who r u", "who are u"]
     
     is_greeting = q_lower in greetings
     is_farewell = q_lower in farewells
     is_thanks = q_lower in thanks
+    is_identity = q_lower in identity
     
-    if is_greeting or is_farewell or is_thanks:
+    if is_greeting or is_farewell or is_thanks or is_identity:
         conn = get_db_connection()
         user_name = "there"
         if conn:
@@ -522,6 +524,8 @@ async def stream_chat(request: ChatRequest):
                     greeting = f"Goodbye {user_name}! Have a great day!"
                 elif is_thanks:
                     greeting = f"You're very welcome, {user_name}! Let me know if you need anything else."
+                elif is_identity:
+                    greeting = "I am the SDF Policy Agent, an enterprise AI assistant designed to help you strictly with Sarvodaya Development Finance's internal documents and HR policies."
                 
                 # Save to AuditTrail so it exists if toggled later
                 is_saved = 1 if request.save_chat else 0
@@ -536,6 +540,7 @@ async def stream_chat(request: ChatRequest):
             if is_greeting: greeting = "Hi there! How can I help you today?"
             elif is_farewell: greeting = "Goodbye! Have a great day!"
             elif is_thanks: greeting = "You're very welcome! Let me know if you need anything else."
+            elif is_identity: greeting = "I am the SDF Policy Agent, an enterprise AI assistant designed to help you strictly with Sarvodaya Development Finance's internal documents and HR policies."
             
         async def greeting_gen():
             yield f"data: {json.dumps({'agent': 'Done', 'status': 'done', 'response': greeting, 'accuracy_score': '', 'hallucination_check': ''})}\n\n"
