@@ -508,7 +508,7 @@ export default function AdminDashboard({ user, role }) {
                 ))
               ) : (
                 intelLogs.filter(l => {
-                  const matchesSearch = l.employee_id.includes(intelSearch) || l.query.toLowerCase().includes(intelSearch.toLowerCase());
+                  const matchesSearch = (l.employee_id || '').includes(intelSearch) || (l.query || '').toLowerCase().includes(intelSearch.toLowerCase());
                   if (!matchesSearch) return false;
                   if (loopFilter === 'all') return true;
                   if (loopFilter === '1') return l.loops === 1;
@@ -520,7 +520,7 @@ export default function AdminDashboard({ user, role }) {
                 }).length === 0 ? 
                 <p className="text-sm text-slate-500 text-center mt-10 italic">No matching reasoning logs found.</p> :
                 intelLogs.filter(l => {
-                  const matchesSearch = l.employee_id.includes(intelSearch) || l.query.toLowerCase().includes(intelSearch.toLowerCase());
+                  const matchesSearch = (l.employee_id || '').includes(intelSearch) || (l.query || '').toLowerCase().includes(intelSearch.toLowerCase());
                   if (!matchesSearch) return false;
                   if (loopFilter === 'all') return true;
                   if (loopFilter === '1') return l.loops === 1;

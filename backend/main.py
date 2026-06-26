@@ -429,11 +429,11 @@ def audit_node(state: AgentState) -> AgentState:
             except Exception as e:
                 logger.error(f"Failed to update semantic cache: {e}")
                 
-            # Intelligence Audit (Log ONLY if multiple attempts were needed)
-            if state.get("rewrite_count", 0) > 0:
-                model_info = "Gemini 1.5 Flash (Writer) | Gemini 1.5 Pro (Reviewer)"
+            # Intelligence Audit: Log ONLY if the AI struggled (2 or more retries) to save maximum Database Space
+            if state.get("rewrite_count", 0) >= 2:
+                model_info = "Gemini 2.5 Flash (Writer/Reviewer)" if state.get("rewrite_count", 0) < 4 else "Gemini 2.5 Pro (Fallback)"
                 cursor.execute("INSERT INTO IntelligenceAudit (EmployeeID, Query, DraftResponse, ReviewerFeedback, FinalResponse, LoopCount, ModelInfo) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                               state["employee_id"], state["query"], state.get("draft_response", ""), state.get("hallucination_check", ""), final, state["rewrite_count"], model_info)
+                               state["employee_id"], state["query"], state.get("draft_response", ""), state.get("reviewer_feedback", "") or state.get("hallucination_check", "pass"), final, state.get("rewrite_count", 0), model_info)
             
             conn.commit()
         finally: conn.close()
