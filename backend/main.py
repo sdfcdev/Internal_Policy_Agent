@@ -697,7 +697,8 @@ async def get_intelligence_audit():
     if not conn: return []
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT ID, EmployeeID, Query, DraftResponse, ReviewerFeedback, FinalResponse, LoopCount, ModelInfo, CreatedAt FROM IntelligenceAudit ORDER BY CreatedAt DESC")
+        # Only return records that escalated to Gemini Pro (LoopCount >= 3) to hide any dummy data from earlier tests
+        cursor.execute("SELECT ID, EmployeeID, Query, DraftResponse, ReviewerFeedback, FinalResponse, LoopCount, ModelInfo, CreatedAt FROM IntelligenceAudit WHERE LoopCount >= 3 ORDER BY CreatedAt DESC")
         return [{
             "id": r[0], "employee_id": r[1], "query": r[2], 
             "draft": r[3], "feedback": r[4], "final": r[5], 

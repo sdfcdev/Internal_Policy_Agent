@@ -36,8 +36,7 @@ export default function AdminDashboard({ user, role }) {
   // AI Intelligence Audit State
   const [logView, setLogView] = useState('document'); // 'document' | 'intelligence'
   const [intelLogs, setIntelLogs] = useState([]);
-  const [intelSearch, setIntelSearch] = useState('');
-  const [loopFilter, setLoopFilter] = useState('all'); // 'all' | '1' | '2' | '3' | 'gt1' | 'gt2'
+  const [intelSearch, setIntelSearch] = useState(''); // 'all' | '1' | '2' | '3' | 'gt1' | 'gt2'
 
   // New Admin fields
   const [startDate, setStartDate]       = useState('');
@@ -470,18 +469,6 @@ export default function AdminDashboard({ user, role }) {
                         className="input-field w-full pl-9 py-2 text-xs bg-dark-900/50 border-white/5"
                       />
                    </div>
-                   <select 
-                     value={loopFilter}
-                     onChange={e => setLoopFilter(e.target.value)}
-                     className="input-field bg-dark-900/50 border-white/5 py-2 px-3 text-xs min-w-[140px]"
-                   >
-                      <option value="all">All Retries</option>
-                      <option value="1">1 Retry Only</option>
-                      <option value="2">2 Retries Only</option>
-                      <option value="3">3 Retries Only</option>
-                      <option value="gt1">More than 1</option>
-                      <option value="gt2">More than 2</option>
-                   </select>
                 </div>
              )}
 
@@ -510,24 +497,12 @@ export default function AdminDashboard({ user, role }) {
                 intelLogs.filter(l => {
                   const matchesSearch = (l.employee_id || '').includes(intelSearch) || (l.query || '').toLowerCase().includes(intelSearch.toLowerCase());
                   if (!matchesSearch) return false;
-                  if (loopFilter === 'all') return true;
-                  if (loopFilter === '1') return l.loops === 1;
-                  if (loopFilter === '2') return l.loops === 2;
-                  if (loopFilter === '3') return l.loops === 3;
-                  if (loopFilter === 'gt1') return l.loops > 1;
-                  if (loopFilter === 'gt2') return l.loops > 2;
                   return true;
                 }).length === 0 ? 
                 <p className="text-sm text-slate-500 text-center mt-10 italic">No matching reasoning logs found.</p> :
                 intelLogs.filter(l => {
                   const matchesSearch = (l.employee_id || '').includes(intelSearch) || (l.query || '').toLowerCase().includes(intelSearch.toLowerCase());
                   if (!matchesSearch) return false;
-                  if (loopFilter === 'all') return true;
-                  if (loopFilter === '1') return l.loops === 1;
-                  if (loopFilter === '2') return l.loops === 2;
-                  if (loopFilter === '3') return l.loops === 3;
-                  if (loopFilter === 'gt1') return l.loops > 1;
-                  if (loopFilter === 'gt2') return l.loops > 2;
                   return true;
                 }).map(audit => (
                   <div key={audit.id} className="flex flex-col gap-3 bg-dark-500/30 p-4 rounded-2xl border border-purple-500/10 w-full hover:border-purple-500/40 transition-all group relative">
