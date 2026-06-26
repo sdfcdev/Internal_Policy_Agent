@@ -749,17 +749,9 @@ export default function AdminDashboard({ user, role }) {
              ) : (
                  documents.filter(doc => {
                     if (docFilterDept === 'All') return true;
-                    // Check by document department, or fallback to checking its chunks
-                    if (doc.department && doc.department !== docFilterDept) return false;
-                    
-                    const docChunks = chunks.filter(c => 
-                       c.metadata?.source_filename === doc.filename ||
-                       (c.metadata?.source && c.metadata.source.endsWith(doc.filename))
-                    );
-                    if (docChunks.length > 0 && docChunks[0].metadata?.department && docChunks[0].metadata.department !== docFilterDept) {
-                        return false;
-                    }
-                    return true;
+                    // If department is null/empty, treat it as 'General'
+                    const docDept = doc.department || 'General';
+                    return docDept === docFilterDept;
                  }).map((doc) => {
                      // Check matching source filenames robustly
                      const docChunks = chunks.filter(c => 

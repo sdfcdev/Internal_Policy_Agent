@@ -603,7 +603,13 @@ async def upload_pdf(
 ):
     if not file.filename.lower().endswith(".pdf"): raise HTTPException(status_code=400, detail="Only PDFs allowed.")
     
+    if not department or department.strip() == "":
+        department = "General"
+        
     file_path = UPLOAD_DIR / file.filename
+    if file_path.exists():
+        raise HTTPException(status_code=400, detail="A document with this name already exists. Please delete it first.")
+        
     async with aiofiles.open(file_path, "wb") as f:
         await f.write(await file.read())
 
