@@ -213,18 +213,20 @@ export default function ChatView({
         <div className="flex-1 relative group">
           {/* 
             OPTIMIZATION #8 (UI/UX): Enter Key Behavior
-            Changed from <input> to <textarea> to allow multiline questions.
-            Pressing Enter simply adds a new line. The form is ONLY submitted
-            when the user clicks the physical Send button.
+            Pressing Enter (without Shift) will submit the message.
+            Pressing Shift + Enter will add a new line.
           */}
           <textarea 
             ref={inputRef} 
             value={query} 
             onChange={e => setQuery(e.target.value)} 
             onKeyDown={e => {
-              // Prevent default enter behavior only if we want to force button click
-              // Actually, default textarea behavior IS to add a newline.
-              // We just do nothing here to let it add a newline!
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); // Prevent default new line
+                if (query.trim() && !loading) {
+                  handleSend(e);
+                }
+              }
             }}
             placeholder="Ask SDF Policy Assistant..." 
             disabled={loading} 
