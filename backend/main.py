@@ -311,7 +311,9 @@ def communicator_node(state: AgentState) -> AgentState:
             "current_agent": "Communicator"
         }
         
-    llm = get_llm("gemini-2.5-flash")
+    rewrite_count = state.get("rewrite_count", 0)
+    model_to_use = "gemini-2.5-pro" if rewrite_count >= 3 else "gemini-2.5-flash"
+    llm = get_llm(model_to_use)
     context = "NO NEW DOCUMENTS RELEVANT TO QUERY." if is_rejected else "\n\n---\n\n".join(state["retrieved_chunks"])
     history = state.get("history", "")
 
@@ -361,11 +363,11 @@ def reviewer_node(state: AgentState) -> AgentState:
 
     # OPTIMIZATION #4 (Cost): Dynamic Model Fallback.
     # - First attempt (rewrite_count == 0): Use cheap Gemini Flash for review.
-    # - After 2 failed retries (rewrite_count >= 2): Escalate to Gemini Pro.
+    # - After 3 failed retries (rewrite_count >= 3): Escalate to Gemini Pro.
     # This alone cuts the monthly AI bill by ~80% since most queries pass on 1st try.
     rewrite_count = state.get("rewrite_count", 0)
-    if rewrite_count >= 4:
-        # Flash has failed four times - bring in the heavy model
+    if rewrite_count >= 3:
+        # Flash has failed three times - bring in the heavy model
         model_to_use = "gemini-2.5-pro"
         logger.info("[REVIEWER] Escalating to Gemini 2.5 Pro (rewrite_count=%d)…", rewrite_count)
     else:
@@ -429,9 +431,9 @@ def audit_node(state: AgentState) -> AgentState:
             except Exception as e:
                 logger.error(f"Failed to update semantic cache: {e}")
                 
-            # Intelligence Audit: Log ONLY if the AI struggled (2 or more retries) to save maximum Database Space
-            if state.get("rewrite_count", 0) >= 2:
-                model_info = "Gemini 2.5 Flash (Writer/Reviewer)" if state.get("rewrite_count", 0) < 4 else "Gemini 2.5 Pro (Fallback)"
+            # Intelligence Audit: Log ONLY if it failed 3 times and reached Gemini Pro (Max retries)
+            if state.get("rewrite_count", 0) >= 3:
+                model_info = "Gemini 2.5 Pro (Fallback)"
                 cursor.execute("INSERT INTO IntelligenceAudit (EmployeeID, Query, DraftResponse, ReviewerFeedback, FinalResponse, LoopCount, ModelInfo) VALUES (?, ?, ?, ?, ?, ?, ?)",
                                state["employee_id"], state["query"], state.get("draft_response", ""), state.get("reviewer_feedback", "") or state.get("hallucination_check", "pass"), final, state.get("rewrite_count", 0), model_info)
             
@@ -443,7 +445,8 @@ def audit_node(state: AgentState) -> AgentState:
 # Graph Construction
 # ─────────────────────────────────────────────
 def hallucination_router(state):
-    if state["hallucination_check"] == "pass" or state.get("rewrite_count", 0) >= 2: return "audit"
+    # Exit loop if passed, OR if we've reached 3 retries (which is Gemini Pro's single attempt)
+    if state["hallucination_check"] == "pass" or state.get("rewrite_count", 0) >= 3: return "audit"
     return "rewrite"
 
 def increment_rewrite(state):
