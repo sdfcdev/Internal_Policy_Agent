@@ -507,7 +507,11 @@ async def stream_chat(request: ChatRequest):
     is_thanks = q_lower in thanks
     is_identity = q_lower in identity
     is_smalltalk = q_lower in smalltalk
-    is_gibberish = q_lower in gibberish or (len(q_lower) < 3 and not is_greeting)
+    
+    # Block anything that has fewer than 3 words to save API costs, unless it's a valid local greeting/intent
+    word_count = len(q_lower.split())
+    is_too_short = word_count < 3
+    is_gibberish = q_lower in gibberish or (is_too_short and not (is_greeting or is_farewell or is_thanks or is_identity or is_smalltalk))
     
     if is_greeting or is_farewell or is_thanks or is_identity or is_smalltalk or is_gibberish:
         conn = get_db_connection()
