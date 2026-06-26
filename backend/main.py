@@ -491,8 +491,16 @@ class ChatRequest(BaseModel):
 async def stream_chat(request: ChatRequest):
     q_lower = request.query.strip().lower()
     
-    # 1. Fast Greeting Interception
-    if q_lower in ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "hi there", "hello there"]:
+    # 1. Fast Greeting Interception (Saves API Costs & Extremely Fast)
+    greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "hi there", "hello there"]
+    farewells = ["bye", "goodbye", "see you", "bye bye"]
+    thanks = ["thanks", "thank you", "thanks a lot", "thank you very much", "tq"]
+    
+    is_greeting = q_lower in greetings
+    is_farewell = q_lower in farewells
+    is_thanks = q_lower in thanks
+    
+    if is_greeting or is_farewell or is_thanks:
         conn = get_db_connection()
         user_name = "there"
         if conn:
@@ -504,7 +512,16 @@ async def stream_chat(request: ChatRequest):
                     full_name = row[0] or row[1]
                     if full_name: user_name = full_name.split(' ')[0]
                     
-                greeting = f"Hi {user_name}! How can I help you today?"
+                if is_greeting:
+                    # Dynamically respond with the exact time of day if they said it
+                    if "morning" in q_lower: greeting = f"Good morning {user_name}! How can I help you today?"
+                    elif "afternoon" in q_lower: greeting = f"Good afternoon {user_name}! How can I help you today?"
+                    elif "evening" in q_lower: greeting = f"Good evening {user_name}! How can I help you today?"
+                    else: greeting = f"Hi {user_name}! How can I help you today?"
+                elif is_farewell:
+                    greeting = f"Goodbye {user_name}! Have a great day!"
+                elif is_thanks:
+                    greeting = f"You're very welcome, {user_name}! Let me know if you need anything else."
                 
                 # Save to AuditTrail so it exists if toggled later
                 is_saved = 1 if request.save_chat else 0
@@ -516,7 +533,9 @@ async def stream_chat(request: ChatRequest):
             finally:
                 conn.close()
         else:
-            greeting = "Hi there! How can I help you today?"
+            if is_greeting: greeting = "Hi there! How can I help you today?"
+            elif is_farewell: greeting = "Goodbye! Have a great day!"
+            elif is_thanks: greeting = "You're very welcome! Let me know if you need anything else."
             
         async def greeting_gen():
             yield f"data: {json.dumps({'agent': 'Done', 'status': 'done', 'response': greeting, 'accuracy_score': '', 'hallucination_check': ''})}\n\n"
