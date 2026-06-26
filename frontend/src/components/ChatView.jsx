@@ -275,6 +275,12 @@ export default function ChatView({
         </button>
       </form>
       
+      <div className="text-center mt-2">
+        <p className="text-[10px] text-slate-500 font-medium tracking-wide">
+          <strong className="text-slate-400 font-bold">SDF Policy Assistant is AI</strong> and can make mistakes.
+        </p>
+      </div>
+      
       {messages.length > 0 && (
         <div className="flex flex-wrap items-center justify-end gap-4 mt-4 px-2">
            <label className="flex items-center gap-3 cursor-pointer group">
