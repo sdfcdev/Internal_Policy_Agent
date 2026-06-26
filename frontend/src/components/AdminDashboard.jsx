@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { UploadCloud, FileText, CheckCircle2, XCircle, Loader2, Trash2, List, AlignLeft, Edit, Save, Users, PlusCircle, ChevronDown, ChevronUp, Download, Brain, Search, Info } from 'lucide-react';
+import { UploadCloud, FileText, CheckCircle2, XCircle, Loader2, Trash2, List, AlignLeft, Edit, Save, Users, PlusCircle, ChevronDown, ChevronUp, Download, Brain, Search, Info, Cpu } from 'lucide-react';
 import { uploadPdf, getDocumentCount, getAdminLogs, getChunks, deleteDocument, renameDocument, updateDocument, getAccounts, addAccount, deleteAccount, updateAccount, getDocuments, getIntelligenceAudit } from '../api';
 
 function fileSizeLabel(bytes) {
