@@ -45,11 +45,11 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-[13px] text-slate-400 mb-1">Employee Number</label>
-            <input type="text" value={username} onChange={e=>setUsername(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full" autoFocus />
+            <input type="text" name="username" autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full" autoFocus />
           </div>
           <div>
             <label className="block text-[13px] text-slate-400 mb-1">Password</label>
-            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full" />
+            <input type="password" name="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full" />
           </div>
           <div className="flex justify-between items-center mt-2">
             <button type="button" onClick={onRegister} className="true-color text-xs text-[#5D419B] font-bold hover:opacity-80 underline transition">New Staff? Register</button>
