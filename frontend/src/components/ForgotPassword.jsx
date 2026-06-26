@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { getUserQuestions, verifySecurity, resetForgottenPassword } from '../api';
 
 export default function ForgotPassword({ onBack }) {
@@ -12,6 +13,7 @@ export default function ForgotPassword({ onBack }) {
   
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -112,13 +114,19 @@ export default function ForgotPassword({ onBack }) {
 
             {step === 3 && (
               <div className="space-y-4">
-                <div>
+                <div className="relative">
                   <label className="block text-[13px] text-slate-400 mb-1">New Password</label>
-                  <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required className="input-field py-2.5 text-base w-full" autoFocus />
+                  <input type={showPassword ? "text" : "password"} value={newPassword} onChange={e=>setNewPassword(e.target.value)} required className="input-field py-2.5 text-base w-full pr-10" autoFocus />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[34px] text-slate-400 hover:text-white transition">
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
-                <div>
+                <div className="relative">
                   <label className="block text-[13px] text-slate-400 mb-1">Confirm New Password</label>
-                  <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required className="input-field py-2.5 text-base w-full" />
+                  <input type={showPassword ? "text" : "password"} value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required className="input-field py-2.5 text-base w-full pr-10" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[34px] text-slate-400 hover:text-white transition">
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                   {confirmPassword && (
                     <div className={`text-[10px] mt-1.5 font-bold ${newPassword === confirmPassword ? 'text-emerald-400' : 'text-red-400'}`}>
                       {newPassword === confirmPassword ? '✅ Passwords match' : '❌ Passwords do not match'}

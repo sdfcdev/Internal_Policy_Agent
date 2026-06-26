@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Eye, EyeOff } from 'lucide-react';
 import Sidebar       from './components/Sidebar';
 import ChatView      from './components/ChatView';
 import AdminDashboard from './components/AdminDashboard';
@@ -12,6 +12,7 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -47,9 +48,12 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
             <label className="block text-[13px] text-slate-400 mb-1">Employee Number</label>
             <input type="text" name="username" autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full" autoFocus />
           </div>
-          <div>
+          <div className="relative">
             <label className="block text-[13px] text-slate-400 mb-1">Password</label>
-            <input type="password" name="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full" />
+            <input type={showPassword ? "text" : "password"} name="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full pr-10" />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[34px] text-slate-400 hover:text-white transition">
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
           </div>
           <div className="flex justify-between items-center mt-2">
             <button type="button" onClick={onRegister} className="true-color text-xs text-[#5D419B] font-bold hover:opacity-80 underline transition">New Staff? Register</button>
