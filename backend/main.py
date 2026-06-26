@@ -59,7 +59,7 @@ CHROMA_DIR.mkdir(exist_ok=True)
 # FastAPI App
 # ─────────────────────────────────────────────
 app = FastAPI(
-    title="SDF AI Copilot API",
+    title="SDF Policy Agent API",
     description="Enterprise Multi-Agent RAG System with Google Gemini & LlamaParse",
     version="2.0.0",
 )
@@ -334,7 +334,7 @@ def communicator_node(state: AgentState) -> AgentState:
         "INSTRUCTIONS:\n"
         "1. If the answer is in the CONTEXT, provide a professional response with citations like [Source: file.pdf, Page: X].\n"
         "2. IF CONTEXT is 'NO NEW DOCUMENTS RELEVANT' BUT the user is asking a simple follow-up formatting request (like 'make it numbered', 'translate it') about the CHAT HISTORY, you MUST answer it by reformatting the CHAT HISTORY.\n"
-        "3. If the user is asking a general question NOT in the context AND not a follow-up to history, politely explain that you are the SDF AI Copilot and can only answer questions based on official internal documents.\n"
+        "3. If the user is asking a general question NOT in the context AND not a follow-up to history, politely explain that you are the SDF Policy Agent and can only answer questions based on official internal documents.\n"
         "4. LANGUAGE: Detect the language of the USER QUERY and respond ONLY in that same language. Never mix languages unless asked.\n"
         "4. Keep it concise (under 100 words).\n"
         "5. FORMATTING: DO NOT use markdown like asterisks (*) or bold text. DO NOT use emojis. Use clean, professional plain text with standard numbered lists (1., 2.) or simple dashes (-) for points.\n"

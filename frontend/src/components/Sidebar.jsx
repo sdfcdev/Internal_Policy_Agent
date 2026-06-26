@@ -3,7 +3,7 @@ import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, Me
 import { renameHistorySession, togglePinSession, deleteSession, API_URL } from '../api';
 
 const NAV = [
-  { id: 'chat',  label: 'AI Copilot',       icon: BotMessageSquare },
+  { id: 'chat',  label: 'Policy Agent',       icon: BotMessageSquare },
   { id: 'admin', label: 'Admin Dashboard',   icon: LayoutDashboard  },
 ];
 
