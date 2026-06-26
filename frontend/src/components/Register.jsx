@@ -93,6 +93,11 @@ export default function Register({ onBack, onComplete }) {
             <div>
               <label className="block text-[13px] text-slate-400 mb-1">Confirm Password</label>
               <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required className="input-field py-2.5 text-base w-full" />
+              {confirmPassword && (
+                <div className={`text-[10px] mt-1.5 font-bold ${password === confirmPassword ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {password === confirmPassword ? '✅ Passwords match' : '❌ Passwords do not match'}
+                </div>
+              )}
             </div>
 
             {password && (

@@ -11,6 +11,7 @@ export default function ForgotPassword({ onBack }) {
   const [a3, setA3] = useState('');
   
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -47,6 +48,10 @@ export default function ForgotPassword({ onBack }) {
 
   async function handleReset(e) {
     e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -106,9 +111,20 @@ export default function ForgotPassword({ onBack }) {
             )}
 
             {step === 3 && (
-              <div>
-                <label className="block text-[13px] text-slate-400 mb-1">New Password</label>
-                <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required className="input-field py-2.5 text-base w-full" autoFocus />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[13px] text-slate-400 mb-1">New Password</label>
+                  <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required className="input-field py-2.5 text-base w-full" autoFocus />
+                </div>
+                <div>
+                  <label className="block text-[13px] text-slate-400 mb-1">Confirm New Password</label>
+                  <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required className="input-field py-2.5 text-base w-full" />
+                  {confirmPassword && (
+                    <div className={`text-[10px] mt-1.5 font-bold ${newPassword === confirmPassword ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {newPassword === confirmPassword ? '✅ Passwords match' : '❌ Passwords do not match'}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
