@@ -804,6 +804,65 @@ async def login(req: Dict[str, str]):
         }
     finally: conn.close()
 
+@app.post("/auth/google")
+async def google_sso(req: Dict[str, str]):
+    """Google SSO - Verify Google token and auto-login/create SDF employees."""
+    try:
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as grequests
+        GOOGLE_CLIENT_ID = "244353936870-4bft7oc0tlei7of6e8nl3jg30pjm67k5.apps.googleusercontent.com"
+        idinfo = id_token.verify_oauth2_token(req['credential'], grequests.Request(), GOOGLE_CLIENT_ID)
+        email = idinfo.get('email', '')
+        name  = idinfo.get('name', '')
+        # Restrict to SDF domain only
+        if not email.endswith('@sdf.lk'):
+            raise HTTPException(status_code=403, detail="Access denied. Only @sdf.lk accounts are allowed.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Google token verification failed: {str(e)}")
+
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        # Check if user already exists (by email)
+        cursor.execute("SELECT Username, Role, Name, PreferredName FROM Accounts WHERE Email=?", email)
+        row = cursor.fetchone()
+        if row:
+            # Existing user — return their data
+            return {
+                "username": row[0],
+                "role": row[1],
+                "name": row[2],
+                "emp_num": row[0],
+                "preferred_name": row[3] or row[2],
+                "email": email,
+                "is_first_login": False
+            }
+        else:
+            # New SDF employee — auto-create account (role: user)
+            username = email  # Use email as username
+            cursor.execute(
+                "INSERT INTO Accounts (Username, Email, Role, Name, PreferredName, IsRegistered) VALUES (?, ?, ?, ?, ?, ?)",
+                username, email, 'user', name, name.split(' ')[0], 1
+            )
+            conn.commit()
+            logger.info(f"New SSO user auto-created: {email}")
+            return {
+                "username": username,
+                "role": "user",
+                "name": name,
+                "emp_num": username,
+                "preferred_name": name.split(' ')[0],
+                "email": email,
+                "is_first_login": False
+            }
+    finally:
+        conn.close()
+
+
 @app.get("/admin/documents")
 async def list_docs():
     conn = get_db_connection()
