@@ -128,6 +128,11 @@ export async function login(username, password) {
   return data;
 }
 
+export async function googleLogin(credential) {
+  const { data } = await API.post('/auth/google', { credential });
+  return data;
+}
+
 export async function register(username, password, name, q1, a1, q2, a2, q3, a3) {
   const { data } = await API.post('/auth/register', { 
     username, 

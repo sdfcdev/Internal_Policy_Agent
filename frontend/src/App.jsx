@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Download, Eye, EyeOff } from 'lucide-react';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import Sidebar       from './components/Sidebar';
 import ChatView      from './components/ChatView';
 import AdminDashboard from './components/AdminDashboard';
 import Register      from './components/Register';
 import ForgotPassword from './components/ForgotPassword';
-import { healthCheck, login } from './api';
+import { healthCheck, login, googleLogin } from './api';
 
 function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
   const [username, setUsername] = useState('');
@@ -63,6 +64,37 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
           <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 mt-2 rounded-lg font-medium shadow-sm transition">
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
+
+          {/* Google SSO Divider */}
+          <div className="flex items-center gap-3 my-2">
+            <div className="flex-1 h-px bg-white/10"></div>
+            <span className="text-[11px] text-slate-500 font-medium">or</span>
+            <div className="flex-1 h-px bg-white/10"></div>
+          </div>
+
+          {/* Google SSO Button */}
+          <div className="flex justify-center" id="google-sso-btn">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                setLoading(true);
+                setError('');
+                try {
+                  const user = await googleLogin(credentialResponse.credential);
+                  const isPrivileged = user.role === 'master' || user.role === 'admin' || user.role === 'subadmin';
+                  onLogin(user, isPrivileged ? 'admin' : 'chat');
+                } catch (e) {
+                  setError(e.response?.data?.detail || 'Google Sign-In failed. Please use your @sdf.lk account.');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              onError={() => setError('Google Sign-In failed. Please try again.')}
+              theme="filled_black"
+              shape="rectangular"
+              text="signin_with_google"
+              width="280"
+            />
+          </div>
           
           <div className="text-center mt-8">
             <p className="true-color text-[13px] font-medium text-[#B7371F] tracking-wide">
