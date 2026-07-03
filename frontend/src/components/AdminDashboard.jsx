@@ -384,6 +384,7 @@ export default function AdminDashboard({ user, role }) {
                     >
                       <option value="General">General / Other</option>
                       <option value="AUDIT">AUDIT</option>
+                      <option value="CBSL DIRECTIONS">CBSL DIRECTIONS</option>
                       <option value="COMPLIANCE">COMPLIANCE</option>
                       <option value="CREDIT">CREDIT</option>
                       <option value="CREDIT ADMINISTRATION UNIT">CREDIT ADMINISTRATION UNIT</option>
