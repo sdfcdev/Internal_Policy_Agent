@@ -386,6 +386,7 @@ export default function AdminDashboard({ user, role }) {
                       <option value="AUDIT">AUDIT</option>
                       <option value="COMPLIANCE">COMPLIANCE</option>
                       <option value="CREDIT AND LEASING">CREDIT AND LEASING</option>
+                      <option value="CREDIT ADMINISTRATION UNIT">CREDIT ADMINISTRATION UNIT</option>
                       <option value="FINANCE">FINANCE</option>
                       <option value="GOLD LOAN">GOLD LOAN</option>
                       <option value="HR">HR</option>
@@ -395,6 +396,9 @@ export default function AdminDashboard({ user, role }) {
                       <option value="OPERATION">OPERATION</option>
                       <option value="RECOVERY">RECOVERY</option>
                       <option value="RISK">RISK</option>
+                      <option value="STRATEGIC PLANNING">STRATEGIC PLANNING</option>
+                      <option value="COMPANY SECRETARY">COMPANY SECRETARY</option>
+                      <option value="SECRETARY TO CHAIRMAN">SECRETARY TO CHAIRMAN</option>
                     </select>
                </div>
                <div className="grid grid-cols-2 gap-3">
