@@ -251,13 +251,13 @@ export default function Sidebar({
                 {/* Grouped Library by Department */}
                 {Object.keys(
                   libraryDocs.reduce((acc, doc) => {
-                    const dept = doc.department || 'General';
+                    const dept = (doc.department || 'General').trim();
                     if (!acc[dept]) acc[dept] = [];
                     acc[dept].push(doc);
                     return acc;
                   }, {})
                 ).sort().map(dept => {
-                  const docsInDept = libraryDocs.filter(d => (d.department || 'General') === dept);
+                  const docsInDept = libraryDocs.filter(d => (d.department || 'General').trim() === dept);
                   const isExpanded = !!expandedDepts[dept];
                   
                   return (
