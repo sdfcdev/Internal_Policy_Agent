@@ -266,9 +266,9 @@ export default function Sidebar({
                         onClick={() => setExpandedDepts(prev => ({ ...prev, [dept]: !prev[dept] }))}
                         className={`flex items-center justify-between px-3 py-3 text-xs font-medium uppercase tracking-widest transition-all duration-300 ${isExpanded ? 'bg-brand-600/30 text-brand-300' : 'text-slate-400 hover:bg-white/5'}`}
                       >
-                        <div className="flex items-center gap-2">
-                           <LayoutDashboard className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'scale-110' : 'opacity-40'}`} />
-                           {dept}
+                        <div className="flex items-center gap-2 flex-1 overflow-hidden text-left">
+                           <LayoutDashboard className={`w-4 h-4 shrink-0 transition-transform duration-300 ${isExpanded ? 'scale-110' : 'opacity-40'}`} />
+                           <span className="truncate" title={dept}>{dept}</span>
                         </div>
                         <div className="flex items-center gap-2">
                            <span className="text-[10px] bg-dark-900/50 px-1.5 py-0.5 rounded-md border border-white/10">{docsInDept.length}</span>
