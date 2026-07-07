@@ -966,8 +966,7 @@ export default function AdminDashboard({ user, role }) {
                                  <button onClick={() => handleSaveDoc(doc)} className="text-emerald-400 hover:text-emerald-300 bg-emerald-900/40 hover:bg-emerald-900/60 px-5 py-2 rounded-lg transition-colors text-xs font-semibold flex items-center shadow-lg shadow-emerald-900/20"><Save className="w-4 h-4 mr-1.5"/>Save Changes</button>
                                </div>
                             </div>
-                             </div>
-                         </div>
+                         )}
                          
                          {isExpanded && (
                            <div className="p-2 overflow-x-auto max-h-80 overflow-y-auto animate-fade-in bg-dark-900/50 w-full block">
