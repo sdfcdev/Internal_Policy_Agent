@@ -53,6 +53,9 @@ export default function AdminDashboard({ user, role }) {
   const [editDepartment, setEditDepartment] = useState('General');
   const [editAllowedEmails, setEditAllowedEmails] = useState('');
   const [editAllowedGroups, setEditAllowedGroups] = useState([]);
+  
+  const [showUploadAccess, setShowUploadAccess] = useState(false);
+  const [showEditAccess, setShowEditAccess] = useState(false);
 
   const accessGroupsList = [
     'ALL', 'CEO', 'COO', 'DIRECTORS', 'MANCOM', 'JUNIOR MANCOM', 
@@ -433,24 +436,38 @@ export default function AdminDashboard({ user, role }) {
                     <input type="date" value={expireDate} onChange={e => setExpireDate(e.target.value)} className="input-field py-1.5 px-3 text-xs w-full"/>
                   </div>
                </div>
-               <div>
-                 <label className="block text-[10px] font-medium text-slate-400 mb-2">Access Control (Who can view this?)</label>
-                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 bg-dark-900 border border-white/5 p-3 rounded-xl max-h-[150px] overflow-y-auto">
-                    {accessGroupsList.map(group => (
-                       <label key={group} className="flex items-center gap-2 cursor-pointer group">
-                          <input 
-                            type="checkbox" 
-                            className="form-checkbox bg-dark-800 border-white/10 rounded text-brand-500 focus:ring-brand-500/50 cursor-pointer"
-                            checked={allowedGroups.includes(group)}
-                            onChange={(e) => {
-                               if (e.target.checked) setAllowedGroups([...allowedGroups, group]);
-                               else setAllowedGroups(allowedGroups.filter(g => g !== group));
-                            }}
-                          />
-                          <span className="text-[10px] font-bold text-slate-400 group-hover:text-brand-300 transition-colors">{group}</span>
-                       </label>
-                    ))}
-                 </div>
+               <div className="relative">
+                 <button 
+                   onClick={() => setShowUploadAccess(!showUploadAccess)}
+                   className="flex items-center justify-between w-full input-field py-1.5 px-3 text-xs bg-dark-900 border-white/5 text-slate-400"
+                 >
+                   <span>Access Control (Who can view this?) {allowedGroups.length > 0 ? `(${allowedGroups.length} selected)` : ''}</span>
+                   {showUploadAccess ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                 </button>
+                 
+                 {showUploadAccess && (
+                   <div className="absolute z-10 top-full left-0 right-0 mt-1 grid grid-cols-2 gap-2 bg-dark-900 border border-white/10 p-3 rounded-xl max-h-[250px] overflow-y-auto shadow-xl">
+                      {accessGroupsList.map(group => (
+                         <label key={group} className="flex items-center gap-2 cursor-pointer group">
+                            <div className="relative flex items-center justify-center w-4 h-4">
+                              <input 
+                                type="checkbox" 
+                                className="peer appearance-none w-4 h-4 bg-white border border-black rounded focus:ring-0 focus:outline-none cursor-pointer"
+                                checked={allowedGroups.includes(group)}
+                                onChange={(e) => {
+                                   if (e.target.checked) setAllowedGroups([...allowedGroups, group]);
+                                   else setAllowedGroups(allowedGroups.filter(g => g !== group));
+                                }}
+                              />
+                              <div className="pointer-events-none absolute opacity-0 peer-checked:opacity-100 text-black">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-300 group-hover:text-white transition-colors leading-tight">{group}</span>
+                         </label>
+                      ))}
+                   </div>
+                 )}
                </div>
                <div>
                  <label className="block text-[10px] font-medium text-slate-400 mb-1">Allowed Emails (Comma separated, optional)</label>
@@ -884,26 +901,40 @@ export default function AdminDashboard({ user, role }) {
                                            </select>
                                        </div>
                                        <div className="flex items-center gap-1">Emails: <input type="text" value={editAllowedEmails} onChange={e=>setEditAllowedEmails(e.target.value)} placeholder="e.g. user1@sdf.lk" className="bg-dark-700 border border-white/10 rounded px-1 h-6 text-white text-[10px] w-32"/></div>
-                                       <div className="flex flex-col gap-1 w-full mt-2">
-                                         <span className="text-[10px] font-medium text-slate-400">Access Control Groups:</span>
-                                         <div className="flex flex-wrap gap-2 bg-dark-800 p-2 rounded">
-                                            {accessGroupsList.map(group => (
-                                               <label key={group} className="flex items-center gap-1 cursor-pointer">
-                                                  <input 
-                                                    type="checkbox" 
-                                                    className="form-checkbox text-[10px] w-3 h-3 bg-dark-700 border-white/20 rounded text-brand-500"
-                                                    checked={editAllowedGroups.includes(group)}
-                                                    onChange={(e) => {
-                                                       if (e.target.checked) setEditAllowedGroups([...editAllowedGroups, group]);
-                                                       else setEditAllowedGroups(editAllowedGroups.filter(g => g !== group));
-                                                    }}
-                                                  />
-                                                  <span className="text-[9px] text-slate-300">{group}</span>
-                                               </label>
-                                            ))}
-                                         </div>
+                                       <div className="flex flex-col gap-1 w-full mt-2 relative">
+                                         <button 
+                                            onClick={() => setShowEditAccess(!showEditAccess)}
+                                            className="flex items-center justify-between w-full bg-dark-700 border border-white/10 rounded px-2 py-1 text-white text-[10px]"
+                                         >
+                                           <span>Access Control Groups {editAllowedGroups.length > 0 ? `(${editAllowedGroups.length})` : ''}</span>
+                                           {showEditAccess ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                         </button>
+                                         
+                                         {showEditAccess && (
+                                           <div className="absolute z-10 top-full left-0 right-0 mt-1 flex flex-wrap gap-2 bg-dark-800 border border-white/20 p-2 rounded shadow-xl max-h-[150px] overflow-y-auto">
+                                              {accessGroupsList.map(group => (
+                                                 <label key={group} className="flex items-center gap-1.5 cursor-pointer w-[calc(50%-0.25rem)]">
+                                                    <div className="relative flex items-center justify-center w-3.5 h-3.5 shrink-0">
+                                                      <input 
+                                                        type="checkbox" 
+                                                        className="peer appearance-none w-3.5 h-3.5 bg-white border border-black rounded focus:ring-0 focus:outline-none cursor-pointer"
+                                                        checked={editAllowedGroups.includes(group)}
+                                                        onChange={(e) => {
+                                                           if (e.target.checked) setEditAllowedGroups([...editAllowedGroups, group]);
+                                                           else setEditAllowedGroups(editAllowedGroups.filter(g => g !== group));
+                                                        }}
+                                                      />
+                                                      <div className="pointer-events-none absolute opacity-0 peer-checked:opacity-100 text-black">
+                                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                      </div>
+                                                    </div>
+                                                    <span className="text-[9px] text-slate-300 leading-tight">{group}</span>
+                                                 </label>
+                                              ))}
+                                           </div>
+                                         )}
                                        </div>
-                                       <div className="flex gap-1 w-full justify-end mt-1">
+                                       <div className="flex gap-1 w-full justify-end mt-2">
                                          <button onClick={() => handleSaveDoc(doc)} className="text-emerald-400 hover:text-emerald-300 bg-emerald-900/20 px-2 py-1 h-6 rounded transition-colors break-keep whitespace-nowrap"><Save className="w-3 h-3 inline mr-1"/>Save</button>
                                          <button onClick={() => setEditingDoc(null)} className="text-slate-400 hover:text-slate-300 bg-dark-800 px-2 py-1 h-6 rounded transition-colors break-keep whitespace-nowrap">Cancel</button>
                                        </div>

@@ -635,17 +635,23 @@ async def stream_chat(request: ChatRequest):
     if conn:
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT Department, Email FROM Accounts WHERE Username = ?", request.employee_id)
+            cursor.execute("SELECT Department, Email, Role FROM Accounts WHERE Username = ?", request.employee_id)
             user_row = cursor.fetchone()
             user_dept_str = (user_row[0] or "").strip() if user_row else ""
             user_depts = [d.strip() for d in user_dept_str.split(",")] if user_dept_str else []
             user_email = (user_row[1] or request.employee_id).strip().lower() if user_row else request.employee_id.strip().lower()
+            user_role = user_row[2] if user_row else "user"
 
             cursor.execute("SELECT Filename, Department, AllowedEmails, AllowedGroups FROM KnowledgeDocuments")
             for row in cursor.fetchall():
                 f_name, f_dept, f_emails = row[0], (row[1] or "General").strip(), row[2]
                 f_allowed_groups_str = row[3] or ""
                 f_allowed_groups = [g.strip().upper() for g in f_allowed_groups_str.split(",")] if f_allowed_groups_str else []
+                
+                # Master admins bypass all access rules
+                if user_role == "master":
+                    allowed_filenames.append(f_name)
+                    continue
                 
                 # Rule 1: General/All or matches one of user's departments (from f_dept)
                 if f_dept in ["General", "All", "General / Other", ""] or f_dept in user_depts:
@@ -937,11 +943,12 @@ async def list_user_docs(username: str):
     if not conn: return []
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT Department, Email FROM Accounts WHERE Username = ?", username)
+        cursor.execute("SELECT Department, Email, Role FROM Accounts WHERE Username = ?", username)
         user_row = cursor.fetchone()
         user_dept_str = (user_row[0] or "").strip() if user_row else ""
         user_depts = [d.strip() for d in user_dept_str.split(",")] if user_dept_str else []
         user_email = (user_row[1] or username).strip().lower() if user_row else username.strip().lower()
+        user_role = user_row[2] if user_row else "user"
 
         cursor.execute("SELECT ID, Filename, Department, StartDate, ExpireDate, AdminID, CreatedAt, AllowedEmails, AllowedGroups FROM KnowledgeDocuments ORDER BY ID DESC")
         all_docs = []
@@ -952,8 +959,12 @@ async def list_user_docs(username: str):
             f_allowed_groups = [g.strip().upper() for g in f_allowed_groups_str.split(",")] if f_allowed_groups_str else []
             
             has_access = False
+            # Master Admin sees everything
+            if user_role == "master":
+                has_access = True
+                
             # Check owner department
-            if f_dept in ["General", "All", "General / Other", ""] or f_dept in user_depts:
+            if not has_access and (f_dept in ["General", "All", "General / Other", ""] or f_dept in user_depts):
                 has_access = True
             
             # Check allowed groups
