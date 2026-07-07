@@ -172,7 +172,7 @@ export default function App() {
   // Removed automatic hash-based switching that might conflict with our new role-based logic
   useEffect(() => {
     if (user) {
-      const isPrivileged = user.role === 'master' || user.role === 'admin' || user.role === 'subadmin';
+      const isPrivileged = user.role === 'master' || user.role === 'admin' || user.role === 'subadmin' || user.role === 'account_admin';
       if (!isPrivileged && view === 'admin') {
          setView('chat');
       }

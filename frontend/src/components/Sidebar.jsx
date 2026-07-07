@@ -128,7 +128,7 @@ export default function Sidebar({
       </div>
 
       {/* Navigation Switcher (ONLY FOR PRIVILEGED USERS IN CHAT VIEW) */}
-      {activeView === 'chat' && user && (user.role === 'master' || user.role === 'admin' || user.role === 'subadmin') && (
+      {activeView === 'chat' && user && (user.role === 'master' || user.role === 'admin' || user.role === 'subadmin' || user.role === 'account_admin') && (
         <div className={`px-4 py-3 border-b border-white/5 bg-brand-600/5 transition-opacity duration-300 ${isSidebarExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none hidden'}`}>
            <button 
              onClick={() => onViewChange('admin')}

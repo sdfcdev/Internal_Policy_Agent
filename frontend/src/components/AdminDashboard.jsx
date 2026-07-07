@@ -362,6 +362,7 @@ export default function AdminDashboard({ user, role }) {
 
       <div className="p-8 grid gap-8 w-full max-w-full">
 
+        {role !== 'account_admin' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start w-full">
           {/* UPLOAD SECTION */}
           <div className="glass-card p-6 flex flex-col h-full w-full">
@@ -630,9 +631,10 @@ export default function AdminDashboard({ user, role }) {
             </div>
           </div>
         </div>
+        )}
 
-        {/* ACCOUNT MANAGEMENT SECTION (MASTER/ADMIN ONLY) */}
-        {(role === 'admin' || role === 'master') && (
+        {/* ACCOUNT MANAGEMENT SECTION */}
+        {(role === 'admin' || role === 'master' || role === 'account_admin') && (
           <div className="glass-card p-6 w-full">
             <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/5 w-full">
               <div className="flex items-center gap-2">
@@ -689,6 +691,7 @@ export default function AdminDashboard({ user, role }) {
                            <option value="user">User</option>
                            <option value="subadmin">Sub-Admin</option>
                            {role === 'master' && <option value="admin">Admin</option>}
+                           {role === 'master' && <option value="account_admin">Account Admin</option>}
                         </select>
                      </div>
                      <div>
@@ -758,10 +761,11 @@ export default function AdminDashboard({ user, role }) {
                                        <option value="user">User</option>
                                        <option value="subadmin">Sub-Admin</option>
                                        {role === 'master' && <option value="admin">Admin</option>}
+                                       {role === 'master' && <option value="account_admin">Account Admin</option>}
                                     </select>
                                 ) : (
-                                    <span className={`px-2 py-0.5 rounded text-[10px] ${acc.role==='admin' ? 'bg-indigo-900/50 text-indigo-400' : acc.role==='subadmin' ? 'bg-amber-900/50 text-amber-400' : 'bg-slate-800 text-slate-400'}`}>
-                                      {acc.role.toUpperCase()}
+                                    <span className={`px-2 py-0.5 rounded text-[10px] ${acc.role==='admin' ? 'bg-indigo-900/50 text-indigo-400' : acc.role==='subadmin' ? 'bg-amber-900/50 text-amber-400' : acc.role==='account_admin' ? 'bg-cyan-900/50 text-cyan-400' : 'bg-slate-800 text-slate-400'}`}>
+                                      {acc.role.replace('_', ' ').toUpperCase()}
                                     </span>
                                 )}
                               </td>
@@ -810,10 +814,14 @@ export default function AdminDashboard({ user, role }) {
                                     </div>
                                 ) : (
                                     <div className="flex justify-end gap-1">
-                                       <button onClick={() => {
-                                           setEditingAcc(acc.username); setEditAccRole(acc.role); setEditAccName(acc.name || ''); setEditAccPreferredName(acc.preferred_name || ''); setEditAccEmpNum(acc.emp_num || ''); setEditAccDepartment(acc.department || ''); setEditAccPassword('');
-                                       }} className="text-brand-300 hover:text-brand-200 bg-brand-900/20 px-2 py-1 rounded">Edit</button>
-                                       <button onClick={() => handleDeleteAccount(acc.username)} className="text-red-400 hover:text-red-300 bg-red-900/20 px-2 py-1 rounded">Del</button>
+                                       {(role === 'master' || (role === 'admin' && acc.role !== 'master') || (role === 'account_admin' && acc.role !== 'master' && acc.role !== 'admin' && acc.role !== 'account_admin')) && (
+                                         <>
+                                           <button onClick={() => {
+                                               setEditingAcc(acc.username); setEditAccRole(acc.role); setEditAccName(acc.name || ''); setEditAccPreferredName(acc.preferred_name || ''); setEditAccEmpNum(acc.emp_num || ''); setEditAccDepartment(acc.department || ''); setEditAccPassword('');
+                                           }} className="text-brand-300 hover:text-brand-200 bg-brand-900/20 px-2 py-1 rounded">Edit</button>
+                                           <button onClick={() => handleDeleteAccount(acc.username)} className="text-red-400 hover:text-red-300 bg-red-900/20 px-2 py-1 rounded">Del</button>
+                                         </>
+                                       )}
                                     </div>
                                 )}
                               </td>
@@ -834,6 +842,7 @@ export default function AdminDashboard({ user, role }) {
         )}
 
          {/* DOCUMENTS SECTION */}
+        {role !== 'account_admin' && (
         <div className="glass-card p-6 border-b border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.5)] w-full block">
            <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
              <div className="flex items-center gap-2">
@@ -1019,6 +1028,7 @@ export default function AdminDashboard({ user, role }) {
              )}
            </div>
         </div>
+        )}
 
       </div>
     </div>
