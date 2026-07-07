@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { setupProfile } from '../api';
+import { Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const SECURITY_QUESTIONS = [
   "What was the name of your first school?",
@@ -14,6 +15,22 @@ const SECURITY_QUESTIONS = [
 export default function SetupProfile({ user, onComplete }) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const getPasswordStrength = (pwd) => {
+    if (pwd.length === 0) return { score: 0, label: '', color: 'bg-slate-700 w-0' };
+    if (pwd.length < 8) return { score: 1, label: 'Weak', color: 'bg-red-500 w-1/4' };
+    let score = 1;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+    if (score === 2) return { score: 2, label: 'Fair', color: 'bg-amber-500 w-2/4' };
+    if (score === 3) return { score: 3, label: 'Good', color: 'bg-blue-500 w-3/4' };
+    return { score: 4, label: 'Strong', color: 'bg-emerald-500 w-full' };
+  };
+  
+  const strength = getPasswordStrength(newPassword);
+  const isMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
   
   const [q1, setQ1] = useState(SECURITY_QUESTIONS[0]);
   const [a1, setA1] = useState('');
@@ -61,16 +78,52 @@ export default function SetupProfile({ user, onComplete }) {
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
+        <div className="space-y-2">
           <label className="block text-[10px] text-slate-400 mb-1">Set New Password</label>
-          <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required className="input-field py-2 text-sm w-full" />
+          <div className="relative">
+            <input 
+              type={showPassword ? "text" : "password"} 
+              value={newPassword} 
+              onChange={e=>setNewPassword(e.target.value)} 
+              required 
+              className="input-field py-2 pr-10 text-sm w-full" 
+            />
+            <button 
+              type="button" 
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {newPassword.length > 0 && (
+            <div className="flex items-center gap-2 mt-1">
+              <div className="h-1 flex-1 bg-dark-900 rounded-full overflow-hidden">
+                <div className={`h-full transition-all duration-300 ${strength.color}`}></div>
+              </div>
+              <span className={`text-[9px] font-bold uppercase w-12 text-right ${strength.color.split(' ')[0].replace('bg-', 'text-')}`}>
+                {strength.label}
+              </span>
+            </div>
+          )}
         </div>
+
         <div>
-          <label className="block text-[10px] text-slate-400 mb-1">Confirm Password</label>
-          <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required className="input-field py-2 text-sm w-full" />
+          <label className="block text-[10px] text-slate-400 mb-1 flex justify-between items-center">
+            <span>Confirm Password</span>
+            {isMatch && <span className="text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Match</span>}
+            {confirmPassword.length > 0 && !isMatch && <span className="text-red-400 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> No Match</span>}
+          </label>
+          <input 
+            type={showPassword ? "text" : "password"} 
+            value={confirmPassword} 
+            onChange={e=>setConfirmPassword(e.target.value)} 
+            required 
+            className={`input-field py-2 text-sm w-full transition-colors ${confirmPassword.length > 0 ? (isMatch ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-red-500/50 focus:border-red-500') : ''}`}
+          />
         </div>
         
-        <div className="pt-2 border-t border-white/5 space-y-4">
+        <div className="pt-4 border-t border-white/5 space-y-4">
             <p className="text-[10px] text-brand-400 font-semibold uppercase tracking-wider">Choose 3 Security Questions</p>
             
             <div className="grid grid-cols-1 gap-4">
