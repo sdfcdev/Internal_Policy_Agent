@@ -905,7 +905,8 @@ export default function AdminDashboard({ user, role }) {
                                        </div>
                                        <div className="flex gap-1 w-full justify-end mt-1">
                                          <button onClick={() => handleSaveDoc(doc)} className="text-emerald-400 hover:text-emerald-300 bg-emerald-900/20 px-2 py-1 h-6 rounded transition-colors break-keep whitespace-nowrap"><Save className="w-3 h-3 inline mr-1"/>Save</button>
-                                       <button onClick={() => setEditingDoc(null)} className="text-slate-400 hover:text-slate-300 bg-dark-800 px-2 py-1 h-6 rounded transition-colors break-keep whitespace-nowrap">Cancel</button>
+                                         <button onClick={() => setEditingDoc(null)} className="text-slate-400 hover:text-slate-300 bg-dark-800 px-2 py-1 h-6 rounded transition-colors break-keep whitespace-nowrap">Cancel</button>
+                                       </div>
                                     </>
                                  ) : (
                                     <>
