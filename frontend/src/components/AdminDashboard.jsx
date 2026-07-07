@@ -42,12 +42,26 @@ export default function AdminDashboard({ user, role }) {
   const [startDate, setStartDate]       = useState('');
   const [expireDate, setExpireDate]     = useState('');
   const [department, setDepartment]     = useState('General');
+  const [allowedEmails, setAllowedEmails] = useState('');
+  const [allowedGroups, setAllowedGroups] = useState([]);
 
   // Editing state
   const [editingDoc, setEditingDoc]     = useState(null);
   const [editFilename, setEditFilename] = useState('');
   const [editStart, setEditStart]       = useState('');
   const [editExpire, setEditExpire]     = useState('');
+  const [editDepartment, setEditDepartment] = useState('General');
+  const [editAllowedEmails, setEditAllowedEmails] = useState('');
+  const [editAllowedGroups, setEditAllowedGroups] = useState([]);
+
+  const accessGroupsList = [
+    'ALL', 'CEO', 'COO', 'DIRECTORS', 'MANCOM', 'JUNIOR MANCOM', 
+    'SECRETARY TO CHAIRMAN', 'SECRETARY TO CEO', 'COMPANY SECRETARY',
+    'AUDIT', 'COMPLIANCE', 'CREDIT', 'CREDIT ADMINISTRATION UNIT', 
+    'FINANCE', 'GOLD LOAN', 'HR', 'IT', 'LEGAL', 'MARKETING', 
+    'OPERATIONS AND ADMINISTRATION', 'RECOVERY', 'RISK MANAGEMENT', 
+    'STRATEGIC PLANNING'
+  ];
 
   // Department filter for documents list
   const [docFilterDept, setDocFilterDept] = useState('All');
@@ -60,6 +74,7 @@ export default function AdminDashboard({ user, role }) {
   const [accRole, setAccRole] = useState('user');
   const [accName, setAccName] = useState('');
   const [accEmpNum, setAccEmpNum] = useState('');
+  const [accDepartment, setAccDepartment] = useState('');
 
   // Account editing state
   const [editingAcc, setEditingAcc] = useState(null);
@@ -67,6 +82,7 @@ export default function AdminDashboard({ user, role }) {
   const [editAccName, setEditAccName] = useState('');
   const [editAccPreferredName, setEditAccPreferredName] = useState('');
   const [editAccEmpNum, setEditAccEmpNum] = useState('');
+  const [editAccDepartment, setEditAccDepartment] = useState('');
   const [editAccPassword, setEditAccPassword] = useState('');
   const [accSearch, setAccSearch] = useState('');
 
@@ -160,12 +176,14 @@ export default function AdminDashboard({ user, role }) {
     setProgress(0);
 
     try {
-      const data = await uploadPdf(selectedFile, user.username, startDate, expireDate, department, pct => setProgress(pct));
+      const data = await uploadPdf(selectedFile, user.username, startDate, expireDate, department, allowedEmails, allowedGroups.join(','), pct => setProgress(pct));
       setResult(data);
       setSelectedFile(null);
       setStartDate('');
       setExpireDate('');
       setDepartment('General');
+      setAllowedEmails('');
+      setAllowedGroups([]);
       if (fileInputRef.current) fileInputRef.current.value = '';
       fetchData(); // Refresh UI
     } catch (err) {
@@ -195,7 +213,7 @@ export default function AdminDashboard({ user, role }) {
       if (doc.filename !== editFilename) {
           await renameDocument(doc.filename, editFilename, user.username);
       }
-      await updateDocument(editFilename, editStart, editExpire, user.username);
+      await updateDocument(editFilename, editStart, editExpire, editDepartment, editAllowedEmails, editAllowedGroups.join(','), user.username);
       setEditingDoc(null);
       showToast('Document updated successfully.', 'success');
       await fetchData();
@@ -208,8 +226,8 @@ export default function AdminDashboard({ user, role }) {
   async function handleAddAccount(e) {
     e.preventDefault();
     try {
-      await addAccount(accEmpNum, accRole, accName, accEmpNum, user.username);
-      setAccName(''); setAccEmpNum('');
+      await addAccount(accEmpNum, accRole, accName, accEmpNum, accDepartment, user.username);
+      setAccName(''); setAccEmpNum(''); setAccDepartment('');
       showToast(`Account "${accEmpNum}" created successfully.`, 'success');
       await fetchData();
     } catch (e) {
@@ -230,7 +248,7 @@ export default function AdminDashboard({ user, role }) {
 
   async function handleUpdateAccount(username) {
     try {
-      await updateAccount(username, editAccRole, editAccName, editAccPreferredName, editAccEmpNum, editAccPassword, user.username);
+      await updateAccount(username, editAccRole, editAccName, editAccPreferredName, editAccEmpNum, editAccDepartment, editAccPassword, user.username);
       setEditingAcc(null);
       showToast(`Account "${username}" updated successfully.`, 'success');
       await fetchData();
@@ -383,6 +401,7 @@ export default function AdminDashboard({ user, role }) {
                       className="input-field py-1.5 px-3 text-xs w-full bg-dark-900 border-white/5"
                     >
                       <option value="General">General / Other</option>
+                      <option value="RESTRICTED / PRIVATE">RESTRICTED / PRIVATE (Emails only)</option>
                       <option value="AUDIT">AUDIT</option>
                       <option value="CBSL DIRECTIONS">CBSL DIRECTIONS</option>
                       <option value="COMPLIANCE">COMPLIANCE</option>
@@ -400,6 +419,8 @@ export default function AdminDashboard({ user, role }) {
                       <option value="STRATEGIC PLANNING">STRATEGIC PLANNING</option>
                       <option value="COMPANY SECRETARY">COMPANY SECRETARY</option>
                       <option value="SECRETARY TO CHAIRMAN">SECRETARY TO CHAIRMAN</option>
+                      <option value="MANCOM">MANCOM</option>
+                      <option value="CEO">CEO</option>
                     </select>
                </div>
                <div className="grid grid-cols-2 gap-3">
@@ -411,6 +432,29 @@ export default function AdminDashboard({ user, role }) {
                     <label className="block text-[10px] font-medium text-slate-400 mb-1">Expire Date</label>
                     <input type="date" value={expireDate} onChange={e => setExpireDate(e.target.value)} className="input-field py-1.5 px-3 text-xs w-full"/>
                   </div>
+               </div>
+               <div>
+                 <label className="block text-[10px] font-medium text-slate-400 mb-2">Access Control (Who can view this?)</label>
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 bg-dark-900 border border-white/5 p-3 rounded-xl max-h-[150px] overflow-y-auto">
+                    {accessGroupsList.map(group => (
+                       <label key={group} className="flex items-center gap-2 cursor-pointer group">
+                          <input 
+                            type="checkbox" 
+                            className="form-checkbox bg-dark-800 border-white/10 rounded text-brand-500 focus:ring-brand-500/50 cursor-pointer"
+                            checked={allowedGroups.includes(group)}
+                            onChange={(e) => {
+                               if (e.target.checked) setAllowedGroups([...allowedGroups, group]);
+                               else setAllowedGroups(allowedGroups.filter(g => g !== group));
+                            }}
+                          />
+                          <span className="text-[10px] font-bold text-slate-400 group-hover:text-brand-300 transition-colors">{group}</span>
+                       </label>
+                    ))}
+                 </div>
+               </div>
+               <div>
+                 <label className="block text-[10px] font-medium text-slate-400 mb-1">Allowed Emails (Comma separated, optional)</label>
+                 <input type="text" placeholder="e.g. kasun@sdf.lk, nimal@sdf.lk" value={allowedEmails} onChange={e => setAllowedEmails(e.target.value)} className="input-field py-1.5 px-3 text-xs w-full bg-dark-900 border-white/5"/>
                </div>
             </div>
 
@@ -607,6 +651,31 @@ export default function AdminDashboard({ user, role }) {
                         <label className="block text-[10px] text-slate-400 mb-1">Employee Number *</label>
                         <input type="text" value={accEmpNum} onChange={e=>setAccEmpNum(e.target.value)} required placeholder="e.g. EMP1234" className="input-field py-1.5 px-3 text-xs w-full"/>
                      </div>
+                     <div>
+                        <label className="block text-[10px] text-slate-400 mb-1">Department</label>
+                        <select value={accDepartment} onChange={e=>setAccDepartment(e.target.value)} className="input-field py-1.5 px-3 text-xs w-full">
+                          <option value="">None (General Only)</option>
+                          <option value="AUDIT">AUDIT</option>
+                          <option value="CBSL DIRECTIONS">CBSL DIRECTIONS</option>
+                          <option value="COMPLIANCE">COMPLIANCE</option>
+                          <option value="CREDIT">CREDIT</option>
+                          <option value="CREDIT ADMINISTRATION UNIT">CREDIT ADMINISTRATION UNIT</option>
+                          <option value="FINANCE">FINANCE</option>
+                          <option value="GOLD LOAN">GOLD LOAN</option>
+                          <option value="HR">HR</option>
+                          <option value="IT">IT</option>
+                          <option value="LEGAL">LEGAL</option>
+                          <option value="MARKETING">MARKETING</option>
+                          <option value="OPERATIONS AND ADMINISTRATION">OPERATIONS AND ADMINISTRATION</option>
+                          <option value="RECOVERY">RECOVERY</option>
+                          <option value="RISK MANAGEMENT">RISK MANAGEMENT</option>
+                          <option value="STRATEGIC PLANNING">STRATEGIC PLANNING</option>
+                          <option value="COMPANY SECRETARY">COMPANY SECRETARY</option>
+                          <option value="SECRETARY TO CHAIRMAN">SECRETARY TO CHAIRMAN</option>
+                          <option value="MANCOM">MANCOM</option>
+                          <option value="CEO">CEO</option>
+                        </select>
+                     </div>
                       <button type="submit" className="btn-primary w-full py-1.5 text-xs h-8 flex justify-center items-center">Authorize Employee</button>
                   </form>
                </div>
@@ -653,11 +722,34 @@ export default function AdminDashboard({ user, role }) {
                                        <input type="text" value={editAccName} onChange={e=>setEditAccName(e.target.value)} placeholder="Full Name" className="input-field py-1 px-2 text-[10px] w-full"/>
                                        <input type="text" value={editAccPreferredName} onChange={e=>setEditAccPreferredName(e.target.value)} placeholder="Preferred Display Name" className="input-field py-1 px-2 text-[10px] w-full"/>
                                        <input type="text" value={editAccEmpNum} onChange={e=>setEditAccEmpNum(e.target.value)} placeholder="Emp Num" className="input-field py-1 px-2 text-[10px] w-full"/>
+                                       <select value={editAccDepartment} onChange={e=>setEditAccDepartment(e.target.value)} className="input-field py-1 px-2 text-[10px] w-full mt-1">
+                                         <option value="">None (General Only)</option>
+                                         <option value="AUDIT">AUDIT</option>
+                                         <option value="CBSL DIRECTIONS">CBSL DIRECTIONS</option>
+                                         <option value="COMPLIANCE">COMPLIANCE</option>
+                                         <option value="CREDIT">CREDIT</option>
+                                         <option value="CREDIT ADMINISTRATION UNIT">CREDIT ADMINISTRATION UNIT</option>
+                                         <option value="FINANCE">FINANCE</option>
+                                         <option value="GOLD LOAN">GOLD LOAN</option>
+                                         <option value="HR">HR</option>
+                                         <option value="IT">IT</option>
+                                         <option value="LEGAL">LEGAL</option>
+                                         <option value="MARKETING">MARKETING</option>
+                                         <option value="OPERATIONS AND ADMINISTRATION">OPERATIONS AND ADMINISTRATION</option>
+                                         <option value="RECOVERY">RECOVERY</option>
+                                         <option value="RISK MANAGEMENT">RISK MANAGEMENT</option>
+                                         <option value="STRATEGIC PLANNING">STRATEGIC PLANNING</option>
+                                         <option value="COMPANY SECRETARY">COMPANY SECRETARY</option>
+                                         <option value="SECRETARY TO CHAIRMAN">SECRETARY TO CHAIRMAN</option>
+                                         <option value="MANCOM">MANCOM</option>
+                                         <option value="CEO">CEO</option>
+                                       </select>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col">
                                        <span className="leading-snug">{acc.name} <span className="text-[10px] text-slate-500 ml-1 whitespace-nowrap">({acc.emp_num})</span></span>
                                        {acc.preferred_name && <span className="text-[10px] text-brand-400 font-semibold mt-0.5">Display Name: {acc.preferred_name}</span>}
+                                       {acc.department && <span className="text-[9px] font-bold text-amber-500/80 mt-1 uppercase">Dept: {acc.department}</span>}
                                     </div>
                                 )}
                               </td>
@@ -670,7 +762,7 @@ export default function AdminDashboard({ user, role }) {
                                 ) : (
                                     <div className="flex justify-end gap-1">
                                        <button onClick={() => {
-                                           setEditingAcc(acc.username); setEditAccRole(acc.role); setEditAccName(acc.name || ''); setEditAccPreferredName(acc.preferred_name || ''); setEditAccEmpNum(acc.emp_num || ''); setEditAccPassword('');
+                                           setEditingAcc(acc.username); setEditAccRole(acc.role); setEditAccName(acc.name || ''); setEditAccPreferredName(acc.preferred_name || ''); setEditAccEmpNum(acc.emp_num || ''); setEditAccDepartment(acc.department || ''); setEditAccPassword('');
                                        }} className="text-brand-300 hover:text-brand-200 bg-brand-900/20 px-2 py-1 rounded">Edit</button>
                                        <button onClick={() => handleDeleteAccount(acc.username)} className="text-red-400 hover:text-red-300 bg-red-900/20 px-2 py-1 rounded">Del</button>
                                     </div>
@@ -766,17 +858,66 @@ export default function AdminDashboard({ user, role }) {
                                     <>
                                        <div className="flex items-center gap-1">Start: <input type="date" value={editStart} onChange={e=>setEditStart(e.target.value)} className="bg-dark-700 border border-white/10 rounded px-1 h-6 text-white text-[10px]"/></div>
                                        <div className="flex items-center gap-1">End: <input type="date" value={editExpire} onChange={e=>setEditExpire(e.target.value)} className="bg-dark-700 border border-white/10 rounded px-1 h-6 text-white text-[10px]"/></div>
-                                       <button onClick={() => handleSaveDoc(doc)} className="text-emerald-400 hover:text-emerald-300 bg-emerald-900/20 px-2 py-1 h-6 rounded transition-colors break-keep whitespace-nowrap"><Save className="w-3 h-3 inline mr-1"/>Save</button>
+                                       <div className="flex items-center gap-1">Dept: 
+                                           <select value={editDepartment} onChange={e=>setEditDepartment(e.target.value)} className="bg-dark-700 border border-white/10 rounded px-1 h-6 text-white text-[10px]">
+                                             <option value="General">General / Other</option>
+                                             <option value="RESTRICTED / PRIVATE">RESTRICTED / PRIVATE (Emails only)</option>
+                                             <option value="AUDIT">AUDIT</option>
+                                             <option value="CBSL DIRECTIONS">CBSL DIRECTIONS</option>
+                                             <option value="COMPLIANCE">COMPLIANCE</option>
+                                             <option value="CREDIT">CREDIT</option>
+                                             <option value="CREDIT ADMINISTRATION UNIT">CREDIT ADMINISTRATION UNIT</option>
+                                             <option value="FINANCE">FINANCE</option>
+                                             <option value="GOLD LOAN">GOLD LOAN</option>
+                                             <option value="HR">HR</option>
+                                             <option value="IT">IT</option>
+                                             <option value="LEGAL">LEGAL</option>
+                                             <option value="MARKETING">MARKETING</option>
+                                             <option value="OPERATIONS AND ADMINISTRATION">OPERATIONS AND ADMINISTRATION</option>
+                                             <option value="RECOVERY">RECOVERY</option>
+                                             <option value="RISK MANAGEMENT">RISK MANAGEMENT</option>
+                                             <option value="STRATEGIC PLANNING">STRATEGIC PLANNING</option>
+                                             <option value="COMPANY SECRETARY">COMPANY SECRETARY</option>
+                                             <option value="SECRETARY TO CHAIRMAN">SECRETARY TO CHAIRMAN</option>
+                                             <option value="MANCOM">MANCOM</option>
+                                             <option value="CEO">CEO</option>
+                                           </select>
+                                       </div>
+                                       <div className="flex items-center gap-1">Emails: <input type="text" value={editAllowedEmails} onChange={e=>setEditAllowedEmails(e.target.value)} placeholder="e.g. user1@sdf.lk" className="bg-dark-700 border border-white/10 rounded px-1 h-6 text-white text-[10px] w-32"/></div>
+                                       <div className="flex flex-col gap-1 w-full mt-2">
+                                         <span className="text-[10px] font-medium text-slate-400">Access Control Groups:</span>
+                                         <div className="flex flex-wrap gap-2 bg-dark-800 p-2 rounded">
+                                            {accessGroupsList.map(group => (
+                                               <label key={group} className="flex items-center gap-1 cursor-pointer">
+                                                  <input 
+                                                    type="checkbox" 
+                                                    className="form-checkbox text-[10px] w-3 h-3 bg-dark-700 border-white/20 rounded text-brand-500"
+                                                    checked={editAllowedGroups.includes(group)}
+                                                    onChange={(e) => {
+                                                       if (e.target.checked) setEditAllowedGroups([...editAllowedGroups, group]);
+                                                       else setEditAllowedGroups(editAllowedGroups.filter(g => g !== group));
+                                                    }}
+                                                  />
+                                                  <span className="text-[9px] text-slate-300">{group}</span>
+                                               </label>
+                                            ))}
+                                         </div>
+                                       </div>
+                                       <div className="flex gap-1 w-full justify-end mt-1">
+                                         <button onClick={() => handleSaveDoc(doc)} className="text-emerald-400 hover:text-emerald-300 bg-emerald-900/20 px-2 py-1 h-6 rounded transition-colors break-keep whitespace-nowrap"><Save className="w-3 h-3 inline mr-1"/>Save</button>
                                        <button onClick={() => setEditingDoc(null)} className="text-slate-400 hover:text-slate-300 bg-dark-800 px-2 py-1 h-6 rounded transition-colors break-keep whitespace-nowrap">Cancel</button>
                                     </>
                                  ) : (
                                     <>
                                        {doc.start_date && <span>Start: {doc.start_date}</span>}
                                        {doc.expire_date && <span className="text-amber-400/80">Expires: {doc.expire_date}</span>}
+                                       <span>Dept: <span className="text-slate-300">{doc.department || 'General'}</span></span>
+                                       {doc.allowed_groups && <span>Groups: <span className="text-slate-300 max-w-[150px] inline-block align-bottom leading-tight">{doc.allowed_groups}</span></span>}
+                                       {doc.allowed_emails && <span>Emails: <span className="text-slate-300 truncate max-w-[100px] inline-block align-bottom" title={doc.allowed_emails}>{doc.allowed_emails}</span></span>}
                                        <span>Admin: <span className="text-slate-300">{doc.admin_id}</span></span>
                                        
                                        <button onClick={() => {
-                                          setEditingDoc(doc.id); setEditFilename(doc.filename); setEditStart(doc.start_date||''); setEditExpire(doc.expire_date||'');
+                                          setEditingDoc(doc.id); setEditFilename(doc.filename); setEditStart(doc.start_date||''); setEditExpire(doc.expire_date||''); setEditDepartment(doc.department || 'General'); setEditAllowedEmails(doc.allowed_emails || ''); setEditAllowedGroups(doc.allowed_groups ? doc.allowed_groups.split(',') : []);
                                        }} className="text-brand-300 hover:text-brand-200 bg-brand-900/20 px-2 py-1 rounded transition-colors break-keep whitespace-nowrap"><Edit className="w-3 h-3 inline mr-1"/>Edit</button>
                                        <button onClick={() => handleDelete(doc.filename)} className="text-red-400 hover:text-red-300 bg-red-900/20 px-2 py-1 rounded transition-colors break-keep whitespace-nowrap"><Trash2 className="w-3 h-3 inline mr-1"/>Delete</button>
                                     </>

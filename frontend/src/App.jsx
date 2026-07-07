@@ -220,7 +220,7 @@ export default function App() {
     try {
       const [hist, docs] = await Promise.all([
         import('./api').then(m => m.getChatHistory(user.username)),
-        import('./api').then(m => m.getDocuments())
+        import('./api').then(m => m.getUserDocuments(user.username))
       ]);
       setHistoryData(hist);
       setLibraryDocs(docs);

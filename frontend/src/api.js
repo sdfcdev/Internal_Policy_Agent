@@ -12,11 +12,13 @@ export async function sendChat(query, employeeId) {
   return data;
 }
 
-export async function uploadPdf(file, adminId, startDate, expireDate, department = 'General', onProgress) {
+export async function uploadPdf(file, adminId, startDate, expireDate, department = 'General', allowedEmails = '', allowedGroups = '', onProgress) {
   const form = new FormData();
   form.append('file', file);
   form.append('admin_id', adminId || 'System');
   form.append('department', department);
+  form.append('allowed_emails', allowedEmails);
+  form.append('allowed_groups', allowedGroups);
   if (startDate) form.append('start_date', startDate);
   if (expireDate) form.append('expire_date', expireDate);
   
@@ -33,6 +35,11 @@ export async function uploadPdf(file, adminId, startDate, expireDate, department
 
 export async function getDocuments() {
   const { data } = await API.get('/admin/documents');
+  return data;
+}
+
+export async function getUserDocuments(username) {
+  const { data } = await API.get(`/user/documents/${username}`);
   return data;
 }
 
@@ -98,8 +105,8 @@ export async function renameDocument(old_filename, new_filename, admin_id) {
   return data;
 }
 
-export async function updateDocument(filename, start_date, expire_date, admin_id) {
-  const { data } = await API.put(`/admin/document/update`, { filename, start_date, expire_date, admin_id });
+export async function updateDocument(filename, start_date, expire_date, department, allowed_emails, allowed_groups, admin_id) {
+  const { data } = await API.put(`/admin/document/update`, { filename, start_date, expire_date, department, allowed_emails, allowed_groups, admin_id });
   return data;
 }
 
@@ -108,8 +115,8 @@ export async function getAccounts() {
   return data;
 }
 
-export async function addAccount(username, role, name, emp_num, admin_id) {
-  const { data } = await API.post('/admin/account', { username, role, name, emp_num, admin_id });
+export async function addAccount(username, role, name, emp_num, department, admin_id) {
+  const { data } = await API.post('/admin/account', { username, role, name, emp_num, department, admin_id });
   return data;
 }
 
@@ -118,8 +125,8 @@ export async function deleteAccount(username, admin_id) {
   return data;
 }
 
-export async function updateAccount(username, role, name, preferred_name, emp_num, password, admin_id) {
-  const { data } = await API.put(`/admin/account/${username}`, { role, name, preferred_name, emp_num, password, admin_id });
+export async function updateAccount(username, role, name, preferred_name, emp_num, department, password, admin_id) {
+  const { data } = await API.put(`/admin/account/${username}`, { role, name, preferred_name, emp_num, department, password, admin_id });
   return data;
 }
 

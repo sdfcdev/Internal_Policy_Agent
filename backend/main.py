@@ -225,6 +225,7 @@ class AgentState(TypedDict):
     session_id: str
     save_chat: bool
     history: str
+    allowed_filenames: List[str]
     retrieved_chunks: List[str]
     draft_response: str
     final_response: str
@@ -261,8 +262,18 @@ def researcher_node(state: AgentState) -> AgentState:
 
     vs = get_vectorstore()
     
-    # 1. Use similarity_search_with_score to evaluate document relevance
-    results = vs.similarity_search_with_score(state["query"], k=5)
+    # 1. Apply document-level Access Control (Filter by source)
+    allowed_files = state.get("allowed_filenames", [])
+    search_kwargs = {"k": 5}
+    if allowed_files:
+        search_kwargs["filter"] = {"source": {"$in": allowed_files}}
+    else:
+        # If no allowed files, meaning the user has access to NO documents
+        # (e.g. no general docs and no department docs), reject immediately.
+        logger.info("[RESEARCHER] User has no allowed documents to search.")
+        return {**state, "retrieved_chunks": ["GUARDRAIL_REJECT"], "current_agent": "Researcher"}
+        
+    results = vs.similarity_search_with_score(state["query"], **search_kwargs)
     
     # 2. Distance Threshold Guardrail (Blocks off-topic queries locally)
     # Increased threshold for Vertex AI text-embedding-004 metric ranges
@@ -615,9 +626,50 @@ async def stream_chat(request: ChatRequest):
             finally:
                 conn.close()
 
+    allowed_filenames = []
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT Department, Email FROM Accounts WHERE Username = ?", request.employee_id)
+            user_row = cursor.fetchone()
+            user_dept_str = (user_row[0] or "").strip() if user_row else ""
+            user_depts = [d.strip() for d in user_dept_str.split(",")] if user_dept_str else []
+            user_email = (user_row[1] or request.employee_id).strip().lower() if user_row else request.employee_id.strip().lower()
+
+            cursor.execute("SELECT Filename, Department, AllowedEmails, AllowedGroups FROM KnowledgeDocuments")
+            for row in cursor.fetchall():
+                f_name, f_dept, f_emails = row[0], (row[1] or "General").strip(), row[2]
+                f_allowed_groups_str = row[3] or ""
+                f_allowed_groups = [g.strip().upper() for g in f_allowed_groups_str.split(",")] if f_allowed_groups_str else []
+                
+                # Rule 1: General/All or matches one of user's departments (from f_dept)
+                if f_dept in ["General", "All", "General / Other", ""] or f_dept in user_depts:
+                    allowed_filenames.append(f_name)
+                    continue
+
+                # Rule 1.5: Matches one of the explicitly Allowed Groups (Checkboxes)
+                # user_depts usually contains roles/groups in uppercase or matching cases
+                overlap = set([ud.upper() for ud in user_depts]).intersection(set(f_allowed_groups))
+                if overlap or "ALL" in f_allowed_groups:
+                    allowed_filenames.append(f_name)
+                    continue
+                
+                # Rule 2: Explicitly allowed via Email
+                if f_emails and user_email:
+                    emails = [e.strip().lower() for e in f_emails.split(',')]
+                    if user_email in emails:
+                        allowed_filenames.append(f_name)
+                        
+        except Exception as e:
+            logger.error(f"Failed to fetch allowed filenames: {e}")
+        finally:
+            conn.close()
+
     initial_state = {
         "query": request.query, "employee_id": request.employee_id, "session_id": request.session_id, "save_chat": request.save_chat,
         "history": chat_history,
+        "allowed_filenames": allowed_filenames,
         "retrieved_chunks": [], "draft_response": "", "final_response": "", "hallucination_check": "", "rewrite_count": 0, "current_agent": "Starting", "accuracy_score": ""
     }
 
@@ -643,7 +695,9 @@ async def upload_pdf(
     admin_id: str = Form("System"), 
     start_date: str = Form(""), 
     expire_date: str = Form(""),
-    department: str = Form("General")
+    department: str = Form("General"),
+    allowed_emails: str = Form(""),
+    allowed_groups: str = Form("")
 ):
     if not file.filename.lower().endswith(".pdf"): raise HTTPException(status_code=400, detail="Only PDFs allowed.")
     
@@ -685,8 +739,8 @@ async def upload_pdf(
         if conn:
             try:
                 cursor = conn.cursor()
-                cursor.execute("INSERT INTO KnowledgeDocuments (Filename, Department, StartDate, ExpireDate, AdminID) VALUES (?, ?, ?, ?, ?)",
-                               file.filename, department, start_date, expire_date, admin_id)
+                cursor.execute("INSERT INTO KnowledgeDocuments (Filename, Department, StartDate, ExpireDate, AdminID, AllowedEmails, AllowedGroups) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                               file.filename, department, start_date, expire_date, admin_id, allowed_emails, allowed_groups)
                 conn.commit()
             finally: conn.close()
             
@@ -828,7 +882,7 @@ async def google_sso(req: Dict[str, str]):
     try:
         cursor = conn.cursor()
         # Check if user already exists (by email)
-        cursor.execute("SELECT Username, Role, Name, PreferredName FROM Accounts WHERE Email=?", email)
+        cursor.execute("SELECT Username, Role, Name, PreferredName, Department FROM Accounts WHERE Email=?", email)
         row = cursor.fetchone()
         if row:
             # Existing user — return their data
@@ -838,6 +892,7 @@ async def google_sso(req: Dict[str, str]):
                 "name": row[2],
                 "emp_num": row[0],
                 "preferred_name": row[3] or row[2],
+                "department": row[4] or "",
                 "email": email,
                 "is_first_login": False
             }
@@ -845,7 +900,7 @@ async def google_sso(req: Dict[str, str]):
             # New SDF employee — auto-create account (role: user)
             username = email  # Use email as username
             cursor.execute(
-                "INSERT INTO Accounts (Username, Email, Role, Name, PreferredName, IsRegistered) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO Accounts (Username, Email, Role, Name, PreferredName, IsRegistered, Department) VALUES (?, ?, ?, ?, ?, ?, NULL)",
                 username, email, 'user', name, name.split(' ')[0], 1
             )
             conn.commit()
@@ -869,8 +924,49 @@ async def list_docs():
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed. Cannot list documents.")
     cursor = conn.cursor()
-    cursor.execute("SELECT ID, Filename, Department, StartDate, ExpireDate, AdminID, CreatedAt FROM KnowledgeDocuments ORDER BY ID DESC")
-    return [{"id": r[0], "filename": r[1], "department": r[2], "start_date": r[3], "expire_date": r[4], "admin_id": r[5], "created_at": r[6].isoformat()} for r in cursor.fetchall()]
+    cursor.execute("SELECT ID, Filename, Department, StartDate, ExpireDate, AdminID, CreatedAt, AllowedEmails, AllowedGroups FROM KnowledgeDocuments ORDER BY ID DESC")
+    return [{"id": r[0], "filename": r[1], "department": r[2], "start_date": r[3], "expire_date": r[4], "admin_id": r[5], "created_at": r[6].isoformat(), "allowed_emails": r[7] or "", "allowed_groups": r[8] or ""} for r in cursor.fetchall()]
+
+@app.get("/user/documents/{username}")
+async def list_user_docs(username: str):
+    conn = get_db_connection()
+    if not conn: return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT Department, Email FROM Accounts WHERE Username = ?", username)
+        user_row = cursor.fetchone()
+        user_dept_str = (user_row[0] or "").strip() if user_row else ""
+        user_depts = [d.strip() for d in user_dept_str.split(",")] if user_dept_str else []
+        user_email = (user_row[1] or username).strip().lower() if user_row else username.strip().lower()
+
+        cursor.execute("SELECT ID, Filename, Department, StartDate, ExpireDate, AdminID, CreatedAt, AllowedEmails, AllowedGroups FROM KnowledgeDocuments ORDER BY ID DESC")
+        all_docs = []
+        for r in cursor.fetchall():
+            f_dept = (r[2] or "General").strip()
+            f_emails = r[7]
+            f_allowed_groups_str = r[8] or ""
+            f_allowed_groups = [g.strip().upper() for g in f_allowed_groups_str.split(",")] if f_allowed_groups_str else []
+            
+            has_access = False
+            # Check owner department
+            if f_dept in ["General", "All", "General / Other", ""] or f_dept in user_depts:
+                has_access = True
+            
+            # Check allowed groups
+            overlap = set([ud.upper() for ud in user_depts]).intersection(set(f_allowed_groups))
+            if overlap or "ALL" in f_allowed_groups:
+                has_access = True
+                
+            # Check emails
+            if f_emails and user_email:
+                emails = [e.strip().lower() for e in f_emails.split(',')]
+                if user_email in emails:
+                    has_access = True
+                    
+            if has_access:
+                all_docs.append({"id": r[0], "filename": r[1], "department": r[2], "start_date": r[3], "expire_date": r[4], "admin_id": r[5], "created_at": r[6].isoformat(), "allowed_emails": r[7] or "", "allowed_groups": r[8] or ""})
+        return all_docs
+    finally: conn.close()
 
 @app.delete("/admin/document/{filename}")
 async def delete_doc(filename: str, admin_id: str = "System"):
@@ -906,8 +1002,8 @@ async def list_users():
     if not conn: return []
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT Username, Name, Role, PreferredName FROM Accounts")
-        return [{"username": r[0], "name": r[1], "role": r[2], "preferred_name": r[3]} for r in cursor.fetchall()]
+        cursor.execute("SELECT Username, Name, Role, PreferredName, Department FROM Accounts")
+        return [{"username": r[0], "name": r[1], "role": r[2], "preferred_name": r[3], "department": r[4] or ""} for r in cursor.fetchall()]
     finally: conn.close()
 
 @app.post("/admin/account")
@@ -917,8 +1013,8 @@ async def add_user(user_data: Dict[str, str]):
     try:
         cursor = conn.cursor()
         # Insert with NULL password and IsRegistered=0 to allow them to register themselves
-        cursor.execute("INSERT INTO Accounts (Username, Password, Role, Name, IsRegistered) VALUES (?, NULL, ?, ?, 0)",
-                       user_data["username"], user_data["role"], user_data["name"])
+        cursor.execute("INSERT INTO Accounts (Username, Password, Role, Name, Department, IsRegistered) VALUES (?, NULL, ?, ?, ?, 0)",
+                       user_data["username"], user_data["role"], user_data["name"], user_data.get("department", ""))
         
         conn.commit()
         return {"message": "User authorized successfully. They can now register using their Employee Number."}
@@ -941,13 +1037,14 @@ async def update_user(username: str, user_data: Dict[str, str]):
     try:
         cursor = conn.cursor()
         pref_name = user_data.get("preferred_name")
+        department = user_data.get("department", "")
         if user_data.get("password"):
             hashed = hash_password(user_data["password"])
-            cursor.execute("UPDATE Accounts SET Role=?, Name=?, PreferredName=?, Password=? WHERE Username=?",
-                           user_data["role"], user_data["name"], pref_name, hashed, username)
+            cursor.execute("UPDATE Accounts SET Role=?, Name=?, PreferredName=?, Department=?, Password=? WHERE Username=?",
+                           user_data["role"], user_data["name"], pref_name, department, hashed, username)
         else:
-            cursor.execute("UPDATE Accounts SET Role=?, Name=?, PreferredName=? WHERE Username=?",
-                           user_data["role"], user_data["name"], pref_name, username)
+            cursor.execute("UPDATE Accounts SET Role=?, Name=?, PreferredName=?, Department=? WHERE Username=?",
+                           user_data["role"], user_data["name"], pref_name, department, username)
             
         conn.commit()
         return {"message": "User updated"}
@@ -958,8 +1055,12 @@ async def update_doc_dates(data: Dict[str, str]):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("UPDATE KnowledgeDocuments SET StartDate = ?, ExpireDate = ? WHERE Filename = ?",
-                       data["start_date"], data["expire_date"], data["filename"])
+        if "department" in data and "allowed_emails" in data:
+            cursor.execute("UPDATE KnowledgeDocuments SET StartDate = ?, ExpireDate = ?, Department = ?, AllowedEmails = ?, AllowedGroups = ? WHERE Filename = ?",
+                           data["start_date"], data["expire_date"], data["department"], data["allowed_emails"], data.get("allowed_groups", ""), data["filename"])
+        else:
+            cursor.execute("UPDATE KnowledgeDocuments SET StartDate = ?, ExpireDate = ? WHERE Filename = ?",
+                           data["start_date"], data["expire_date"], data["filename"])
         
         # Log the modification
         log_document_action("MODIFY", data["filename"], 0, data.get("admin_id", "System"))
