@@ -50,6 +50,22 @@ export default function SetupProfile({ user, onComplete }) {
       setError("Password must be at least 8 characters long.");
       return;
     }
+    if (!/[A-Z]/.test(newPassword)) {
+      setError("Password must contain at least one uppercase letter.");
+      return;
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      setError("Password must contain at least one lowercase letter.");
+      return;
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      setError("Password must contain at least one number.");
+      return;
+    }
+    if (!/[^A-Za-z0-9]/.test(newPassword)) {
+      setError("Password must contain at least one special character.");
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -97,13 +113,32 @@ export default function SetupProfile({ user, onComplete }) {
             </button>
           </div>
           {newPassword.length > 0 && (
-            <div className="flex items-center gap-2 mt-1">
-              <div className="h-1 flex-1 bg-dark-900 rounded-full overflow-hidden">
-                <div className={`h-full transition-all duration-300 ${strength.color}`}></div>
+            <div className="flex flex-col gap-2 mt-2">
+              <div className="flex items-center gap-2">
+                <div className="h-1 flex-1 bg-dark-900 rounded-full overflow-hidden">
+                  <div className={`h-full transition-all duration-300 ${strength.color}`}></div>
+                </div>
+                <span className={`text-[9px] font-bold uppercase w-12 text-right ${strength.color.split(' ')[0].replace('bg-', 'text-')}`}>
+                  {strength.label}
+                </span>
               </div>
-              <span className={`text-[9px] font-bold uppercase w-12 text-right ${strength.color.split(' ')[0].replace('bg-', 'text-')}`}>
-                {strength.label}
-              </span>
+              <div className="grid grid-cols-2 gap-1 mt-1 text-[10px]">
+                <div className={`flex items-center gap-1 ${newPassword.length >= 8 ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  <CheckCircle2 className="w-3 h-3" /> 8+ Characters
+                </div>
+                <div className={`flex items-center gap-1 ${/[A-Z]/.test(newPassword) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  <CheckCircle2 className="w-3 h-3" /> Uppercase
+                </div>
+                <div className={`flex items-center gap-1 ${/[a-z]/.test(newPassword) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  <CheckCircle2 className="w-3 h-3" /> Lowercase
+                </div>
+                <div className={`flex items-center gap-1 ${/[0-9]/.test(newPassword) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  <CheckCircle2 className="w-3 h-3" /> Number
+                </div>
+                <div className={`flex items-center gap-1 ${/[^A-Za-z0-9]/.test(newPassword) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  <CheckCircle2 className="w-3 h-3" /> Special Char
+                </div>
+              </div>
             </div>
           )}
         </div>
