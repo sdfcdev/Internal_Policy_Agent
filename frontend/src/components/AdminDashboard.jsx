@@ -899,11 +899,13 @@ export default function AdminDashboard({ user, role }) {
                      
                      return (
                      <div key={doc.id} className="bg-dark-500/30 rounded-xl border border-white/5 overflow-hidden transition-all shadow-md w-full block">
-                         <div className="bg-dark-400/50 px-4 py-3 flex flex-wrap gap-2 items-center justify-between border-b border-white/5 hover:bg-dark-400 transition cursor-pointer w-full" onClick={(e) => {
-                             if(!e.target.closest('button') && !e.target.closest('input')) toggleDocExpand(doc.id);
+                         <div className={`bg-dark-400/50 px-4 py-3 flex flex-wrap gap-2 items-center justify-between border-b border-white/5 transition w-full ${(role === 'master' || role === 'admin') ? 'hover:bg-dark-400 cursor-pointer' : ''}`} onClick={(e) => {
+                             if((role === 'master' || role === 'admin') && !e.target.closest('button') && !e.target.closest('input')) toggleDocExpand(doc.id);
                          }}>
                              <div className="flex items-center gap-3">
-                                 {isExpanded ? <ChevronUp className="w-4 h-4 text-brand-400 shrink-0"/> : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0"/>}
+                                 {(role === 'master' || role === 'admin') && (
+                                    isExpanded ? <ChevronUp className="w-4 h-4 text-brand-400 shrink-0"/> : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0"/>
+                                 )}
                                  <FileText className="w-4 h-4 text-brand-400 shrink-0" />
                                  {isEditing ? (
                                      <input type="text" value={editFilename} onChange={e=>setEditFilename(e.target.value)} className="input-field py-1 px-2 text-xs w-48 text-white bg-dark-700" onClick={e=>e.stopPropagation()}/>
