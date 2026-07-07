@@ -774,7 +774,7 @@ export default function AdminDashboard({ user, role }) {
                                     <div className="flex flex-col gap-1">
                                        <input type="text" value={editAccName} onChange={e=>setEditAccName(e.target.value)} placeholder="Full Name" className="input-field py-1 px-2 text-[10px] w-full"/>
                                        <input type="text" value={editAccPreferredName} onChange={e=>setEditAccPreferredName(e.target.value)} placeholder="Preferred Display Name" className="input-field py-1 px-2 text-[10px] w-full"/>
-                                       <input type="text" value={editAccEmpNum} onChange={e=>setEditAccEmpNum(e.target.value)} placeholder="Email Address" className="input-field py-1 px-2 text-[10px] w-full"/>
+                                       <input type="text" value={acc.username} disabled className="input-field py-1 px-2 text-[10px] w-full opacity-50 cursor-not-allowed" title="Email (Username) cannot be changed"/>
                                        <select value={editAccDepartment} onChange={e=>setEditAccDepartment(e.target.value)} className="input-field py-1 px-2 text-[10px] w-full mt-1">
                                          <option value="">None (General Only)</option>
                                          <option value="AUDIT">AUDIT</option>
