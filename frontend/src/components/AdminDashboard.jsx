@@ -117,7 +117,7 @@ export default function AdminDashboard({ user, role }) {
       } catch (e) { console.error("Docs fetch failed", e); }
 
       try {
-        if (role === 'master' || role === 'admin') {
+        if (role === 'master' || role === 'admin' || role === 'account_admin') {
           const accs = await getAccounts();
           setAccounts(accs || []);
         }
