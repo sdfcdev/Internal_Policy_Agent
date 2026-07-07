@@ -891,8 +891,8 @@ async def google_sso(req: Dict[str, str]):
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
         cursor = conn.cursor()
-        # Check if user already exists (by email)
-        cursor.execute("SELECT Username, Role, Name, PreferredName, Department FROM Accounts WHERE Email=?", email)
+        # Check if user already exists (by Username since we use Email as Username)
+        cursor.execute("SELECT Username, Role, Name, PreferredName, Department FROM Accounts WHERE Username=?", email)
         row = cursor.fetchone()
         if row:
             # Existing user — return their data
@@ -910,8 +910,8 @@ async def google_sso(req: Dict[str, str]):
             # New SDF employee — auto-create account (role: user)
             username = email  # Use email as username
             cursor.execute(
-                "INSERT INTO Accounts (Username, Email, Role, Name, PreferredName, IsRegistered, Department) VALUES (?, ?, ?, ?, ?, ?, NULL)",
-                username, email, 'user', name, name.split(' ')[0], 1
+                "INSERT INTO Accounts (Username, Role, Name, PreferredName, IsRegistered, Department) VALUES (?, ?, ?, ?, ?, NULL)",
+                username, 'user', name, name.split(' ')[0], 1
             )
             conn.commit()
             logger.info(f"New SSO user auto-created: {email}")
@@ -1284,4 +1284,28 @@ async def reset_forgotten_password(req: ResetPasswordRequest):
         cursor.execute("UPDATE Accounts SET Password = ? WHERE Username = ?", hashed, req.username)
         conn.commit()
         return {"message": "Password reset successful"}
+    finally: conn.close()
+
+class SetupProfileRequest(BaseModel):
+    username: str
+    new_password: str
+    q1: str
+    a1: str
+    q2: str
+    a2: str
+    q3: str
+    a3: str
+
+@app.post("/auth/setup-profile")
+async def setup_profile_route(req: SetupProfileRequest):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        hashed = hash_password(req.new_password)
+        cursor.execute(
+            "UPDATE Accounts SET Password = ?, Q1 = ?, A1 = ?, Q2 = ?, A2 = ?, Q3 = ?, A3 = ?, IsRegistered = 1 WHERE Username = ?",
+            hashed, req.q1, req.a1, req.q2, req.a2, req.q3, req.a3, req.username
+        )
+        conn.commit()
+        return {"message": "Profile setup successful"}
     finally: conn.close()

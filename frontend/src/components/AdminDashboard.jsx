@@ -88,6 +88,7 @@ export default function AdminDashboard({ user, role }) {
   const [editAccDepartment, setEditAccDepartment] = useState('');
   const [editAccPassword, setEditAccPassword] = useState('');
   const [accSearch, setAccSearch] = useState('');
+  const [accFilterDept, setAccFilterDept] = useState('');
 
   const fileInputRef = useRef(null);
 
@@ -638,15 +639,43 @@ export default function AdminDashboard({ user, role }) {
                 <Users className="w-5 h-5 text-indigo-400"/>
                 <h2 className="text-base font-semibold text-white">User & Admin Management</h2>
               </div>
-              <div className="relative w-full max-w-[250px]">
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
-                 <input 
-                   type="text"
-                   placeholder="Search Emp No or Name..."
-                   value={accSearch}
-                   onChange={e => setAccSearch(e.target.value)}
-                   className="input-field w-full pl-9 py-1.5 text-xs bg-dark-900/50 border-white/5 rounded-lg"
-                 />
+              <div className="flex w-full max-w-[450px] gap-2">
+                <div className="relative flex-1">
+                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                   <input 
+                     type="text"
+                     placeholder="Search Email or Name..."
+                     value={accSearch}
+                     onChange={e => setAccSearch(e.target.value)}
+                     className="input-field w-full pl-9 py-1.5 text-xs bg-dark-900/50 border-white/5 rounded-lg"
+                   />
+                </div>
+                <select 
+                   value={accFilterDept} 
+                   onChange={e => setAccFilterDept(e.target.value)}
+                   className="input-field py-1.5 px-3 text-xs bg-dark-900/50 border-white/5 rounded-lg w-[160px]"
+                >
+                   <option value="">All Departments</option>
+                   <option value="AUDIT">AUDIT</option>
+                   <option value="CBSL DIRECTIONS">CBSL DIRECTIONS</option>
+                   <option value="COMPLIANCE">COMPLIANCE</option>
+                   <option value="CREDIT">CREDIT</option>
+                   <option value="CREDIT ADMINISTRATION UNIT">CREDIT ADMINISTRATION UNIT</option>
+                   <option value="FINANCE">FINANCE</option>
+                   <option value="GOLD LOAN">GOLD LOAN</option>
+                   <option value="HR">HR</option>
+                   <option value="IT">IT</option>
+                   <option value="LEGAL">LEGAL</option>
+                   <option value="MARKETING">MARKETING</option>
+                   <option value="OPERATIONS AND ADMINISTRATION">OPERATIONS AND ADMINISTRATION</option>
+                   <option value="RECOVERY">RECOVERY</option>
+                   <option value="RISK MANAGEMENT">RISK MANAGEMENT</option>
+                   <option value="STRATEGIC PLANNING">STRATEGIC PLANNING</option>
+                   <option value="COMPANY SECRETARY">COMPANY SECRETARY</option>
+                   <option value="SECRETARY TO CHAIRMAN">SECRETARY TO CHAIRMAN</option>
+                   <option value="MANCOM">MANCOM</option>
+                   <option value="CEO">CEO</option>
+                </select>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
@@ -667,8 +696,8 @@ export default function AdminDashboard({ user, role }) {
                         <input type="text" value={accName} onChange={e=>setAccName(e.target.value)} required className="input-field py-1.5 px-3 text-xs w-full"/>
                      </div>
                      <div>
-                        <label className="block text-[10px] text-slate-400 mb-1">Employee Number *</label>
-                        <input type="text" value={accEmpNum} onChange={e=>setAccEmpNum(e.target.value)} required placeholder="e.g. EMP1234" className="input-field py-1.5 px-3 text-xs w-full"/>
+                        <label className="block text-[10px] text-slate-400 mb-1">Email Address *</label>
+                        <input type="text" value={accEmpNum} onChange={e=>setAccEmpNum(e.target.value)} required placeholder="name@sdf.lk" className="input-field py-1.5 px-3 text-xs w-full"/>
                      </div>
                      <div>
                         <label className="block text-[10px] text-slate-400 mb-1">Department</label>
@@ -710,6 +739,7 @@ export default function AdminDashboard({ user, role }) {
                      </thead>
                      <tbody className="divide-y divide-white/5">
                         {accounts.filter(acc => {
+                           if (accFilterDept && acc.department !== accFilterDept) return false;
                            if (!accSearch) return true;
                            const searchLower = accSearch.toLowerCase();
                            return (acc.username && acc.username.toLowerCase().includes(searchLower)) ||
@@ -740,7 +770,7 @@ export default function AdminDashboard({ user, role }) {
                                     <div className="flex flex-col gap-1">
                                        <input type="text" value={editAccName} onChange={e=>setEditAccName(e.target.value)} placeholder="Full Name" className="input-field py-1 px-2 text-[10px] w-full"/>
                                        <input type="text" value={editAccPreferredName} onChange={e=>setEditAccPreferredName(e.target.value)} placeholder="Preferred Display Name" className="input-field py-1 px-2 text-[10px] w-full"/>
-                                       <input type="text" value={editAccEmpNum} onChange={e=>setEditAccEmpNum(e.target.value)} placeholder="Emp Num" className="input-field py-1 px-2 text-[10px] w-full"/>
+                                       <input type="text" value={editAccEmpNum} onChange={e=>setEditAccEmpNum(e.target.value)} placeholder="Email Address" className="input-field py-1 px-2 text-[10px] w-full"/>
                                        <select value={editAccDepartment} onChange={e=>setEditAccDepartment(e.target.value)} className="input-field py-1 px-2 text-[10px] w-full mt-1">
                                          <option value="">None (General Only)</option>
                                          <option value="AUDIT">AUDIT</option>
@@ -790,6 +820,7 @@ export default function AdminDashboard({ user, role }) {
                            </tr>
                         )})}
                         {accounts.filter(acc => {
+                           if (accFilterDept && acc.department !== accFilterDept) return false;
                            if (!accSearch) return true;
                            const searchLower = accSearch.toLowerCase();
                            return (acc.username && acc.username.toLowerCase().includes(searchLower)) ||

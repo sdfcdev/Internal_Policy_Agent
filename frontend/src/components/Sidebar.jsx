@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, MessageSquare, DownloadCloud, Edit2, X, Check, ChevronDown, PanelLeftClose, PanelLeftOpen, Settings, Pin, Trash2, MoreVertical, Eye } from 'lucide-react';
+import { BotMessageSquare, LayoutDashboard, Cpu, Activity, History, FileText, MessageSquare, DownloadCloud, Edit2, X, Check, ChevronDown, PanelLeftClose, PanelLeftOpen, Settings, Pin, Trash2, MoreVertical, Eye, UserCog } from 'lucide-react';
 import { renameHistorySession, togglePinSession, deleteSession, API_URL } from '../api';
+import SetupProfile from './SetupProfile';
 
 const NAV = [
   { id: 'chat',  label: 'Policy Agent',       icon: BotMessageSquare },
@@ -39,6 +40,7 @@ export default function Sidebar({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStatusExpanded, setIsStatusExpanded] = useState(false);
   const [isPersonalizeOpen, setIsPersonalizeOpen] = useState(false);
+  const [isProfileSetupOpen, setIsProfileSetupOpen] = useState(false);
 
   const groupedHistory = historyData.filter(d => d.is_saved).reduce((acc, h) => {
       if (!acc[h.session_id]) acc[h.session_id] = [];
@@ -355,6 +357,14 @@ export default function Sidebar({
                  <div className="fixed inset-0 z-40" onClick={() => setIsSettingsOpen(false)} />
                  <div className={`absolute bottom-full mb-3 w-44 bg-dark-800 border border-white/10 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 z-50 animate-slide-up ${isSidebarExpanded ? 'right-0' : 'left-0'}`}>
                     <button 
+                      onClick={() => { setIsProfileSetupOpen(true); setIsSettingsOpen(false); }}
+                      className="w-full flex items-center justify-between px-3 py-2 mb-1 group cursor-pointer hover:bg-white/5 rounded-xl transition-colors"
+                    >
+                      <span className="text-sm font-normal text-slate-300 group-hover:text-white transition-colors">
+                        Profile Settings
+                      </span>
+                    </button>
+                    <button 
                       onClick={() => { setIsPersonalizeOpen(true); setIsSettingsOpen(false); }}
                       className="w-full flex items-center justify-between px-3 py-2 mb-1 group cursor-pointer hover:bg-white/5 rounded-xl transition-colors"
                     >
@@ -396,6 +406,27 @@ export default function Sidebar({
         </div>
       </div>
       
+      {/* Profile Setup Modal */}
+      {isProfileSetupOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+           <div className="relative w-full max-w-lg">
+              <button 
+                onClick={() => setIsProfileSetupOpen(false)} 
+                className="absolute right-6 top-6 z-10 p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <SetupProfile 
+                 user={user} 
+                 onComplete={(updatedUser) => {
+                    setIsProfileSetupOpen(false);
+                    alert("Profile updated successfully! You can now log in using your email and password.");
+                 }} 
+              />
+           </div>
+        </div>
+      )}
+
       {/* Personalize Modal */}
       {isPersonalizeOpen && (
         <>

@@ -46,8 +46,8 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-[13px] text-slate-400 mb-1">Employee Number</label>
-            <input type="text" name="username" autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)} disabled={loading} required className="input-field py-2.5 text-base w-full" autoFocus />
+            <label className="block text-[13px] text-slate-400 mb-1">Email Address</label>
+            <input type="text" name="username" autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)} disabled={loading} required placeholder="e.g. name@sdf.lk" className="input-field py-2.5 text-base w-full" autoFocus />
           </div>
           <div className="relative">
             <label className="block text-[13px] text-slate-400 mb-1">Password</label>
@@ -56,8 +56,7 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
-          <div className="flex justify-between items-center mt-2">
-            <button type="button" onClick={onRegister} className="true-color text-xs text-[#5D419B] font-bold hover:opacity-80 underline transition">New Staff? Register</button>
+          <div className="flex justify-end items-center mt-2">
             <button type="button" onClick={onForgotPassword} className="text-xs text-slate-400 hover:text-white underline transition">Forgot Password?</button>
           </div>
           {error && <div className="text-xs text-red-400 bg-red-900/20 border border-red-500/30 p-2 rounded">{error}</div>}

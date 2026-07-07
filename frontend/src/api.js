@@ -164,3 +164,11 @@ export async function resetForgottenPassword(username, newPassword) {
   const { data } = await API.post('/auth/reset-forgotten-password', { username, new_password: newPassword });
   return data;
 }
+
+export async function setupProfile(username, newPassword, q1, a1, q2, a2, q3, a3) {
+  const { data } = await API.post('/auth/setup-profile', { 
+    username, new_password: newPassword, q1, a1, q2, a2, q3, a3
+  });
+  return data;
+}
+
