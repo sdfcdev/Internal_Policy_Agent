@@ -399,7 +399,7 @@ export default function App() {
               />
             </div>
             
-            <div className={view === 'admin' && (user.role === 'master' || user.role === 'admin' || user.role === 'subadmin') ? 'flex flex-col flex-1 h-full overflow-hidden' : 'hidden'}>
+            <div className={view === 'admin' && (user.role === 'master' || user.role === 'admin' || user.role === 'subadmin' || user.role === 'account_admin') ? 'flex flex-col flex-1 h-full overflow-hidden' : 'hidden'}>
               <AdminDashboard user={user} role={user.role} />
             </div>
 
