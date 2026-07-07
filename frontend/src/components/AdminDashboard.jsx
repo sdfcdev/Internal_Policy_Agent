@@ -436,7 +436,7 @@ export default function AdminDashboard({ user, role }) {
                       <option value="CEO">CEO</option>
                     </select>
                </div>
-               <div className="relative">
+               <div className="w-full">
                  <button 
                    onClick={() => setShowUploadAccess(!showUploadAccess)}
                    className="flex items-center justify-between w-full input-field py-1.5 px-3 text-xs bg-dark-900 border-white/5 text-slate-400"
@@ -446,26 +446,28 @@ export default function AdminDashboard({ user, role }) {
                  </button>
                  
                  {showUploadAccess && (
-                   <div className="absolute z-10 top-full left-0 right-0 mt-1 grid grid-cols-2 gap-2 bg-dark-900 border border-white/10 p-3 rounded-xl max-h-[250px] overflow-y-auto shadow-xl">
-                      {accessGroupsList.map(group => (
-                         <label key={group} className="flex items-center gap-2 cursor-pointer group">
-                            <div className="relative flex items-center justify-center w-4 h-4">
-                              <input 
-                                type="checkbox" 
-                                className="peer appearance-none w-4 h-4 bg-white border border-black rounded focus:ring-0 focus:outline-none cursor-pointer"
-                                checked={allowedGroups.includes(group)}
-                                onChange={(e) => {
-                                   if (e.target.checked) setAllowedGroups([...allowedGroups, group]);
-                                   else setAllowedGroups(allowedGroups.filter(g => g !== group));
-                                }}
-                              />
-                              <div className="pointer-events-none absolute opacity-0 peer-checked:opacity-100 text-black">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                              </div>
+                   <div className="mt-2 grid grid-cols-2 gap-2 bg-dark-900/50 border border-white/10 p-3 rounded-xl max-h-[250px] overflow-y-auto shadow-inner">
+                      {accessGroupsList.map(group => {
+                         const isSelected = allowedGroups.includes(group);
+                         return (
+                         <label key={group} className="flex items-center gap-2.5 cursor-pointer p-1.5 hover:bg-white/5 rounded-lg transition-colors">
+                            <div className="relative flex items-center justify-center w-4 h-4 shrink-0">
+                               <input 
+                                 type="checkbox" 
+                                 className="peer appearance-none w-4 h-4 bg-slate-800/80 border border-slate-600 rounded cursor-pointer checked:bg-brand-500 checked:border-brand-500 transition-all"
+                                 checked={isSelected}
+                                 onChange={(e) => {
+                                    if (e.target.checked) setAllowedGroups([...allowedGroups, group]);
+                                    else setAllowedGroups(allowedGroups.filter(g => g !== group));
+                                 }}
+                               />
+                               <div className="pointer-events-none absolute opacity-0 peer-checked:opacity-100 text-white drop-shadow-sm">
+                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                               </div>
                             </div>
-                            <span className="text-[10px] font-bold text-slate-300 group-hover:text-white transition-colors leading-tight">{group}</span>
+                            <span className={`text-[11px] font-medium transition-colors ${isSelected ? 'text-brand-300' : 'text-slate-300'}`}>{group}</span>
                          </label>
-                      ))}
+                      )})}
                    </div>
                  )}
                </div>
@@ -864,82 +866,106 @@ export default function AdminDashboard({ user, role }) {
                                  {isExpanded ? <ChevronUp className="w-4 h-4 text-brand-400 shrink-0"/> : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0"/>}
                                  <FileText className="w-4 h-4 text-brand-400 shrink-0" />
                                  {isEditing ? (
-                                     <input type="text" value={editFilename} onChange={e=>setEditFilename(e.target.value)} className="input-field py-1 px-2 text-xs w-48 text-white bg-dark-700"/>
+                                     <input type="text" value={editFilename} onChange={e=>setEditFilename(e.target.value)} className="input-field py-1 px-2 text-xs w-48 text-white bg-dark-700" onClick={e=>e.stopPropagation()}/>
                                  ) : (
                                     <span className="font-semibold text-sm text-slate-200">{doc.filename}</span>
                                  )}
                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-white/5 whitespace-nowrap shrink-0">{docChunks.length} chunks</span>
                              </div>
-                             <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-400">
-                                 {isEditing ? (
-                                    <>
-                                       <div className="flex items-center gap-1">Start: <input type="date" value={editStart} onChange={e=>setEditStart(e.target.value)} className="bg-dark-700 border border-white/10 rounded px-1 h-6 text-white text-[10px]"/></div>
-                                       <div className="flex items-center gap-1">End: <input type="date" value={editExpire} onChange={e=>setEditExpire(e.target.value)} className="bg-dark-700 border border-white/10 rounded px-1 h-6 text-white text-[10px]"/></div>
-                                       <div className="flex items-center gap-1">Dept: 
-                                           <select value={editDepartment} onChange={e=>setEditDepartment(e.target.value)} className="bg-dark-700 border border-white/10 rounded px-1 h-6 text-white text-[10px]">
-                                             <option value="General">General / Other</option>
-                                             <option value="RESTRICTED / PRIVATE">RESTRICTED / PRIVATE (Emails only)</option>
-                                             <option value="AUDIT">AUDIT</option>
-                                             <option value="CBSL DIRECTIONS">CBSL DIRECTIONS</option>
-                                             <option value="COMPLIANCE">COMPLIANCE</option>
-                                             <option value="CREDIT">CREDIT</option>
-                                             <option value="CREDIT ADMINISTRATION UNIT">CREDIT ADMINISTRATION UNIT</option>
-                                             <option value="FINANCE">FINANCE</option>
-                                             <option value="GOLD LOAN">GOLD LOAN</option>
-                                             <option value="HR">HR</option>
-                                             <option value="IT">IT</option>
-                                             <option value="LEGAL">LEGAL</option>
-                                             <option value="MARKETING">MARKETING</option>
-                                             <option value="OPERATIONS AND ADMINISTRATION">OPERATIONS AND ADMINISTRATION</option>
-                                             <option value="RECOVERY">RECOVERY</option>
-                                             <option value="RISK MANAGEMENT">RISK MANAGEMENT</option>
-                                             <option value="STRATEGIC PLANNING">STRATEGIC PLANNING</option>
-                                             <option value="COMPANY SECRETARY">COMPANY SECRETARY</option>
-                                             <option value="SECRETARY TO CHAIRMAN">SECRETARY TO CHAIRMAN</option>
-                                             <option value="MANCOM">MANCOM</option>
-                                             <option value="CEO">CEO</option>
-                                           </select>
-                                       </div>
-                                       <div className="flex items-center gap-1">Emails: <input type="text" value={editAllowedEmails} onChange={e=>setEditAllowedEmails(e.target.value)} placeholder="e.g. user1@sdf.lk" className="bg-dark-700 border border-white/10 rounded px-1 h-6 text-white text-[10px] w-32"/></div>
-                                       <div className="flex flex-col gap-1 w-full mt-2">
-                                         <span className="text-[10px] font-medium text-slate-400">Access Control Groups:</span>
-                                         <div className="flex flex-wrap gap-2 bg-dark-800 p-2 rounded">
-                                            {accessGroupsList.map(group => (
-                                               <label key={group} className="flex items-center gap-1 cursor-pointer">
-                                                  <input 
-                                                    type="checkbox" 
-                                                    className="form-checkbox text-[10px] w-3 h-3 bg-white border-black rounded text-black focus:ring-black cursor-pointer"
-                                                    checked={editAllowedGroups.includes(group)}
-                                                    onChange={(e) => {
-                                                       if (e.target.checked) setEditAllowedGroups([...editAllowedGroups, group]);
-                                                       else setEditAllowedGroups(editAllowedGroups.filter(g => g !== group));
-                                                    }}
-                                                  />
-                                                  <span className="text-[9px] text-slate-300">{group}</span>
-                                               </label>
-                                            ))}
-                                         </div>
-                                       </div>
-                                       <div className="flex gap-1 w-full justify-end mt-2">
-                                         <button onClick={() => handleSaveDoc(doc)} className="text-emerald-400 hover:text-emerald-300 bg-emerald-900/20 px-2 py-1 h-6 rounded transition-colors break-keep whitespace-nowrap"><Save className="w-3 h-3 inline mr-1"/>Save</button>
-                                         <button onClick={() => setEditingDoc(null)} className="text-slate-400 hover:text-slate-300 bg-dark-800 px-2 py-1 h-6 rounded transition-colors break-keep whitespace-nowrap">Cancel</button>
-                                       </div>
-                                    </>
-                                 ) : (
-                                    <>
-                                       {doc.start_date && <span>Start: {doc.start_date}</span>}
-                                       {doc.expire_date && <span className="text-amber-400/80">Expires: {doc.expire_date}</span>}
-                                       <span>Dept: <span className="text-slate-300">{doc.department || 'General'}</span></span>
-                                       {doc.allowed_groups && <span>Groups: <span className="text-slate-300 max-w-[150px] inline-block align-bottom leading-tight">{doc.allowed_groups}</span></span>}
-                                       {doc.allowed_emails && <span>Emails: <span className="text-slate-300 truncate max-w-[100px] inline-block align-bottom" title={doc.allowed_emails}>{doc.allowed_emails}</span></span>}
-                                       <span>Admin: <span className="text-slate-300">{doc.admin_id}</span></span>
-                                       
-                                       <button onClick={() => {
-                                          setEditingDoc(doc.id); setEditFilename(doc.filename); setEditStart(doc.start_date||''); setEditExpire(doc.expire_date||''); setEditDepartment(doc.department || 'General'); setEditAllowedEmails(doc.allowed_emails || ''); setEditAllowedGroups(doc.allowed_groups ? doc.allowed_groups.split(',') : []);
-                                       }} className="text-brand-300 hover:text-brand-200 bg-brand-900/20 px-2 py-1 rounded transition-colors break-keep whitespace-nowrap"><Edit className="w-3 h-3 inline mr-1"/>Edit</button>
-                                       <button onClick={() => handleDelete(doc.filename)} className="text-red-400 hover:text-red-300 bg-red-900/20 px-2 py-1 rounded transition-colors break-keep whitespace-nowrap"><Trash2 className="w-3 h-3 inline mr-1"/>Delete</button>
-                                    </>
-                                 )}
+                             
+                             {!isEditing && (
+                               <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-400">
+                                   {doc.start_date && <span>Start: {doc.start_date}</span>}
+                                   {doc.expire_date && <span className="text-amber-400/80">Expires: {doc.expire_date}</span>}
+                                   <span>Dept: <span className="text-slate-300">{doc.department || 'General'}</span></span>
+                                   {doc.allowed_groups && <span>Groups: <span className="text-slate-300 max-w-[150px] inline-block align-bottom leading-tight">{doc.allowed_groups}</span></span>}
+                                   {doc.allowed_emails && <span>Emails: <span className="text-slate-300 truncate max-w-[100px] inline-block align-bottom" title={doc.allowed_emails}>{doc.allowed_emails}</span></span>}
+                                   <span>Admin: <span className="text-slate-300">{doc.admin_id}</span></span>
+                                   
+                                   <button onClick={(e) => {
+                                      e.stopPropagation(); setEditingDoc(doc.id); setEditFilename(doc.filename); setEditStart(doc.start_date||''); setEditExpire(doc.expire_date||''); setEditDepartment(doc.department || 'General'); setEditAllowedEmails(doc.allowed_emails || ''); setEditAllowedGroups(doc.allowed_groups ? doc.allowed_groups.split(',') : []);
+                                   }} className="text-brand-300 hover:text-brand-200 bg-brand-900/20 px-2 py-1 rounded transition-colors break-keep whitespace-nowrap"><Edit className="w-3 h-3 inline mr-1"/>Edit</button>
+                                   <button onClick={(e) => { e.stopPropagation(); handleDelete(doc.filename); }} className="text-red-400 hover:text-red-300 bg-red-900/20 px-2 py-1 rounded transition-colors break-keep whitespace-nowrap"><Trash2 className="w-3 h-3 inline mr-1"/>Delete</button>
+                               </div>
+                             )}
+                         </div>
+                         
+                         {isEditing && (
+                            <div className="p-5 bg-dark-800/80 border-b border-white/5 w-full">
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                   <div>
+                                     <label className="block text-[10px] font-medium text-slate-400 mb-1">Start Date</label>
+                                     <input type="date" value={editStart} onChange={e=>setEditStart(e.target.value)} className="bg-dark-700 border border-white/10 rounded px-2 h-8 w-full text-white text-xs"/>
+                                   </div>
+                                   <div>
+                                     <label className="block text-[10px] font-medium text-slate-400 mb-1">Expire Date</label>
+                                     <input type="date" value={editExpire} onChange={e=>setEditExpire(e.target.value)} className="bg-dark-700 border border-white/10 rounded px-2 h-8 w-full text-white text-xs"/>
+                                   </div>
+                               </div>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                   <div>
+                                     <label className="block text-[10px] font-medium text-slate-400 mb-1">Target Department</label>
+                                     <select value={editDepartment} onChange={e=>setEditDepartment(e.target.value)} className="bg-dark-700 border border-white/10 rounded px-2 h-8 w-full text-white text-xs">
+                                        <option value="General">General / Other</option>
+                                        <option value="RESTRICTED / PRIVATE">RESTRICTED / PRIVATE (Emails only)</option>
+                                        <option value="AUDIT">AUDIT</option>
+                                        <option value="CBSL DIRECTIONS">CBSL DIRECTIONS</option>
+                                        <option value="COMPLIANCE">COMPLIANCE</option>
+                                        <option value="CREDIT">CREDIT</option>
+                                        <option value="CREDIT ADMINISTRATION UNIT">CREDIT ADMINISTRATION UNIT</option>
+                                        <option value="FINANCE">FINANCE</option>
+                                        <option value="GOLD LOAN">GOLD LOAN</option>
+                                        <option value="HR">HR</option>
+                                        <option value="IT">IT</option>
+                                        <option value="LEGAL">LEGAL</option>
+                                        <option value="MARKETING">MARKETING</option>
+                                        <option value="OPERATIONS AND ADMINISTRATION">OPERATIONS AND ADMINISTRATION</option>
+                                        <option value="RECOVERY">RECOVERY</option>
+                                        <option value="RISK MANAGEMENT">RISK MANAGEMENT</option>
+                                        <option value="STRATEGIC PLANNING">STRATEGIC PLANNING</option>
+                                        <option value="COMPANY SECRETARY">COMPANY SECRETARY</option>
+                                        <option value="SECRETARY TO CHAIRMAN">SECRETARY TO CHAIRMAN</option>
+                                        <option value="MANCOM">MANCOM</option>
+                                        <option value="CEO">CEO</option>
+                                     </select>
+                                   </div>
+                                   <div>
+                                     <label className="block text-[10px] font-medium text-slate-400 mb-1">Allowed Emails (Comma separated)</label>
+                                     <input type="text" value={editAllowedEmails} onChange={e=>setEditAllowedEmails(e.target.value)} placeholder="e.g. user1@sdf.lk" className="bg-dark-700 border border-white/10 rounded px-2 h-8 w-full text-white text-xs"/>
+                                   </div>
+                               </div>
+                               <div className="w-full mb-5">
+                                 <label className="block text-[10px] font-medium text-slate-400 mb-2">Access Control Groups</label>
+                                 <div className="flex flex-wrap gap-2.5 bg-dark-900/50 p-4 rounded-xl border border-white/5">
+                                    {accessGroupsList.map(group => {
+                                       const isSelected = editAllowedGroups.includes(group);
+                                       return (
+                                       <label key={group} className="flex items-center gap-2 cursor-pointer p-1 hover:bg-white/5 rounded transition-colors w-[calc(50%-0.5rem)] md:w-auto">
+                                          <div className="relative flex items-center justify-center w-3.5 h-3.5 shrink-0">
+                                             <input 
+                                               type="checkbox" 
+                                               className="peer appearance-none w-3.5 h-3.5 bg-slate-800/80 border border-slate-600 rounded cursor-pointer checked:bg-emerald-500 checked:border-emerald-500 transition-all"
+                                               checked={isSelected}
+                                               onChange={(e) => {
+                                                  if (e.target.checked) setEditAllowedGroups([...editAllowedGroups, group]);
+                                                  else setEditAllowedGroups(editAllowedGroups.filter(g => g !== group));
+                                               }}
+                                             />
+                                             <div className="pointer-events-none absolute opacity-0 peer-checked:opacity-100 text-white drop-shadow-sm">
+                                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                             </div>
+                                          </div>
+                                          <span className={`text-[10px] font-medium transition-colors ${isSelected ? 'text-emerald-300' : 'text-slate-300'}`}>{group}</span>
+                                       </label>
+                                    )})}
+                                 </div>
+                               </div>
+                               
+                               <div className="flex gap-2 w-full justify-end mt-4 pt-4 border-t border-white/5">
+                                 <button onClick={() => setEditingDoc(null)} className="text-slate-300 hover:text-white bg-dark-700 hover:bg-dark-600 px-4 py-2 rounded-lg transition-colors text-xs font-semibold">Cancel</button>
+                                 <button onClick={() => handleSaveDoc(doc)} className="text-emerald-400 hover:text-emerald-300 bg-emerald-900/40 hover:bg-emerald-900/60 px-5 py-2 rounded-lg transition-colors text-xs font-semibold flex items-center shadow-lg shadow-emerald-900/20"><Save className="w-4 h-4 mr-1.5"/>Save Changes</button>
+                               </div>
+                            </div>
                              </div>
                          </div>
                          
