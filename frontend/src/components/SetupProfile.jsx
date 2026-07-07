@@ -13,6 +13,7 @@ const SECURITY_QUESTIONS = [
 
 export default function SetupProfile({ user, onComplete }) {
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
   const [q1, setQ1] = useState(SECURITY_QUESTIONS[0]);
   const [a1, setA1] = useState('');
@@ -28,6 +29,14 @@ export default function SetupProfile({ user, onComplete }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
     if (q1 === q2 || q1 === q3 || q2 === q3) {
       setError("Please select three different security questions.");
       return;
@@ -45,20 +54,23 @@ export default function SetupProfile({ user, onComplete }) {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8 z-10 w-full relative h-[100vh]">
-      <div className="glass-card p-8 w-full max-w-lg glow-ring animate-fade-in">
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-white">Security Setup</h2>
-          <p className="text-xs text-slate-400 mt-1">First time login: Please set your password and security questions</p>
+    <div className="glass-card p-8 w-full max-w-lg glow-ring animate-fade-in shadow-2xl">
+      <div className="text-center mb-6">
+        <h2 className="text-xl font-bold text-white">Security Setup</h2>
+        <p className="text-xs text-slate-400 mt-1">Set your password and security questions</p>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-[10px] text-slate-400 mb-1">Set New Password</label>
+          <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required className="input-field py-2 text-sm w-full" />
+        </div>
+        <div>
+          <label className="block text-[10px] text-slate-400 mb-1">Confirm Password</label>
+          <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required className="input-field py-2 text-sm w-full" />
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-[10px] text-slate-400 mb-1">Set New Password</label>
-            <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required className="input-field py-2 text-sm w-full" />
-          </div>
-          
-          <div className="pt-2 border-t border-white/5 space-y-4">
+        <div className="pt-2 border-t border-white/5 space-y-4">
             <p className="text-[10px] text-brand-400 font-semibold uppercase tracking-wider">Choose 3 Security Questions</p>
             
             <div className="grid grid-cols-1 gap-4">
@@ -95,6 +107,5 @@ export default function SetupProfile({ user, onComplete }) {
           </button>
         </form>
       </div>
-    </div>
   );
 }
