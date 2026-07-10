@@ -1039,7 +1039,11 @@ async def google_sso(req: Dict[str, str]):
         GOOGLE_CLIENT_ID = "244353936870-4bft7oc0tlei7of6e8nl3jg30pjm67k5.apps.googleusercontent.com"
         idinfo = id_token.verify_oauth2_token(req['credential'], grequests.Request(), GOOGLE_CLIENT_ID)
         email = idinfo.get('email', '')
-        name  = idinfo.get('name', '')
+        if email: email = email.lower().strip()
+        
+        name  = idinfo.get('name')
+        if not name: name = "SDF User"
+        
         # Restrict to SDF domain only
         if not email.endswith('@sdf.lk'):
             raise HTTPException(status_code=403, detail="Access denied. Only @sdf.lk accounts are allowed.")

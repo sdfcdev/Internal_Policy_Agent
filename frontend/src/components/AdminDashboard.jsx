@@ -690,6 +690,7 @@ export default function AdminDashboard({ user, role }) {
                         <select value={accRole} onChange={e=>setAccRole(e.target.value)} className="input-field py-1.5 px-3 text-xs w-full cursor-pointer">
                            <option value="user">User</option>
                            <option value="subadmin">Sub-Admin</option>
+                           {role === 'master' && <option value="master">Master</option>}
                            {role === 'master' && <option value="admin">Admin</option>}
                            {role === 'master' && <option value="account_admin">Account Admin</option>}
                         </select>
@@ -762,6 +763,7 @@ export default function AdminDashboard({ user, role }) {
                                        <option value="subadmin">Sub-Admin</option>
                                        {role === 'master' && <option value="admin">Admin</option>}
                                        {role === 'master' && <option value="account_admin">Account Admin</option>}
+                                       {role === 'master' && <option value="master">Master</option>}
                                     </select>
                                 ) : (
                                     <span className={`px-2 py-0.5 rounded text-[10px] ${acc.role==='admin' ? 'bg-indigo-900/50 text-indigo-400' : acc.role==='subadmin' ? 'bg-amber-900/50 text-amber-400' : acc.role==='account_admin' ? 'bg-cyan-900/50 text-cyan-400' : 'bg-slate-800 text-slate-400'}`}>
