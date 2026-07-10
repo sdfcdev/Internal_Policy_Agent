@@ -927,7 +927,7 @@ async def list_groups():
     finally: conn.close()
 
 def get_user_google_groups(user_email: str) -> list:
-    """Returns list of Google Group emails the user belongs to."""
+    """Returns list of Google Group emails the user belongs to (from DB cache)."""
     conn = get_db_connection()
     if not conn: return []
     try:
@@ -935,6 +935,33 @@ def get_user_google_groups(user_email: str) -> list:
         cursor.execute("SELECT GroupEmail FROM GroupMembers WHERE MemberEmail = ?", user_email.lower())
         return [r[0].lower() for r in cursor.fetchall()]
     finally: conn.close()
+
+def get_user_live_groups(user_email: str) -> list:
+    """Real-time Google Directory API lookup - used on SSO login for instant accuracy.
+    Falls back to DB cache if API is unavailable."""
+    try:
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
+
+        if not SERVICE_ACCOUNT_FILE.exists() or not WORKSPACE_ADMIN_EMAIL:
+            return get_user_google_groups(user_email)
+
+        SCOPES = [
+            'https://www.googleapis.com/auth/admin.directory.group.readonly',
+        ]
+        creds = service_account.Credentials.from_service_account_file(
+            str(SERVICE_ACCOUNT_FILE), scopes=SCOPES
+        ).with_subject(WORKSPACE_ADMIN_EMAIL)
+
+        service = build('admin', 'directory_v1', credentials=creds, cache_discovery=False)
+        result = service.groups().list(userKey=user_email).execute()
+        groups = result.get('groups', [])
+        group_emails = [g.get('email', '').lower() for g in groups if g.get('email')]
+        logger.info(f"[LIVE GROUPS] {user_email} is in {len(group_emails)} groups.")
+        return group_emails
+    except Exception as e:
+        logger.warning(f"[LIVE GROUPS] API call failed for {user_email}, falling back to DB: {e}")
+        return get_user_google_groups(user_email)
 
 # ─────────────────────────────────────────────
 # Password Hashing Helpers (bcrypt)
@@ -950,6 +977,35 @@ def verify_password(plain: str, hashed: str) -> bool:
     except Exception:
         # Fallback: plain-text comparison for legacy accounts not yet migrated
         return plain == hashed
+
+# ─────────────────────────────────────────────
+# Google Groups to Excel Department Mapping
+# ─────────────────────────────────────────────
+# Maps actual Google Group emails to the exact Department names used in the Admin Dashboard Checkboxes
+GROUP_TO_DEPT_MAPPING = {
+    "mancom@sdf.lk": "MANCOM",
+    "compliancedepartment@sdf.lk": "COMPLIANCE TEAM",
+    "auditdepartment@sdf.lk": "INTERNAL AUDIT",
+    "risk@sdf.lk": "RISK MANAGEMENT",
+    "boardofdirectors@sdf.lk": "BOARD",
+    "tencomm@sdf.lk": "TENDER COMMITTEE",
+    "finance@sdf.lk": "FINANCE",
+    "creditdepartment@sdf.lk": "CREDIT",
+    "recoverydepartment@sdf.lk": "RECOVERY",
+    "alco@sdf.lk": "ALCO",
+    "cau@sdf.lk": "CAU",
+    "itsecurity@sdf.lk": "ITSC",
+    "itgroup@sdf.lk": "IT",
+    "operationsdepartment@sdf.lk": "OPERATIONS",
+    "productdevelopmentcommittee@sdf.lk": "PDC",
+    "productheads@sdf.lk": "PRODUCT HEADS",
+    "sustainabilitycommittee@sdf.lk": "SUSTAINABILITYCOMMITTE",
+    "ormc@sdf.lk": "ORMC",
+    "goldloandepartment@sdf.lk": "GOLD LOAN",
+    "humanresources@sdf.lk": "HR",
+    "legaldepartment@sdf.lk": "LEGAL",
+    "marketingdepartment@sdf.lk": "MARKETING"
+}
 
 @app.post("/auth/login")
 async def login(req: Dict[str, str]):
@@ -998,14 +1054,23 @@ async def google_sso(req: Dict[str, str]):
     try:
         cursor = conn.cursor()
 
-        # Auto-detect department from Google Groups
-        user_google_groups = get_user_google_groups(email)
+        # Auto-detect department from Google Groups (Live API - real-time accurate)
+        user_google_groups = get_user_live_groups(email)
         auto_departments = []
         for g_email in user_google_groups:
-            # Extract group name from email: it@sdf.lk → IT, mancom@sdf.lk → MANCOM
-            group_name = g_email.split('@')[0].upper().replace('-', ' ').replace('_', ' ')
-            if group_name and group_name not in auto_departments:
-                auto_departments.append(group_name)
+            g_email_lower = g_email.lower()
+            
+            # 1. Check if this exact email is in our Mapping Dictionary
+            if g_email_lower in GROUP_TO_DEPT_MAPPING:
+                mapped_dept = GROUP_TO_DEPT_MAPPING[g_email_lower]
+                if mapped_dept not in auto_departments:
+                    auto_departments.append(mapped_dept)
+            else:
+                # 2. Fallback: Extract group name from email if not mapped
+                group_name = g_email_lower.split('@')[0].upper().replace('-', ' ').replace('_', ' ')
+                if group_name and group_name not in auto_departments:
+                    auto_departments.append(group_name)
+                    
         auto_dept_str = ", ".join(auto_departments) if auto_departments else None
 
         # Check if user already exists
