@@ -194,7 +194,12 @@ def ensure_audit_table():
         except: pass
         try: cursor.execute("ALTER TABLE KnowledgeDocuments ADD AllowedGroups NVARCHAR(MAX) NULL")
         except: pass
-        
+        # Google Groups Sync Tables
+        try: cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='GoogleGroups' AND xtype='U') CREATE TABLE GoogleGroups (ID INT IDENTITY(1,1) PRIMARY KEY, GroupEmail NVARCHAR(200) NOT NULL UNIQUE, GroupName NVARCHAR(255) NULL, SyncedAt DATETIME DEFAULT GETDATE())")
+        except: pass
+        try: cursor.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='GroupMembers' AND xtype='U') CREATE TABLE GroupMembers (ID INT IDENTITY(1,1) PRIMARY KEY, GroupEmail NVARCHAR(200) NOT NULL, MemberEmail NVARCHAR(200) NOT NULL)")
+        except: pass
+
         conn.commit()
     except pyodbc.Error as exc:
         logger.error("Database setup failed: %s", exc)
@@ -831,6 +836,107 @@ async def list_all_chunks():
 # Auth, List Chunks, List Logs, etc.
 
 # ─────────────────────────────────────────────
+# Google Groups Sync
+# ─────────────────────────────────────────────
+SERVICE_ACCOUNT_FILE = BASE_DIR / "chatbot.json"
+WORKSPACE_ADMIN_EMAIL = os.getenv("WORKSPACE_ADMIN_EMAIL", "")
+
+def sync_google_groups_to_db():
+    """Pulls all Google Groups + Members from Workspace and stores in DB."""
+    try:
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
+
+        if not SERVICE_ACCOUNT_FILE.exists():
+            logger.error("[GROUPS SYNC] Service account JSON not found at %s", SERVICE_ACCOUNT_FILE)
+            return {"status": "error", "message": "Service account file not found."}
+
+        if not WORKSPACE_ADMIN_EMAIL:
+            logger.error("[GROUPS SYNC] WORKSPACE_ADMIN_EMAIL env var not set.")
+            return {"status": "error", "message": "WORKSPACE_ADMIN_EMAIL not configured."}
+
+        SCOPES = [
+            'https://www.googleapis.com/auth/admin.directory.group.readonly',
+            'https://www.googleapis.com/auth/admin.directory.group.member.readonly',
+        ]
+        creds = service_account.Credentials.from_service_account_file(
+            str(SERVICE_ACCOUNT_FILE), scopes=SCOPES
+        ).with_subject(WORKSPACE_ADMIN_EMAIL)
+
+        service = build('admin', 'directory_v1', credentials=creds, cache_discovery=False)
+
+        # Fetch all groups in the domain
+        domain = WORKSPACE_ADMIN_EMAIL.split('@')[-1]
+        groups_result = service.groups().list(domain=domain, maxResults=200).execute()
+        groups = groups_result.get('groups', [])
+        logger.info("[GROUPS SYNC] Found %d groups in domain.", len(groups))
+
+        conn = get_db_connection()
+        if not conn:
+            return {"status": "error", "message": "DB connection failed."}
+        cursor = conn.cursor()
+
+        # Clear existing group/member data for a fresh sync
+        cursor.execute("DELETE FROM GroupMembers")
+        cursor.execute("DELETE FROM GoogleGroups")
+
+        for group in groups:
+            g_email = group.get('email', '').lower()
+            g_name  = group.get('name', '')
+            if not g_email:
+                continue
+            cursor.execute("INSERT INTO GoogleGroups (GroupEmail, GroupName, SyncedAt) VALUES (?, ?, GETDATE())", g_email, g_name)
+
+            # Fetch members of each group
+            try:
+                members_result = service.members().list(groupKey=g_email).execute()
+                members = members_result.get('members', [])
+                for m in members:
+                    m_email = m.get('email', '').lower()
+                    if m_email:
+                        cursor.execute("INSERT INTO GroupMembers (GroupEmail, MemberEmail) VALUES (?, ?)", g_email, m_email)
+            except Exception as me:
+                logger.warning("[GROUPS SYNC] Could not fetch members for %s: %s", g_email, me)
+
+        conn.commit()
+        conn.close()
+        logger.info("[GROUPS SYNC] Sync complete. %d groups synced.", len(groups))
+        return {"status": "ok", "groups_synced": len(groups)}
+
+    except Exception as e:
+        logger.error("[GROUPS SYNC] Failed: %s", traceback.format_exc())
+        return {"status": "error", "message": str(e)}
+
+@app.post("/admin/sync-groups")
+async def trigger_group_sync():
+    """Manually trigger Google Groups sync from Admin Dashboard."""
+    result = sync_google_groups_to_db()
+    if result["status"] == "error":
+        raise HTTPException(status_code=500, detail=result["message"])
+    return result
+
+@app.get("/admin/groups")
+async def list_groups():
+    """Return all synced Google Groups for the Admin Dashboard checkboxes."""
+    conn = get_db_connection()
+    if not conn: return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT GroupEmail, GroupName FROM GoogleGroups ORDER BY GroupName")
+        return [{"email": r[0], "name": r[1] or r[0]} for r in cursor.fetchall()]
+    finally: conn.close()
+
+def get_user_google_groups(user_email: str) -> list:
+    """Returns list of Google Group emails the user belongs to."""
+    conn = get_db_connection()
+    if not conn: return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT GroupEmail FROM GroupMembers WHERE MemberEmail = ?", user_email.lower())
+        return [r[0].lower() for r in cursor.fetchall()]
+    finally: conn.close()
+
+# ─────────────────────────────────────────────
 # Password Hashing Helpers (bcrypt)
 # ─────────────────────────────────────────────
 def hash_password(plain: str) -> str:
@@ -962,16 +1068,23 @@ async def list_user_docs(username: str):
             # Master Admin sees everything
             if user_role == "master":
                 has_access = True
-                
+
             # Check owner department
             if not has_access and (f_dept in ["General", "All", "General / Other", ""] or f_dept in user_depts):
                 has_access = True
-            
-            # Check allowed groups
+
+            # Check allowed groups (Department-based legacy groups)
             overlap = set([ud.upper() for ud in user_depts]).intersection(set(f_allowed_groups))
             if overlap or "ALL" in f_allowed_groups:
                 has_access = True
-                
+
+            # Check Google Groups membership (new)
+            if not has_access and f_allowed_groups:
+                user_google_groups = get_user_google_groups(user_email)
+                google_overlap = set(user_google_groups).intersection(set([g.lower() for g in f_allowed_groups]))
+                if google_overlap:
+                    has_access = True
+
             # Check emails
             if f_emails and user_email:
                 emails = [e.strip().lower() for e in f_emails.split(',')]
