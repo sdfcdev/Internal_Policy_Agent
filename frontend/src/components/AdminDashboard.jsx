@@ -802,7 +802,13 @@ export default function AdminDashboard({ user, role }) {
                                     <div className="flex flex-col">
                                        <span className="leading-snug">{acc.name} <span className="text-[10px] text-slate-500 ml-1 whitespace-nowrap">({acc.emp_num})</span></span>
                                        {acc.preferred_name && <span className="text-[10px] text-brand-400 font-semibold mt-0.5">Display Name: {acc.preferred_name}</span>}
-                                       {acc.department && <span className="text-[9px] font-bold text-amber-500/80 mt-1 uppercase">Dept: {acc.department}</span>}
+                                       {acc.department && (
+                                         <div className="flex flex-wrap gap-1 mt-1">
+                                           {acc.department.split(',').map(d => d.trim()).filter(Boolean).map(d => (
+                                             <span key={d} className="text-[8px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-full uppercase">{d}</span>
+                                           ))}
+                                         </div>
+                                       )}
                                     </div>
                                 )}
                               </td>

@@ -997,41 +997,58 @@ async def google_sso(req: Dict[str, str]):
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
         cursor = conn.cursor()
-        # Check if user already exists (by Username since we use Email as Username)
+
+        # Auto-detect department from Google Groups
+        user_google_groups = get_user_google_groups(email)
+        auto_departments = []
+        for g_email in user_google_groups:
+            # Extract group name from email: it@sdf.lk → IT, mancom@sdf.lk → MANCOM
+            group_name = g_email.split('@')[0].upper().replace('-', ' ').replace('_', ' ')
+            if group_name and group_name not in auto_departments:
+                auto_departments.append(group_name)
+        auto_dept_str = ", ".join(auto_departments) if auto_departments else None
+
+        # Check if user already exists
         cursor.execute("SELECT Username, Role, Name, PreferredName, Department FROM Accounts WHERE Username=?", email)
         row = cursor.fetchone()
         if row:
-            # Existing user — return their data
+            # Existing user — update department from Google Groups if available
+            final_dept = auto_dept_str if auto_dept_str else (row[4] or "")
+            if auto_dept_str:
+                cursor.execute("UPDATE Accounts SET Department=? WHERE Username=?", auto_dept_str, email)
+                conn.commit()
             return {
                 "username": row[0],
                 "role": row[1],
                 "name": row[2],
                 "emp_num": row[0],
                 "preferred_name": row[3] or row[2],
-                "department": row[4] or "",
+                "department": final_dept,
                 "email": email,
                 "is_first_login": False
             }
         else:
-            # New SDF employee — auto-create account (role: user)
-            username = email  # Use email as username
+            # New SDF employee — auto-create account with auto-detected department
+            username = email
             cursor.execute(
-                "INSERT INTO Accounts (Username, Role, Name, PreferredName, IsRegistered, Department) VALUES (?, ?, ?, ?, ?, NULL)",
-                username, 'user', name, name.split(' ')[0], 1
+                "INSERT INTO Accounts (Username, Role, Name, PreferredName, IsRegistered, Department) VALUES (?, ?, ?, ?, ?, ?)",
+                username, 'user', name, name.split(' ')[0], 1, auto_dept_str
             )
             conn.commit()
-            logger.info(f"New SSO user auto-created: {email}")
+            logger.info(f"New SSO user auto-created: {email} | Departments: {auto_dept_str}")
             return {
                 "username": username,
                 "role": "user",
                 "name": name,
                 "emp_num": username,
                 "preferred_name": name.split(' ')[0],
+                "department": auto_dept_str or "",
                 "email": email,
                 "is_first_login": False
             }
     finally:
         conn.close()
+
 
 
 @app.get("/admin/documents")
