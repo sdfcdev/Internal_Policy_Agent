@@ -119,6 +119,7 @@ export default function App() {
   const [fontStyle, setFontStyle] = useState('Inter');
 
   const [hasAgreedTerms, setHasAgreedTerms] = useState(true);
+  const [isTermsChecked, setIsTermsChecked] = useState(false);
 
   // Load user-specific preferences on login
   useEffect(() => {
@@ -449,12 +450,26 @@ export default function App() {
                      </div>
                   </div>
                   
+                  <div className="w-full mb-5 flex items-start gap-3 bg-dark-900/30 p-3 rounded-lg border border-white/5">
+                    <input 
+                      type="checkbox" 
+                      id="terms-checkbox"
+                      checked={isTermsChecked}
+                      onChange={(e) => setIsTermsChecked(e.target.checked)}
+                      className="mt-1 w-4 h-4 rounded border-gray-600 bg-dark-800 text-brand-500 focus:ring-brand-500 focus:ring-offset-dark-900 cursor-pointer"
+                    />
+                    <label htmlFor="terms-checkbox" className="text-xs text-slate-300 text-left leading-relaxed cursor-pointer select-none">
+                      I have read and understood the terms above and agree to comply with SDF data policies.
+                    </label>
+                  </div>
+
                   <button 
+                     disabled={!isTermsChecked}
                      onClick={() => {
                         localStorage.setItem(`sdf_terms_agreed_${user.username}`, 'true');
                         setHasAgreedTerms(true);
                      }}
-                     className="w-full btn-primary py-3.5 rounded-xl text-sm font-bold tracking-wide shadow-lg shadow-brand-500/25 flex justify-center items-center gap-2 active:scale-95 transition-all"
+                     className={`w-full py-3.5 rounded-xl text-sm font-bold tracking-wide shadow-lg flex justify-center items-center gap-2 transition-all ${isTermsChecked ? 'btn-primary shadow-brand-500/25 active:scale-95 cursor-pointer' : 'bg-dark-700 text-slate-500 cursor-not-allowed opacity-70'}`}
                   >
                      I Agree & Continue <ArrowRight className="w-4 h-4" />
                   </button>
