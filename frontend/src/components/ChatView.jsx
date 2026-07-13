@@ -71,13 +71,13 @@ export default function ChatView({
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
       return;
     }
-    // If user has scrolled up more than 150px, don't force them back down
-    const isScrolledUp = container.scrollHeight - container.scrollTop - container.clientHeight > 150;
+    // If user has scrolled up even a tiny bit (10px), don't force them back down
+    const isScrolledUp = container.scrollHeight - container.scrollTop - container.clientHeight > 10;
     if (!isScrolledUp) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
     }
   }, [messages, loading]);
 
