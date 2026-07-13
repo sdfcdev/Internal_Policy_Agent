@@ -53,6 +53,7 @@ export default function ChatView({
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
   const abortControllerRef = useRef(null);
+  const scrollContainerRef = useRef(null);
 
   function stopGeneration() {
     if (abortControllerRef.current) {
@@ -67,7 +68,18 @@ export default function ChatView({
     }
   }, [user, sessionId]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    // If user has scrolled up more than 150px, don't force them back down
+    const isScrolledUp = container.scrollHeight - container.scrollTop - container.clientHeight > 150;
+    if (!isScrolledUp) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, loading]);
 
   function startNewChat() {
     const freshSession = Date.now().toString();
@@ -319,7 +331,7 @@ export default function ChatView({
            </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6 custom-scrollbar">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6 custom-scrollbar">
           {messages.map((msg, i) => (
              <MessageBubble 
                 key={`${msg.id}-${i}`} 
