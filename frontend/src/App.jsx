@@ -455,9 +455,10 @@ export default function App() {
                     className="w-full mb-5 flex items-start gap-3 bg-dark-900/30 p-3 rounded-lg border border-white/5 cursor-pointer hover:bg-dark-900/50 transition-colors group"
                   >
                     <div 
-                      className={`mt-1 flex-shrink-0 w-4 h-4 rounded flex items-center justify-center transition-colors border-2 ${isTermsChecked ? 'bg-white border-white' : 'bg-white border-slate-400 group-hover:border-slate-300'}`}
+                      className={`mt-1 flex-shrink-0 w-4 h-4 rounded flex items-center justify-center transition-colors border-2 ${isTermsChecked ? 'border-white' : 'border-slate-400 group-hover:border-slate-300'}`}
+                      style={{ backgroundColor: '#ffffff', borderColor: isTermsChecked ? '#ffffff' : undefined }}
                     >
-                       {isTermsChecked && <Check className="w-3 h-3 text-black" strokeWidth={4} />}
+                       {isTermsChecked && <Check className="w-3 h-3" style={{ color: '#000000' }} strokeWidth={4} />}
                     </div>
                     <p className="text-xs text-slate-300 text-left leading-relaxed select-none">
                       I have read and understood the terms above and agree to comply with SDF data policies.
