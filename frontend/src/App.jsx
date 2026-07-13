@@ -422,12 +422,12 @@ export default function App() {
           {/* NDA / Terms Modal */}
           {user && !hasAgreedTerms && (
              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-dark-900/80 backdrop-blur-md p-4">
-               <div className="bg-dark-800 border border-brand-500/30 shadow-[0_0_50px_rgba(139,92,246,0.15)] rounded-2xl max-w-lg w-full p-8 flex flex-col items-center text-center animate-fade-in relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 via-purple-500 to-brand-500"></div>
-                  <div className="w-16 h-16 bg-brand-500/10 rounded-full flex items-center justify-center mb-6">
-                     <ShieldAlert className="w-8 h-8 text-brand-400" />
+               <div className="bg-dark-800 border border-brand-500/30 shadow-[0_0_50px_rgba(139,92,246,0.15)] rounded-2xl max-w-lg w-full p-6 sm:p-8 flex flex-col items-center text-center animate-fade-in relative overflow-y-auto custom-scrollbar max-h-[95vh]">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 via-purple-500 to-brand-500 shrink-0"></div>
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-brand-500/10 rounded-full flex items-center justify-center mb-4 shrink-0">
+                     <ShieldAlert className="w-6 h-6 sm:w-8 sm:h-8 text-brand-400" />
                   </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">SDF Policy Assistant</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 shrink-0">SDF Policy Assistant</h2>
                   <h3 className="text-sm font-semibold text-brand-400 uppercase tracking-widest mb-6">Confidentiality Agreement</h3>
                   
                   <div className="space-y-4 text-left w-full mb-8">
