@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Eye, EyeOff, ShieldAlert, Lock, Briefcase, ArrowRight, FileText } from 'lucide-react';
+import { Download, Eye, EyeOff, ShieldAlert, Lock, Briefcase, ArrowRight, FileText, Clock } from 'lucide-react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import Sidebar       from './components/Sidebar';
 import ChatView      from './components/ChatView';
@@ -442,6 +442,10 @@ export default function App() {
                      <div className="bg-dark-900/50 rounded-xl p-4 border border-white/5 hover:border-brand-500/30 transition-colors">
                        <h4 className="text-sm font-bold text-slate-200 mb-1 flex items-center gap-2"><FileText className="w-4 h-4 text-emerald-400"/> Disclaimer</h4>
                        <p className="text-xs text-slate-400 leading-relaxed">While the SDF Policy Assistant offers quick guidance, its automated responses must not be exclusively relied upon for critical decisions. Users are strictly advised to consult the original SDF policy documents and cross-check with the appropriate responsible authorities before taking any action.</p>
+                     </div>
+                     <div className="bg-dark-900/50 rounded-xl p-4 border border-white/5 hover:border-brand-500/30 transition-colors">
+                       <h4 className="text-sm font-bold text-slate-200 mb-1 flex items-center gap-2"><Clock className="w-4 h-4 text-amber-400"/> Data Retention</h4>
+                       <p className="text-xs text-slate-400 leading-relaxed">To ensure data security and compliance, any chat session that remains inactive for 30 days will have its history automatically and permanently deleted from the system.</p>
                      </div>
                   </div>
                   
