@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, EyeOff, ShieldAlert, Lock, Briefcase, ArrowRight, FileText } from 'lucide-react';
+import { Download, Eye, EyeOff, ShieldAlert, Lock, Briefcase, ArrowRight, FileText } from 'lucide-react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import Sidebar       from './components/Sidebar';
 import ChatView      from './components/ChatView';
