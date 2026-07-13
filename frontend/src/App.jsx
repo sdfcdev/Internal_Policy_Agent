@@ -427,7 +427,7 @@ export default function App() {
                   <div className="w-16 h-16 bg-brand-500/10 rounded-full flex items-center justify-center mb-6">
                      <ShieldAlert className="w-8 h-8 text-brand-400" />
                   </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">SDF AI Copilot</h2>
+                  <h2 className="text-2xl font-bold text-white mb-2">SDF Policy Assistant</h2>
                   <h3 className="text-sm font-semibold text-brand-400 uppercase tracking-widest mb-6">Confidentiality Agreement</h3>
                   
                   <div className="space-y-4 text-left w-full mb-8">
@@ -437,11 +437,11 @@ export default function App() {
                      </div>
                      <div className="bg-dark-900/50 rounded-xl p-4 border border-white/5 hover:border-brand-500/30 transition-colors">
                        <h4 className="text-sm font-bold text-slate-200 mb-1 flex items-center gap-2"><Briefcase className="w-4 h-4 text-blue-400"/> Authorized Usage</h4>
-                       <p className="text-xs text-slate-400 leading-relaxed">This AI assistant must be used exclusively for official bank duties. Do not use it for personal inquiries or non-work-related tasks.</p>
+                       <p className="text-xs text-slate-400 leading-relaxed">This AI assistant must be used exclusively for official SDF duties. Do not use it for personal inquiries or non-work-related tasks.</p>
                      </div>
                      <div className="bg-dark-900/50 rounded-xl p-4 border border-white/5 hover:border-brand-500/30 transition-colors">
-                       <h4 className="text-sm font-bold text-slate-200 mb-1 flex items-center gap-2"><FileText className="w-4 h-4 text-emerald-400"/> System Accuracy</h4>
-                       <p className="text-xs text-slate-400 leading-relaxed">While the SDF Policy Agent provides quick policy guidance, users must verify critical decisions against the original SDF policy documents.</p>
+                       <h4 className="text-sm font-bold text-slate-200 mb-1 flex items-center gap-2"><FileText className="w-4 h-4 text-emerald-400"/> Disclaimer</h4>
+                       <p className="text-xs text-slate-400 leading-relaxed">While the SDF Policy Assistant offers quick guidance, its automated responses must not be exclusively relied upon for critical decisions. Users are strictly advised to consult the original SDF policy documents and cross-check with the appropriate responsible authorities before taking any action.</p>
                      </div>
                   </div>
                   
