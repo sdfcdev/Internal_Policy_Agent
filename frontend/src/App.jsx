@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Eye, EyeOff } from 'lucide-react';
+import { Download, EyeOff, ShieldAlert, Lock, Briefcase, ArrowRight, FileText } from 'lucide-react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import Sidebar       from './components/Sidebar';
 import ChatView      from './components/ChatView';
@@ -118,6 +118,8 @@ export default function App() {
   const [aiBubbleColor, setAiBubbleColor] = useState('white');
   const [fontStyle, setFontStyle] = useState('Inter');
 
+  const [hasAgreedTerms, setHasAgreedTerms] = useState(true);
+
   // Load user-specific preferences on login
   useEffect(() => {
     if (user?.username) {
@@ -125,6 +127,9 @@ export default function App() {
       setUserBubbleColor(localStorage.getItem(`sdf_user_color_${user.username}`) || 'blue');
       setAiBubbleColor(localStorage.getItem(`sdf_ai_color_${user.username}`) || 'white');
       setFontStyle(localStorage.getItem(`sdf_font_style_${user.username}`) || 'Inter');
+      
+      // Check NDA agreement
+      setHasAgreedTerms(localStorage.getItem(`sdf_terms_agreed_${user.username}`) === 'true');
     }
   }, [user?.username]);
 
@@ -413,6 +418,45 @@ export default function App() {
                </p>
             </footer>
           </main>
+          
+          {/* NDA / Terms Modal */}
+          {user && !hasAgreedTerms && (
+             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-dark-900/80 backdrop-blur-md p-4">
+               <div className="bg-dark-800 border border-brand-500/30 shadow-[0_0_50px_rgba(139,92,246,0.15)] rounded-2xl max-w-lg w-full p-8 flex flex-col items-center text-center animate-fade-in relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 via-purple-500 to-brand-500"></div>
+                  <div className="w-16 h-16 bg-brand-500/10 rounded-full flex items-center justify-center mb-6">
+                     <ShieldAlert className="w-8 h-8 text-brand-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-2">SDF AI Copilot</h2>
+                  <h3 className="text-sm font-semibold text-brand-400 uppercase tracking-widest mb-6">Confidentiality Agreement</h3>
+                  
+                  <div className="space-y-4 text-left w-full mb-8">
+                     <div className="bg-dark-900/50 rounded-xl p-4 border border-white/5 hover:border-brand-500/30 transition-colors">
+                       <h4 className="text-sm font-bold text-slate-200 mb-1 flex items-center gap-2"><Lock className="w-4 h-4 text-rose-400"/> Strict Confidentiality</h4>
+                       <p className="text-xs text-slate-400 leading-relaxed">This is the official internal system of Sarvodaya Development Finance. Sharing policies, documents, or AI responses with external parties is strictly prohibited.</p>
+                     </div>
+                     <div className="bg-dark-900/50 rounded-xl p-4 border border-white/5 hover:border-brand-500/30 transition-colors">
+                       <h4 className="text-sm font-bold text-slate-200 mb-1 flex items-center gap-2"><Briefcase className="w-4 h-4 text-blue-400"/> Authorized Usage</h4>
+                       <p className="text-xs text-slate-400 leading-relaxed">This AI assistant must be used exclusively for official bank duties. Do not use it for personal inquiries or non-work-related tasks.</p>
+                     </div>
+                     <div className="bg-dark-900/50 rounded-xl p-4 border border-white/5 hover:border-brand-500/30 transition-colors">
+                       <h4 className="text-sm font-bold text-slate-200 mb-1 flex items-center gap-2"><FileText className="w-4 h-4 text-emerald-400"/> System Accuracy</h4>
+                       <p className="text-xs text-slate-400 leading-relaxed">While the SDF Policy Agent provides quick policy guidance, users must verify critical decisions against the original SDF policy documents.</p>
+                     </div>
+                  </div>
+                  
+                  <button 
+                     onClick={() => {
+                        localStorage.setItem(`sdf_terms_agreed_${user.username}`, 'true');
+                        setHasAgreedTerms(true);
+                     }}
+                     className="w-full btn-primary py-3.5 rounded-xl text-sm font-bold tracking-wide shadow-lg shadow-brand-500/25 flex justify-center items-center gap-2 active:scale-95 transition-all"
+                  >
+                     I Agree & Continue <ArrowRight className="w-4 h-4" />
+                  </button>
+               </div>
+             </div>
+          )}
         </>
       )}
     </div>
