@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Eye, EyeOff, ShieldAlert, Lock, Briefcase, ArrowRight, FileText, Clock } from 'lucide-react';
+import { Download, Eye, EyeOff, ShieldAlert, Lock, Briefcase, ArrowRight, FileText, Clock, Check } from 'lucide-react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import Sidebar       from './components/Sidebar';
 import ChatView      from './components/ChatView';
@@ -450,23 +450,18 @@ export default function App() {
                      </div>
                   </div>
                   
-                  <div className="w-full mb-5 flex items-start gap-3 bg-dark-900/30 p-3 rounded-lg border border-white/5">
-                    <input 
-                      type="checkbox" 
-                      id="terms-checkbox"
-                      checked={isTermsChecked}
-                      onChange={(e) => setIsTermsChecked(e.target.checked)}
-                      className="mt-1 w-4 h-4 rounded cursor-pointer appearance-none shrink-0 outline-none border-2 border-slate-400 bg-white"
-                      style={{
-                        backgroundImage: isTermsChecked ? `url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='black' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e")` : 'none',
-                        backgroundSize: '100% 100%',
-                        backgroundPosition: 'center',
-                        backgroundRepeat: 'no-repeat',
-                      }}
-                    />
-                    <label htmlFor="terms-checkbox" className="text-xs text-slate-300 text-left leading-relaxed cursor-pointer select-none">
+                  <div 
+                    onClick={() => setIsTermsChecked(!isTermsChecked)}
+                    className="w-full mb-5 flex items-start gap-3 bg-dark-900/30 p-3 rounded-lg border border-white/5 cursor-pointer hover:bg-dark-900/50 transition-colors group"
+                  >
+                    <div 
+                      className={`mt-1 flex-shrink-0 w-4 h-4 rounded flex items-center justify-center transition-colors border-2 ${isTermsChecked ? 'bg-white border-white' : 'bg-white border-slate-400 group-hover:border-slate-300'}`}
+                    >
+                       {isTermsChecked && <Check className="w-3 h-3 text-black" strokeWidth={4} />}
+                    </div>
+                    <p className="text-xs text-slate-300 text-left leading-relaxed select-none">
                       I have read and understood the terms above and agree to comply with SDF data policies.
-                    </label>
+                    </p>
                   </div>
 
                   <button 
