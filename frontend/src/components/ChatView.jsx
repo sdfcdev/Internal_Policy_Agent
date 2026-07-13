@@ -68,18 +68,23 @@ export default function ChatView({
     }
   }, [user, sessionId]);
 
+  const [autoScroll, setAutoScroll] = useState(true);
+
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) {
-      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-      return;
-    }
-    // If user has scrolled up even a tiny bit (10px), don't force them back down
-    const isScrolledUp = container.scrollHeight - container.scrollTop - container.clientHeight > 10;
-    if (!isScrolledUp) {
+    if (autoScroll) {
       bottomRef.current?.scrollIntoView({ behavior: 'auto' });
     }
-  }, [messages, loading]);
+  }, [messages, loading, autoScroll]);
+
+  const handleScroll = (e) => {
+    const { scrollHeight, scrollTop, clientHeight } = e.target;
+    // If scrolled within 20px of bottom, re-enable auto-scroll. Otherwise, user is reading history.
+    if (scrollHeight - scrollTop - clientHeight < 20) {
+      setAutoScroll(true);
+    } else {
+      setAutoScroll(false);
+    }
+  };
 
   function startNewChat() {
     const freshSession = Date.now().toString();
@@ -97,6 +102,8 @@ export default function ChatView({
     const tempAssistantId = Date.now() + 1;
     const currentHist = overrideMessages !== null ? overrideMessages : messages;
     
+    setAutoScroll(true); // Force auto-scroll on new message
+
     setMessages([
       ...currentHist,
       userMsg,
@@ -331,7 +338,7 @@ export default function ChatView({
            </div>
         </div>
       ) : (
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6 custom-scrollbar">
+        <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6 custom-scrollbar">
           {messages.map((msg, i) => (
              <MessageBubble 
                 key={`${msg.id}-${i}`} 
