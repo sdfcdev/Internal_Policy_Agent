@@ -219,8 +219,21 @@ export default function Sidebar({
                                 {firstQ.session_title || firstQ.query}
                               </p>
                             </div>
-                            <div className="flex items-center gap-2 mt-1.5 opacity-60">
+                            <div className="flex items-center justify-between mt-1.5 opacity-60">
                               <span className="text-[10px] text-slate-500 font-mono">{new Date(firstQ.created_at).toLocaleDateString()}</span>
+                              {(() => {
+                                 const latest = qs.reduce((l, m) => new Date(m.created_at) > new Date(l) ? m.created_at : l, qs[0].created_at);
+                                 const daysLeft = Math.ceil((new Date(latest).getTime() + 30*24*60*60*1000 - Date.now()) / (1000*60*60*24));
+                                 return daysLeft > 0 ? (
+                                   <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${daysLeft <= 5 ? 'bg-red-500/20 text-red-400' : 'bg-brand-500/10 text-brand-400'}`}>
+                                      {daysLeft}d left
+                                   </span>
+                                 ) : (
+                                   <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-red-500/20 text-red-400">
+                                      Expired
+                                   </span>
+                                 );
+                              })()}
                             </div>
                             <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 group/menu">
                               <button className="p-1 text-slate-400 hover:text-white" onClick={e => e.stopPropagation()}>
