@@ -197,13 +197,6 @@ export default function MessageBubble({ message, onEditSubmit, textSize = 'md', 
 
           {/* Meta and Copy Footer */}
           <div className="flex flex-wrap items-center gap-2 mt-3 pt-2.5 border-t border-white/10">
-            
-            {message.accuracy_score && message.accuracy_score !== '0%' && (
-               <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-900/20 border border-emerald-500/20 rounded-md">
-                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                   <span className="text-[10px] font-bold text-emerald-400 tracking-wide uppercase">Accuracy: {message.accuracy_score}</span>
-               </div>
-            )}
 
             <div className="ml-auto flex items-center gap-3">
               <button 
