@@ -102,7 +102,7 @@ html.light-theme .true-color {
 }
 
 /* ── PDF Viewer: Always light, never inverted ──── */
-/* Prevents both Dark Reader extension AND our light-theme CSS from inverting the PDF */
+/* In light mode the whole html has filter:invert(1). We counter-invert the PDF wrapper to undo it. */
 .pdf-iframe-wrapper {
   background-color: #ffffff !important;
   background: #ffffff !important;
@@ -113,7 +113,11 @@ html.light-theme .true-color {
   color-scheme: light !important;
   background-color: #ffffff !important;
 }
-html.light-theme .pdf-iframe-wrapper,
+/* Counter-invert to undo parent's invert(1) hue-rotate(180deg) in light theme */
+html.light-theme .pdf-iframe-wrapper {
+  filter: invert(1) hue-rotate(180deg) !important;
+  -webkit-filter: invert(1) hue-rotate(180deg) !important;
+}
 html.light-theme .pdf-iframe-wrapper iframe {
   filter: none !important;
   -webkit-filter: none !important;
