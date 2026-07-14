@@ -70,19 +70,23 @@ export default function ChatView({
 
   const [autoScroll, setAutoScroll] = useState(true);
 
+  // Robust Smart-Scroll Implementation
   useEffect(() => {
-    if (autoScroll) {
-      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+    if (autoScroll && scrollContainerRef.current) {
+      // Direct DOM manipulation is much smoother and less buggy than scrollIntoView during rapid SSE updates
+      const container = scrollContainerRef.current;
+      container.scrollTop = container.scrollHeight;
     }
   }, [messages, loading, autoScroll]);
 
   const handleScroll = (e) => {
     const { scrollHeight, scrollTop, clientHeight } = e.target;
-    // If scrolled within 20px of bottom, re-enable auto-scroll. Otherwise, user is reading history.
-    if (scrollHeight - scrollTop - clientHeight < 20) {
-      setAutoScroll(true);
-    } else {
-      setAutoScroll(false);
+    // Increased threshold to 100px and used Math.abs to handle iOS bounce/momentum scrolling and sub-pixels
+    const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 100;
+    
+    // Only update state if it actually changed to prevent excessive re-renders during fast scrolling
+    if (isAtBottom !== autoScroll) {
+      setAutoScroll(isAtBottom);
     }
   };
 
@@ -322,42 +326,50 @@ export default function ChatView({
       
       {messages.length > 0 && user?.role !== 'user' && <AgentPipeline activeAgent={activeAgentNav} />}
 
-      {messages.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 animate-fade-in overflow-y-auto custom-scrollbar">
-           <div className="max-w-3xl w-full flex flex-col items-center mt-[-5vh]">
-              <h1 className="text-4xl sm:text-5xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-purple-300 to-brand-400 mb-3 text-center tracking-tight">
-                 Hello, {user?.preferred_name || user?.name?.split(' ')[0] || user?.username}
-              </h1>
-              <h2 className="text-2xl sm:text-3xl font-medium text-slate-400 text-center mb-12">
-                 How can I help you today?
-              </h2>
-              
-              <div className="w-full max-w-2xl bg-dark-900/50 backdrop-blur-xl rounded-3xl p-3 border border-white/5 shadow-2xl">
-                 {InputForm}
-              </div>
-           </div>
-        </div>
-      ) : (
-        <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6 custom-scrollbar">
-          {messages.map((msg, i) => (
-             <MessageBubble 
-                key={`${msg.id}-${i}`} 
-                message={msg} 
-                onEditSubmit={handleEditSubmit}
-                textSize={textSize}
-                userBubbleColor={userBubbleColor}
-                aiBubbleColor={aiBubbleColor}
-                onViewPdf={onViewPdf}
-             />
-          ))}
-          {loading && <TypingIndicator />}
-          {error && <div className="glass-card border-red-500/30 bg-red-900/10 px-4 py-3 animate-fade-in"><p className="text-red-400 text-sm">{error}</p></div>}
-          <div ref={bottomRef} />
-        </div>
-      )}
+      {/* Main Chat Area (Scrollable) */}
+      <div 
+        ref={scrollContainerRef} 
+        onScroll={handleScroll} 
+        className="flex-1 overflow-y-auto overscroll-y-none px-4 sm:px-8 py-6 space-y-6 custom-scrollbar"
+      >
+        {messages.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
+             <div className="max-w-3xl w-full flex flex-col items-center mt-[-5vh]">
+                <h1 className="text-4xl sm:text-5xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-purple-300 to-brand-400 mb-3 text-center tracking-tight">
+                   Hello, {user?.preferred_name || user?.name?.split(' ')[0] || user?.username}
+                </h1>
+                <h2 className="text-2xl sm:text-3xl font-medium text-slate-400 text-center mb-12">
+                   How can I help you today?
+                </h2>
+                
+                <div className="w-full max-w-2xl bg-dark-900/50 backdrop-blur-xl rounded-3xl p-3 border border-white/5 shadow-2xl">
+                   {InputForm}
+                </div>
+             </div>
+          </div>
+        ) : (
+          <>
+            {messages.map((msg, i) => (
+               <MessageBubble 
+                  key={`${msg.id}-${i}`} 
+                  message={msg} 
+                  onEditSubmit={handleEditSubmit}
+                  textSize={textSize}
+                  userBubbleColor={userBubbleColor}
+                  aiBubbleColor={aiBubbleColor}
+                  onViewPdf={onViewPdf}
+               />
+            ))}
+            {loading && <TypingIndicator />}
+            {error && <div className="glass-card border-red-500/30 bg-red-900/10 px-4 py-3 animate-fade-in"><p className="text-red-400 text-sm">{error}</p></div>}
+            <div ref={bottomRef} className="h-4" />
+          </>
+        )}
+      </div>
 
+      {/* Fixed Bottom Input Area - ONLY for active chats */}
       {messages.length > 0 && (
-        <div className="px-4 sm:px-8 py-6 border-t border-white/5 bg-dark-900/80 backdrop-blur-xl shrink-0">
+        <div className="px-4 sm:px-8 py-4 border-t border-white/5 bg-dark-900/80 backdrop-blur-xl shrink-0 z-10">
           <div className="max-w-4xl mx-auto">
             {InputForm}
           </div>
