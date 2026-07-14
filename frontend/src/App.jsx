@@ -506,8 +506,8 @@ export default function App() {
                       <X className="w-5 h-5 text-white" />
                     </button>
                   </div>
-                  <div className="flex-1 w-full bg-slate-900">
-                    <iframe src={`${viewPdfUrl}#toolbar=0&navpanes=0`} className="w-full h-full border-0" title="PDF Viewer" />
+                  <div className="flex-1 w-full bg-white">
+                    <iframe src={`${viewPdfUrl}#toolbar=0&navpanes=0`} className="w-full h-full border-0" style={{ backgroundColor: '#ffffff', colorScheme: 'light' }} title="PDF Viewer" />
                   </div>
                 </div>
               </div>
