@@ -519,26 +519,19 @@ async def stream_chat(request: ChatRequest):
     q_lower = request.query.strip().lower()
     
     # 1. Fast Greeting Interception (Saves API Costs & Extremely Fast)
-    greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "hi there", "hello there"]
-    farewells = ["bye", "goodbye", "see you", "bye bye"]
-    thanks = ["thanks", "thank you", "thanks a lot", "thank you very much", "tq"]
-    identity = ["who are you", "what are you", "what is your name", "who is this", "oy kowd", "oya kowd", "oya kauda", "oy kawd", "oya kawda", "who r u", "who are u"]
-    smalltalk = ["how are you", "how are you doing", "how r u", "hw r u", "how are u", "kohomada", "khmd"]
+    # Using regex for slang to catch "byeee", "bby", "mk" etc.
+    import re
     
-    # Catch gibberish or very short non-meaningful inputs like 'uu', 'oo', 'ok', 'k'
-    # We already check for 'hi' and 'ok' is caught here.
-    gibberish = ["ok", "k", "uu", "oo", "hm", "hmm", "hmmm", "yes", "no"]
+    # Check if query matches specific known useless patterns
+    is_greeting = bool(re.search(r'\b(h+i+|h+e+l+o+|h+e+y+|good\s*morning|good\s*afternoon|good\s*evening)\b', q_lower))
+    is_farewell = bool(re.search(r'\b(b+y+e+|g+o+o+d\s*b+y+e+|b+b+y+|good\s*night)\b', q_lower))
+    is_thanks = bool(re.search(r'\b(t+h+a+n+k+s+|t+h+a+n+k\s*y+o+u+|t+q+)\b', q_lower))
+    is_identity = bool(re.search(r'\b(who\s*are\s*you|what\s*are\s*you|who\s*is\s*this|oya\s*k+a+w+d+a+|oy\s*k+o+w+d+|oya\s*k+a+u+d+a+|who\s*r\s*u+)\b', q_lower))
+    is_smalltalk = bool(re.search(r'\b(h+o+w\s*a+r+e\s*y+o+u+|h+o+w\s*r\s*u+|k+o+h+o+m+a+d+a+|k+h+m+d+|m+k+|k+e+w+a+d+a+|a+d+a+r+e+i+|n+i+d+i+d+a+)\b', q_lower))
     
-    is_greeting = q_lower in greetings
-    is_farewell = q_lower in farewells
-    is_thanks = q_lower in thanks
-    is_identity = q_lower in identity
-    is_smalltalk = q_lower in smalltalk
-    
-    # Block anything that has fewer than 3 words to save API costs, unless it's a valid local greeting/intent
+    # Catch pure gibberish strictly OR if the word count is less than 3
     word_count = len(q_lower.split())
-    is_too_short = word_count < 3
-    is_gibberish = q_lower in gibberish or (is_too_short and not (is_greeting or is_farewell or is_thanks or is_identity or is_smalltalk))
+    is_gibberish = bool(re.fullmatch(r'(ok|k|u+|o+|h+m+|y+e+s+|n+o+)', q_lower)) or word_count < 3
     
     if is_greeting or is_farewell or is_thanks or is_identity or is_smalltalk or is_gibberish:
         conn = get_db_connection()
