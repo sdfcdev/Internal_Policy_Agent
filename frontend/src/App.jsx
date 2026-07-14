@@ -506,8 +506,20 @@ export default function App() {
                       <X className="w-5 h-5 text-white" />
                     </button>
                   </div>
-                  <div className="flex-1 w-full bg-white">
-                    <iframe src={`${viewPdfUrl}#toolbar=0&navpanes=0`} className="w-full h-full border-0" style={{ backgroundColor: '#ffffff', colorScheme: 'light' }} title="PDF Viewer" />
+                  <div className="pdf-iframe-wrapper flex-1 w-full" style={{ backgroundColor: '#ffffff', background: '#ffffff' }}>
+                    <iframe 
+                      src={`${viewPdfUrl}#toolbar=0&navpanes=0`} 
+                      className="w-full h-full border-0" 
+                      style={{ 
+                        backgroundColor: '#ffffff',
+                        background: '#ffffff',
+                        colorScheme: 'light',
+                        filter: 'none',
+                        WebkitFilter: 'none'
+                      }}
+                      data-darkreader-ignore="true"
+                      title="PDF Viewer" 
+                    />
                   </div>
                 </div>
               </div>

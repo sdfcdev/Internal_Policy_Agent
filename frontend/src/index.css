@@ -101,6 +101,24 @@ html.light-theme .true-color {
   filter: invert(1) hue-rotate(180deg);
 }
 
+/* ── PDF Viewer: Always light, never inverted ──── */
+/* Prevents both Dark Reader extension AND our light-theme CSS from inverting the PDF */
+.pdf-iframe-wrapper {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+}
+.pdf-iframe-wrapper iframe {
+  filter: none !important;
+  -webkit-filter: none !important;
+  color-scheme: light !important;
+  background-color: #ffffff !important;
+}
+html.light-theme .pdf-iframe-wrapper,
+html.light-theme .pdf-iframe-wrapper iframe {
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
 /* ── Custom Animations ──────────────────────── */
 .animate-pulse-slow {
   animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
