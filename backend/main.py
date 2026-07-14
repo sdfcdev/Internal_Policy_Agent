@@ -273,7 +273,7 @@ def researcher_node(state: AgentState) -> AgentState:
     
     # 1. Apply document-level Access Control (Filter by source)
     allowed_files = state.get("allowed_filenames", [])
-    search_kwargs = {"k": 8}
+    search_kwargs = {"k": 5}
     if allowed_files:
         search_kwargs["filter"] = {"source": {"$in": allowed_files}}
     else:
@@ -345,8 +345,42 @@ def communicator_node(state: AgentState) -> AgentState:
         if feedback else ""
     )
 
+    # Fact Sheet injected to resolve Vector DB retrieval failures for common names
+    COMPANY_FACT_SHEET = (
+        "CORE COMPANY FACTS (Always consider this as valid Context):\n"
+        "- Company: Sarvodaya Development Finance (SDF) PLC\n"
+        "- Board of Directors:\n"
+        "  * Mr. Channa De Silva (Chairman/Non-Executive, Non-Independent Director)\n"
+        "  * Mr. Dhammika Ganegama (Senior Director/Non-Executive, Independent Director)\n"
+        "  * Mr. Christopher Amrit Canagaretna (Non-Executive, Independent Director)\n"
+        "  * Mr. Senthi Nandhanan Senthilverl (Non-Executive, Non-Independent Director)\n"
+        "  * Ms. Shehara De Silva (Non-Executive, Independent Director)\n"
+        "  * Ms. Ramya Suranjani Wickremeratne (Non-Executive, Independent Director)\n"
+        "  * Mr. Nandika Buddhipala (Non-Executive, Independent Director)\n"
+        "  * Ms. Sashi Adele Schaffter (Non-Executive, Non-Independent Director)\n"
+        "  * Mr. Saliya J. Ranasinghe (Non-Executive, Non-Independent Director)\n"
+        "- Corporate Management Team:\n"
+        "  * Mr. Nilantha Jayanetti (Chief Executive Officer - CEO)\n"
+        "  * Mr. Ruwan Jayasuriya (Chief Operating Officer - COO)\n"
+        "  * Mr. Ranapriya Fernando (Head of Credit)\n"
+        "  * Mr. Mahesh Jayasanka (Head of Strategic Planning)\n"
+        "  * Ms. Manori Wannigama (Head of Finance)\n"
+        "  * Mr. Kularuwan Gamage (Head of Operations & Administration)\n"
+        "  * Mr. Indika Dissanayake (Head of Information Technology - IT)\n"
+        "  * Mr. Ruwin Yapa (Head of Human Resources - HR)\n"
+        "  * Mr. Kelum Thilakerathne (Head of National Sales)\n"
+        "  * Mr. Prabath Rangajeewa (Head of Gold Loan)\n"
+        "  * Ms. Piyumi Ranadheera (Head of Risk Management)\n"
+        "  * Mr. Migara K. Abayatilake (Head of Compliance)\n"
+        "  * Mr. Randil Keerthipala (Head of Recovery)\n"
+        "  * Mr. Amila Gunawardana (Head of Internal Audit)\n"
+        "  * Ms. Maheshika Wickramatunga (Head of Legal)\n"
+        "  * Ms. Ishani Wasana (Company Secretary)\n"
+    )
+
     prompt = (
         "You are a Professional Corporate Communications AI for Sarvodaya Development Finance (SDF). "
+        f"{COMPANY_FACT_SHEET}\n"
         "DOCUMENT CONTEXT:\n{context}\n\n"
         "CHAT HISTORY:\n{history}\n\n"
         "{feedback_block}"
@@ -398,6 +432,38 @@ def reviewer_node(state: AgentState) -> AgentState:
     llm = get_llm(model_to_use)
     context = "\n\n---\n\n".join(state["retrieved_chunks"])
 
+    COMPANY_FACT_SHEET = (
+        "CORE COMPANY FACTS (Always consider this as valid Context):\n"
+        "- Company: Sarvodaya Development Finance (SDF) PLC\n"
+        "- Board of Directors:\n"
+        "  * Mr. Channa De Silva (Chairman/Non-Executive, Non-Independent Director)\n"
+        "  * Mr. Dhammika Ganegama (Senior Director/Non-Executive, Independent Director)\n"
+        "  * Mr. Christopher Amrit Canagaretna (Non-Executive, Independent Director)\n"
+        "  * Mr. Senthi Nandhanan Senthilverl (Non-Executive, Non-Independent Director)\n"
+        "  * Ms. Shehara De Silva (Non-Executive, Independent Director)\n"
+        "  * Ms. Ramya Suranjani Wickremeratne (Non-Executive, Independent Director)\n"
+        "  * Mr. Nandika Buddhipala (Non-Executive, Independent Director)\n"
+        "  * Ms. Sashi Adele Schaffter (Non-Executive, Non-Independent Director)\n"
+        "  * Mr. Saliya J. Ranasinghe (Non-Executive, Non-Independent Director)\n"
+        "- Corporate Management Team:\n"
+        "  * Mr. Nilantha Jayanetti (Chief Executive Officer - CEO)\n"
+        "  * Mr. Ruwan Jayasuriya (Chief Operating Officer - COO)\n"
+        "  * Mr. Ranapriya Fernando (Head of Credit)\n"
+        "  * Mr. Mahesh Jayasanka (Head of Strategic Planning)\n"
+        "  * Ms. Manori Wannigama (Head of Finance)\n"
+        "  * Mr. Kularuwan Gamage (Head of Operations & Administration)\n"
+        "  * Mr. Indika Dissanayake (Head of Information Technology - IT)\n"
+        "  * Mr. Ruwin Yapa (Head of Human Resources - HR)\n"
+        "  * Mr. Kelum Thilakerathne (Head of National Sales)\n"
+        "  * Mr. Prabath Rangajeewa (Head of Gold Loan)\n"
+        "  * Ms. Piyumi Ranadheera (Head of Risk Management)\n"
+        "  * Mr. Migara K. Abayatilake (Head of Compliance)\n"
+        "  * Mr. Randil Keerthipala (Head of Recovery)\n"
+        "  * Mr. Amila Gunawardana (Head of Internal Audit)\n"
+        "  * Ms. Maheshika Wickramatunga (Head of Legal)\n"
+        "  * Ms. Ishani Wasana (Company Secretary)\n"
+    )
+
     # OPTIMIZATION #3 (Critique & Revise): Ask the Reviewer to also return a
     # specific 'reason' on FAIL. This reason is passed back to the Communicator
     # so it knows exactly what to fix instead of blindly retrying.
@@ -405,6 +471,7 @@ def reviewer_node(state: AgentState) -> AgentState:
         "Review the DRAFT RESPONSE against the DOCUMENT CONTEXT for accuracy and hallucinations.\n"
         "Output ONLY raw JSON with these fields:\n"
         '  {"verdict": "PASS" or "FAIL", "accuracy": "X%", "reason": "Specific error if FAIL, else OK"}\n\n'
+        f"{COMPANY_FACT_SHEET}\n"
         f"CONTEXT:\n{context}\n\nDRAFT:\n{state['draft_response']}"
     )
     response = llm.invoke(prompt)
