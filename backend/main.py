@@ -273,7 +273,7 @@ def researcher_node(state: AgentState) -> AgentState:
     
     # 1. Apply document-level Access Control (Filter by source)
     allowed_files = state.get("allowed_filenames", [])
-    search_kwargs = {"k": 5}
+    search_kwargs = {"k": 8}
     if allowed_files:
         search_kwargs["filter"] = {"source": {"$in": allowed_files}}
     else:
