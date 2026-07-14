@@ -413,7 +413,14 @@ def reviewer_node(state: AgentState) -> AgentState:
         verdict = data.get("verdict", "FAIL")
         acc = data.get("accuracy", "0%")
         # Extract the specific failure reason for the Critique & Revise loop
-        reason = data.get("reason", "") if verdict == "FAIL" else ""
+        current_feedback = state.get("reviewer_feedback", "")
+        if verdict == "FAIL":
+            attempt_num = state.get("rewrite_count", 0) + 1
+            new_reason = data.get("reason", "")
+            failed_draft = state.get("draft_response", "")
+            reason = f"{current_feedback}\n[Attempt {attempt_num} Failed]\n- Draft: {failed_draft}\n- Reason: {new_reason}\n".strip()
+        else:
+            reason = current_feedback
     except:
         verdict, acc, reason = "FAIL", "0%", "Could not parse the previous draft. Please rewrite carefully."
 

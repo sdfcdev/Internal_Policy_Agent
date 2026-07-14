@@ -610,8 +610,8 @@ export default function AdminDashboard({ user, role }) {
                                 <p className="text-[10px] text-slate-500 line-through leading-relaxed bg-red-900/5 p-2 rounded border border-red-500/5">{audit.draft}</p>
                              </div>
                              <div>
-                                <p className="text-[9px] font-black text-blue-400 uppercase mb-1">Reviewer Feedback</p>
-                                <p className="text-[10px] text-blue-300/80 italic leading-relaxed bg-blue-900/5 p-2 rounded border border-blue-500/10 font-medium">"{audit.feedback}"</p>
+                                <p className="text-[9px] font-black text-blue-400 uppercase mb-1">Reviewer Feedback Log</p>
+                                <p className="text-[10px] text-blue-300/80 italic leading-relaxed bg-blue-900/5 p-2 rounded border border-blue-500/10 font-medium whitespace-pre-wrap">{audit.feedback}</p>
                              </div>
                              <div>
                                 <p className="text-[9px] font-black text-emerald-500 uppercase mb-1">Corrected Final</p>
