@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Eye, EyeOff, ShieldAlert, Lock, Briefcase, ArrowRight, FileText, Clock, Check } from 'lucide-react';
+import { Download, Eye, EyeOff, ShieldAlert, Lock, Briefcase, ArrowRight, FileText, Clock, Check, X } from 'lucide-react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import Sidebar       from './components/Sidebar';
 import ChatView      from './components/ChatView';
@@ -120,6 +120,7 @@ export default function App() {
 
   const [hasAgreedTerms, setHasAgreedTerms] = useState(true);
   const [isTermsChecked, setIsTermsChecked] = useState(false);
+  const [viewPdfUrl, setViewPdfUrl] = useState(null);
 
   // Load user-specific preferences on login
   useEffect(() => {
@@ -329,29 +330,42 @@ export default function App() {
             activeView={view} 
             onViewChange={setView} 
             backendOk={backendOk} 
-            role={user.role}
+            role={user.role} 
+            user={user}
             historyData={historyData}
             libraryDocs={libraryDocs}
             activeSessionId={sessionId}
             onSelectSession={(session) => {
-               setSessionId(session.id);
-               setMessages(session.messages);
-               setSaveChat(true);
+              setSessionId(session.id);
+              setMessages(session.messages);
+              setSaveChat(true);
+              setView('chat');
             }}
             onNewChat={() => {
-               setSessionId('');
-               setMessages([]);
-               setSaveChat(false);
+              setSessionId('');
+              setMessages([]);
+              setSaveChat(false);
+              setView('chat');
             }}
             onRefreshData={loadChatData}
-            user={user}
             theme={theme}
-            onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-            onLogout={() => {setUser(null); setView('chat'); setSessionId(''); setMessages([]); setSaveChat(false);}}
-            textSize={textSize} setTextSize={setTextSize}
-            userBubbleColor={userBubbleColor} setUserBubbleColor={setUserBubbleColor}
-            aiBubbleColor={aiBubbleColor} setAiBubbleColor={setAiBubbleColor}
-            fontStyle={fontStyle} setFontStyle={setFontStyle}
+            onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+            onLogout={() => {
+              setUser(null);
+              setHistoryData([]);
+              setLibraryDocs([]);
+              setMessages([]);
+              setSessionId('');
+            }}
+            textSize={textSize}
+            setTextSize={setTextSize}
+            userBubbleColor={userBubbleColor}
+            setUserBubbleColor={setUserBubbleColor}
+            aiBubbleColor={aiBubbleColor}
+            setAiBubbleColor={setAiBubbleColor}
+            fontStyle={fontStyle}
+            setFontStyle={setFontStyle}
+            onViewPdf={setViewPdfUrl}
           />
 
           <main className="flex flex-col flex-1 h-screen overflow-hidden relative z-10 w-full min-w-0">
@@ -402,6 +416,7 @@ export default function App() {
                 textSize={textSize}
                 userBubbleColor={userBubbleColor}
                 aiBubbleColor={aiBubbleColor}
+                onViewPdf={setViewPdfUrl}
               />
             </div>
             
@@ -477,6 +492,26 @@ export default function App() {
                </div>
              </div>
           )}
+
+           {/* PDF Viewer Modal */}
+           {viewPdfUrl && (
+              <div className="fixed inset-0 z-[200] flex items-center justify-center bg-dark-900/90 backdrop-blur-sm p-4 animate-fade-in">
+                <div className="bg-dark-800 border border-white/10 rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden relative shadow-2xl">
+                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-dark-900">
+                    <h3 className="text-white font-semibold flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-brand-400" />
+                      Document Viewer
+                    </h3>
+                    <button onClick={() => setViewPdfUrl(null)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
+                      <X className="w-5 h-5 text-white" />
+                    </button>
+                  </div>
+                  <div className="flex-1 w-full bg-slate-900">
+                    <iframe src={`${viewPdfUrl}#toolbar=0&navpanes=0`} className="w-full h-full border-0" title="PDF Viewer" />
+                  </div>
+                </div>
+              </div>
+           )}
         </>
       )}
     </div>

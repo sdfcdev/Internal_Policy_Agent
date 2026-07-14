@@ -23,7 +23,7 @@ export function TypingIndicator() {
   );
 }
 
-export default function MessageBubble({ message, onEditSubmit, textSize = 'md', userBubbleColor = 'blue', aiBubbleColor = 'white' }) {
+export default function MessageBubble({ message, onEditSubmit, textSize = 'md', userBubbleColor = 'blue', aiBubbleColor = 'white', onViewPdf }) {
   const isUser = message.role === 'user';
   
   const [isEditing, setIsEditing] = useState(false);
@@ -184,9 +184,9 @@ export default function MessageBubble({ message, onEditSubmit, textSize = 'md', 
                    const pagesStr = r.pages.size > 0 ? `(Pages: ${Array.from(r.pages).join(', ')})` : '';
                    return (
                      <li key={idx} className="flex items-center gap-2 bg-brand-950/30 border border-brand-800/30 rounded-lg px-3 py-1.5">
-                        <a href={`${API_URL}/uploads/${encodeURIComponent(r.file)}`} target="_blank" rel="noopener noreferrer" className="text-brand-400 hover:text-brand-300 hover:underline transition inline-flex items-center gap-1.5 font-medium text-xs">
+                        <button onClick={() => onViewPdf(`${API_URL}/uploads/${encodeURIComponent(r.file)}`)} className="text-brand-400 hover:text-brand-300 hover:underline transition inline-flex items-center gap-1.5 font-medium text-xs">
                           {r.file}
-                        </a>
+                        </button>
                         {pagesStr && <span className="ml-auto text-[10px] text-slate-500 tracking-wide bg-dark-700/60 px-2 py-0.5 rounded-full">{pagesStr}</span>}
                      </li>
                    );

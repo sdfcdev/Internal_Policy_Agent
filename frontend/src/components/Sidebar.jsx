@@ -29,7 +29,8 @@ export default function Sidebar({
   activeView, onViewChange, backendOk, role, 
   historyData = [], libraryDocs = [], activeSessionId, onSelectSession, onRefreshData, user,
   onNewChat, theme, onToggleTheme, onLogout,
-  textSize, setTextSize, userBubbleColor, setUserBubbleColor, aiBubbleColor, setAiBubbleColor, fontStyle, setFontStyle
+  textSize, setTextSize, userBubbleColor, setUserBubbleColor, aiBubbleColor, setAiBubbleColor, fontStyle, setFontStyle,
+  onViewPdf
 }) {
   const [leftTab, setLeftTab] = useState('history'); // 'history' | 'library'
   const [historySearch, setHistorySearch] = useState('');
@@ -294,19 +295,17 @@ export default function Sidebar({
                       {isExpanded && (
                         <div className="flex flex-col border-t border-white/5 bg-dark-900/40 animate-fade-in">
                           {docsInDept.map(doc => (
-                            <a 
+                            <button 
                               key={doc.id} 
-                              href={`${API_URL}/uploads/${doc.filename}`} 
-                              target="_blank"  
-                              rel="noreferrer"
-                              className="flex items-center gap-3 p-3 hover:bg-brand-600/10 transition-all group border-b border-white/5 last:border-0"
+                              onClick={() => onViewPdf(`${API_URL}/uploads/${doc.filename}`)}
+                              className="flex w-full items-center gap-3 p-3 hover:bg-brand-600/10 transition-all group border-b border-white/5 last:border-0 text-left"
                             >
                               <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
                                 <FileText className="w-3.5 h-3.5 text-emerald-500/60" />
                               </div>
                               <span className="text-[11px] text-slate-400 truncate flex-1 font-semibold group-hover:text-slate-200" title={doc.filename}>{doc.filename}</span>
                               <Eye className="w-3.5 h-3.5 text-slate-600 group-hover:text-emerald-400 transition-colors" />
-                            </a>
+                            </button>
                           ))}
                         </div>
                       )}
