@@ -2,12 +2,27 @@ import pandas as pd
 import json
 import asyncio
 import os
+import sys
+import types
 from dotenv import load_dotenv
+
+# --- HOTFIX FOR RAGAS + NEW LANGCHAIN ---
+# Ragas internally tries to import VertexAI from the old langchain_community location
+try:
+    import langchain_community.chat_models
+    mock_vertex = types.ModuleType("langchain_community.chat_models.vertexai")
+    sys.modules["langchain_community.chat_models.vertexai"] = mock_vertex
+    mock_vertex.ChatVertexAI = None
+except Exception:
+    pass
+# ----------------------------------------
 
 # Import RAGAS and HuggingFace Datasets
 from datasets import Dataset
 from ragas import evaluate
 from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
+from ragas.llms import LangchainLLMWrapper
+from ragas.embeddings import LangchainEmbeddingsWrapper
 
 # Import our LangChain VertexAI models
 from langchain_google_vertexai import ChatVertexAI, VertexAIEmbeddings
@@ -87,8 +102,11 @@ async def run_evaluation():
     
     print("\n[STEP 4] Initializing RAGAS Models (Google Vertex AI)...")
     # We use Vertex AI as the "Examiner" to grade the answers
-    ragas_llm = ChatVertexAI(model_name="gemini-2.5-flash", location="global", temperature=0)
-    ragas_emb = VertexAIEmbeddings(model_name="text-embedding-004", location="us-central1")
+    base_llm = ChatVertexAI(model_name="gemini-2.5-flash", location="global", temperature=0)
+    base_emb = VertexAIEmbeddings(model_name="text-embedding-004", location="us-central1")
+    
+    ragas_llm = LangchainLLMWrapper(base_llm)
+    ragas_emb = LangchainEmbeddingsWrapper(base_emb)
     
     print("\n[STEP 5] Running RAGAS Evaluation... (This takes time as it grades Faithfulness, Relevancy, etc.)")
     try:
