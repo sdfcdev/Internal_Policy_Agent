@@ -28,9 +28,22 @@ from ragas.embeddings import LangchainEmbeddingsWrapper
 from langchain_google_vertexai import ChatVertexAI, VertexAIEmbeddings
 
 # Import our actual Agent Graph from main.py to get the real AI answers
-from main import graph
+from main import graph, get_db_connection
 
 load_dotenv()
+
+def get_all_filenames():
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT Filename FROM KnowledgeDocuments")
+            return [row[0] for row in cursor.fetchall()]
+        except Exception as e:
+            print(f"Error fetching filenames: {e}")
+        finally:
+            conn.close()
+    return []
 
 async def run_evaluation():
     print("\n[STEP 1] Loading Evaluation Dataset (ragas_evaluation_dataset.csv)...")
@@ -45,6 +58,10 @@ async def run_evaluation():
     
     answers = []
     contexts = []
+    
+    print("\n[STEP 1.5] Fetching allowed documents for evaluation...")
+    all_files = get_all_filenames()
+    print(f"Found {len(all_files)} documents in the database.")
     
     print(f"\n[STEP 2] Generating AI Answers for {len(questions)} questions...")
     print("This will run your AI Agent (Retrieval + Generation) for each question. Please wait...\n")
@@ -65,7 +82,7 @@ async def run_evaluation():
             "accuracy_score": "",
             "reviewer_feedback": "",
             "rewrite_count": 0,
-            "allowed_filenames": []
+            "allowed_filenames": all_files  # Pass the fetched filenames to bypass the security block!
         }
         
         try:
@@ -110,12 +127,16 @@ async def run_evaluation():
     
     print("\n[STEP 5] Running RAGAS Evaluation... (This takes time as it grades Faithfulness, Relevancy, etc.)")
     try:
+        from ragas.run_config import RunConfig
+        
         result = evaluate(
             dataset,
             metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
             llm=ragas_llm,
             embeddings=ragas_emb,
-            raise_exceptions=False
+            raise_exceptions=False,
+            # Force RAGAS to do it slowly (one by one) so Google Vertex AI doesn't crash/timeout!
+            run_config=RunConfig(max_workers=1, max_retries=3)
         )
         
         print("\n================ RAGAS EVALUATION SUMMARY ================")
