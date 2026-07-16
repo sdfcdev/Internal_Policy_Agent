@@ -425,7 +425,7 @@ export default function App() {
             </div>
 
             {/* Global Footer */}
-            <footer className="py-4 border-t border-white/5 bg-dark-900/80 backdrop-blur-sm text-center shrink-0">
+            <footer className="py-4 border-t border-white/5 bg-dark-900/80 backdrop-blur-sm text-center shrink-0 mt-auto w-full">
                <p className="text-[10px] text-slate-500 tracking-wide font-normal">
                  © 2026 Sarvodaya Development Finance. All rights reserved.
                </p>
