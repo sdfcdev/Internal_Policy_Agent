@@ -261,7 +261,7 @@ def researcher_node(state: AgentState) -> AgentState:
         "above", "abouv", "number", "point", "format", "list", "bullet", 
         "translate", "translte", "translt", "trnslt", "trsanslte", 
         "sinhala", "sinhla", "sinhalen", "sinhalin", "english", "tamil", "demala", "demalen",
-        "short", "summarize", "kalin", "eka", "uda", "numbers", "explain"
+        "short", "summarize", "kalin", "eka", "uda", "numbers"
     ]
     is_follow_up = any(kw in query_lower for kw in follow_up_keywords) and len(state["query"].split()) <= 15 and state.get("history", "").strip() != ""
     
@@ -319,7 +319,7 @@ def communicator_node(state: AgentState) -> AgentState:
         "above", "abouv", "number", "point", "format", "list", "bullet", 
         "translate", "translte", "translt", "trnslt", "trsanslte", 
         "sinhala", "sinhla", "sinhalen", "sinhalin", "english", "tamil", "demala", "demalen",
-        "short", "summarize", "kalin", "eka", "uda", "numbers", "explain"
+        "short", "summarize", "kalin", "eka", "uda", "numbers"
     ]
     is_follow_up = any(kw in query_lower for kw in follow_up_keywords) and state.get("history", "").strip() != ""
 
@@ -390,7 +390,7 @@ def communicator_node(state: AgentState) -> AgentState:
         "2. IF CONTEXT is 'NO NEW DOCUMENTS RELEVANT' BUT the user is asking a simple follow-up formatting request (like 'make it numbered', 'translate it') about the CHAT HISTORY, you MUST answer it by reformatting the CHAT HISTORY.\n"
         "3. If the user is asking a general question NOT in the context AND not a follow-up to history, politely explain that you are the SDF Policy Agent and can only answer questions based on official internal documents.\n"
         "4. LANGUAGE: Detect the language of the USER QUERY and respond ONLY in that same language. Never mix languages unless asked.\n"
-        "4. Keep it concise (under 100 words).\n"
+        "4. Keep it concise (under 100 words), UNLESS the user explicitly asks for a detailed explanation.\n"
         "5. FORMATTING: DO NOT use markdown like asterisks (*) or bold text. DO NOT use emojis. Use clean, professional plain text with standard numbered lists (1., 2.) or simple dashes (-) for points.\n"
     )
     response = llm.invoke(prompt.format(
