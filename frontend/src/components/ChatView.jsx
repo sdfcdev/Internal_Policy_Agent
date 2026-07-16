@@ -369,7 +369,7 @@ export default function ChatView({
 
       {/* Fixed Bottom Input Area - ONLY for active chats */}
       {messages.length > 0 && (
-        <div className="px-4 sm:px-8 py-4 border-t border-white/5 bg-dark-900/80 backdrop-blur-xl shrink-0 z-10">
+        <div className="px-4 sm:px-8 py-4 border-t border-white/5 bg-dark-900/80 backdrop-blur-xl shrink-0 z-10 mt-auto">
           <div className="max-w-4xl mx-auto">
             {InputForm}
           </div>
