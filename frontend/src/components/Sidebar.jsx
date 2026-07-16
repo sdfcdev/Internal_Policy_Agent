@@ -106,7 +106,7 @@ export default function Sidebar({
   const isSidebarExpanded = activeView === 'admin' ? true : isOpen;
 
   return (
-    <aside className={`flex flex-col min-h-screen bg-dark-800 border-r border-white/10 shrink-0 z-20 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-72' : 'w-[88px]'}`}>
+    <aside className={`flex flex-col h-screen overflow-hidden bg-dark-800 border-r border-white/10 shrink-0 z-20 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-72' : 'w-[88px]'}`}>
       {/* Logo Area */}
       <div className="flex flex-col items-center gap-3 px-4 py-6 border-b border-white/5 bg-dark-900/20">
         <img 

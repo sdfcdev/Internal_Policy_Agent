@@ -296,7 +296,7 @@ export default function App() {
   };
 
   return (
-    <div className={`flex w-full min-h-screen ${!user ? 'bg-white' : 'bg-dark-900'} text-white`} style={{ fontFamily: `"${fontStyle}", system-ui, sans-serif` }}>
+    <div className={`flex w-full h-screen overflow-hidden ${!user ? 'bg-white' : 'bg-dark-900'} text-white`} style={{ fontFamily: `"${fontStyle}", system-ui, sans-serif` }}>
       {/* Ambient gradient blobs (only show in dark mode / when logged in) */}
       {user && (
         <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
