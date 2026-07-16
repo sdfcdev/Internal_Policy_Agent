@@ -377,7 +377,7 @@ export default function Sidebar({
                       }}
                       disabled={user?.role === 'user'}
                       className={`w-full flex items-center justify-between px-3 py-2 mb-1 group rounded-xl transition-all ${user?.role === 'user' ? 'opacity-40 cursor-not-allowed blur-[0.5px] grayscale' : 'cursor-pointer hover:bg-white/5'}`}
-                      title={user?.role === 'user' ? "Access restricted to Administrators" : ""}
+                      title={user?.role === 'user' ? "Access restricted" : ""}
                     >
                       <span className={`text-sm font-normal transition-colors ${user?.role === 'user' ? 'text-slate-500' : 'text-slate-300 group-hover:text-white'}`}>
                         Profile Settings
