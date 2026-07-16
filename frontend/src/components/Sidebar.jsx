@@ -369,10 +369,17 @@ export default function Sidebar({
                  <div className="fixed inset-0 z-40" onClick={() => setIsSettingsOpen(false)} />
                  <div className={`absolute bottom-full mb-3 w-44 bg-dark-800 border border-white/10 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 z-50 animate-slide-up ${isSidebarExpanded ? 'right-0' : 'left-0'}`}>
                     <button 
-                      onClick={() => { setIsProfileSetupOpen(true); setIsSettingsOpen(false); }}
-                      className="w-full flex items-center justify-between px-3 py-2 mb-1 group cursor-pointer hover:bg-white/5 rounded-xl transition-colors"
+                      onClick={() => { 
+                        if (user?.role !== 'user') {
+                          setIsProfileSetupOpen(true); 
+                          setIsSettingsOpen(false); 
+                        }
+                      }}
+                      disabled={user?.role === 'user'}
+                      className={`w-full flex items-center justify-between px-3 py-2 mb-1 group rounded-xl transition-all ${user?.role === 'user' ? 'opacity-40 cursor-not-allowed blur-[0.5px] grayscale' : 'cursor-pointer hover:bg-white/5'}`}
+                      title={user?.role === 'user' ? "Access restricted to Administrators" : ""}
                     >
-                      <span className="text-sm font-normal text-slate-300 group-hover:text-white transition-colors">
+                      <span className={`text-sm font-normal transition-colors ${user?.role === 'user' ? 'text-slate-500' : 'text-slate-300 group-hover:text-white'}`}>
                         Profile Settings
                       </span>
                     </button>
