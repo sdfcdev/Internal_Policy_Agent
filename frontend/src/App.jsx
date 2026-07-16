@@ -424,8 +424,8 @@ export default function App() {
               <AdminDashboard user={user} role={user.role} />
             </div>
 
-            {/* Global Footer */}
-            <footer className="absolute bottom-0 left-0 w-full py-4 border-t border-white/5 bg-dark-900/95 backdrop-blur-md text-center z-20">
+            {/* Global Footer - FIXED, never moves */}
+            <footer className="fixed bottom-0 left-0 w-full py-3 border-t border-white/5 bg-dark-900/95 backdrop-blur-md text-center z-20">
                <p className="text-[10px] text-slate-500 tracking-wide font-normal">
                  © 2026 Sarvodaya Development Finance. All rights reserved.
                </p>
