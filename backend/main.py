@@ -387,11 +387,13 @@ def communicator_node(state: AgentState) -> AgentState:
         "USER QUERY: {query}\n\n"
         "INSTRUCTIONS:\n"
         "1. If the answer is in the CONTEXT, provide a professional response with citations like [Source: file.pdf, Page: X].\n"
-        "2. IF CONTEXT is 'NO NEW DOCUMENTS RELEVANT' BUT the user is asking a follow-up (e.g. 'explain more', 'translate', 'format') about the CHAT HISTORY, try to answer using the CHAT HISTORY. If they ask for 'more details' but you lack the detailed documents, politely ask them to include the specific topic in their question (e.g. 'කරුණාකර මාතෘකාව සඳහන් කරමින් අසන්න - උදා: ණය ලබාගැනීම ගැන තවදුරටත් විස්තර කරන්න').\n"
-        "3. If the user is asking a general question NOT in the context AND not a follow-up to history, politely explain that you are the SDF Policy Agent and can only answer questions based on official internal documents.\n"
+        "2. IF CONTEXT is 'NO NEW DOCUMENTS RELEVANT':\n"
+        "   - If the user asks for a translation or formatting (e.g. 'translate to sinhala', 'make it short'), answer using the CHAT HISTORY.\n"
+        "   - If the user asks for 'more details' or 'explain more' WITHOUT mentioning a specific topic: DO NOT REPEAT THE PREVIOUS ANSWER. You MUST politely ask them to mention the topic (e.g. 'කරුණාකර මාතෘකාව සඳහන් කරමින් අසන්න - උදා: ණය ලබාගැනීම ගැන තවදුරටත් විස්තර කරන්න').\n"
+        "3. IF CONTEXT is 'NO NEW DOCUMENTS RELEVANT' AND the user is asking a long, general question NOT related to history, politely explain that you are the SDF Policy Agent and can only answer questions based on official internal documents.\n"
         "4. LANGUAGE: Detect the language of the USER QUERY and respond ONLY in that same language. Never mix languages unless asked.\n"
-        "4. Keep it concise (under 100 words), UNLESS the user explicitly asks for a detailed explanation.\n"
-        "5. FORMATTING: DO NOT use markdown like asterisks (*) or bold text. DO NOT use emojis. Use clean, professional plain text with standard numbered lists (1., 2.) or simple dashes (-) for points.\n"
+        "5. Keep it concise (under 100 words), UNLESS the user explicitly asks for a detailed explanation.\n"
+        "6. FORMATTING (CRITICAL): YOU MUST NEVER USE ASTERISKS (*) OR BOLD TEXT (**text**). NEVER! It looks unprofessional. Use clean plain text with standard numbered lists (1., 2.) or simple dashes (-) for points.\n"
     )
     response = llm.invoke(prompt.format(
         context=context,
