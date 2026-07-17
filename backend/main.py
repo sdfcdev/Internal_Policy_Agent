@@ -349,6 +349,7 @@ def communicator_node(state: AgentState) -> AgentState:
     COMPANY_FACT_SHEET = (
         "CORE COMPANY FACTS (Always consider this as valid Context):\n"
         "- Company: Sarvodaya Development Finance (SDF) PLC\n"
+        "- Founder / Owner / Visionary: Dr. A.T. Ariyaratne (Founder of the Sarvodaya Movement)\n"
         "- Board of Directors:\n"
         "  * Mr. Channa De Silva (Chairman/Non-Executive, Non-Independent Director)\n"
         "  * Mr. Dhammika Ganegama (Senior Director/Non-Executive, Independent Director)\n"
@@ -392,7 +393,7 @@ def communicator_node(state: AgentState) -> AgentState:
         "   - If the user asks for 'more details' or 'explain more' WITHOUT mentioning a specific topic: DO NOT REPEAT THE PREVIOUS ANSWER. You MUST politely ask them to mention the topic (e.g. 'කරුණාකර මාතෘකාව සඳහන් කරමින් අසන්න - උදා: ණය ලබාගැනීම ගැන තවදුරටත් විස්තර කරන්න').\n"
         "3. IF CONTEXT is 'NO NEW DOCUMENTS RELEVANT' AND the user is asking a long, general question NOT related to history, politely explain that you are the SDF Policy Agent and can only answer questions based on official internal documents.\n"
         "4. LANGUAGE: Detect the language of the USER QUERY and respond ONLY in that same language. Never mix languages unless asked.\n"
-        "5. Keep it concise (under 300 words), UNLESS the user explicitly asks for a detailed explanation.\n"
+        "5. Keep it concise (under 300 words), UNLESS the user explicitly asks for a detailed explanation. However, if the user asks for a list of people (like Board of Directors or ManCom), YOU MUST ALWAYS list ALL members completely without summarizing or leaving anyone out.\n"
         "6. FORMATTING (CRITICAL): YOU MUST NEVER USE ASTERISKS (*) OR BOLD TEXT (**text**). NEVER! It looks unprofessional. Use clean plain text with standard numbered lists (1., 2.) or simple dashes (-) for points.\n"
     )
     response = llm.invoke(prompt.format(
@@ -437,6 +438,7 @@ def reviewer_node(state: AgentState) -> AgentState:
     COMPANY_FACT_SHEET = (
         "CORE COMPANY FACTS (Always consider this as valid Context):\n"
         "- Company: Sarvodaya Development Finance (SDF) PLC\n"
+        "- Founder / Owner / Visionary: Dr. A.T. Ariyaratne (Founder of the Sarvodaya Movement)\n"
         "- Board of Directors:\n"
         "  * Mr. Channa De Silva (Chairman/Non-Executive, Non-Independent Director)\n"
         "  * Mr. Dhammika Ganegama (Senior Director/Non-Executive, Independent Director)\n"
