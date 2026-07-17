@@ -392,7 +392,7 @@ def communicator_node(state: AgentState) -> AgentState:
         "   - If the user asks for 'more details' or 'explain more' WITHOUT mentioning a specific topic: DO NOT REPEAT THE PREVIOUS ANSWER. You MUST politely ask them to mention the topic (e.g. 'කරුණාකර මාතෘකාව සඳහන් කරමින් අසන්න - උදා: ණය ලබාගැනීම ගැන තවදුරටත් විස්තර කරන්න').\n"
         "3. IF CONTEXT is 'NO NEW DOCUMENTS RELEVANT' AND the user is asking a long, general question NOT related to history, politely explain that you are the SDF Policy Agent and can only answer questions based on official internal documents.\n"
         "4. LANGUAGE: Detect the language of the USER QUERY and respond ONLY in that same language. Never mix languages unless asked.\n"
-        "5. Keep it concise (under 100 words), UNLESS the user explicitly asks for a detailed explanation.\n"
+        "5. Keep it concise (under 300 words), UNLESS the user explicitly asks for a detailed explanation.\n"
         "6. FORMATTING (CRITICAL): YOU MUST NEVER USE ASTERISKS (*) OR BOLD TEXT (**text**). NEVER! It looks unprofessional. Use clean plain text with standard numbered lists (1., 2.) or simple dashes (-) for points.\n"
     )
     response = llm.invoke(prompt.format(
