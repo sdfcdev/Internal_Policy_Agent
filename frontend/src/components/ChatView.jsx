@@ -324,7 +324,7 @@ export default function ChatView({
   return (
     <div className="flex flex-col flex-1 min-w-0 h-full relative bg-dark-900/40">
       
-      {messages.length > 0 && user?.role !== 'user' && <AgentPipeline activeAgent={activeAgentNav} />}
+      {messages.length > 0 && <AgentPipeline activeAgent={activeAgentNav} />}
 
       {/* Main Chat Area (Scrollable) */}
       <div 
