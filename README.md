@@ -1,4 +1,4 @@
-# SDF AI Copilot
+# SDF AI assistent
 
 > **Enterprise AI Assistant for Internal Policy & Procedure Documents**  
 > Powered by Google Vertex AI (Gemini 2.5 Flash) · LangGraph · FastAPI · React · MSSQL
@@ -24,7 +24,7 @@
 
 ## 1. Overview
 
-**SDF AI Copilot** is a production-grade AI assistant that enables Sarvodaya Development Finance (SDF) employees to query internal company policy documents through a secure, conversational interface.
+**SDF AI assistent** is a production-grade AI assistant that enables Sarvodaya Development Finance (SDF) employees to query internal company policy documents through a secure, conversational interface.
 
 Employees log in with their official `@sdf.lk` Google account (SSO). The AI reads uploaded policy PDFs, understands questions in plain language, and responds with accurate, cited answers — verified by a multi-agent hallucination-checking pipeline.
 
@@ -97,7 +97,7 @@ Employees log in with their official `@sdf.lk` Google account (SSO). The AI read
 │  ┌──────────────┐  ┌───────────────────┐  ┌─────────────┐  │
 │  │  ChromaDB    │  │  Google Vertex AI │  │  MSSQL      │  │
 │  │  (chroma_db/)│  │  Gemini 2.5 Flash │  │  Audit DB   │  │
-│  │  Vector Store│  │  text-embedding   │  │  SDF_Copilot│  │
+│  │  Vector Store│  │  text-embedding   │  │  SDF_assistent│  │
 │  └──────────────┘  └───────────────────┘  └─────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -211,7 +211,7 @@ Internal_Policy_Agent/
 │           └── ForgotPassword.jsx   # Password recovery
 │
 ├── documemnt/                       # Documentation
-│   ├── SDF_AI_Copilot_Developer_Guide.md
+│   ├── SDF_AI_assistent_Developer_Guide.md
 │   ├── FRESH_SERVER_SETUP.md        # Disaster recovery guide
 │   └── NETWORK_ALLOWLIST.md         # Firewall rules for network admin
 │
@@ -229,7 +229,7 @@ Internal_Policy_Agent/
 ```env
 # Microsoft SQL Server
 MSSQL_SERVER=localhost
-MSSQL_DATABASE=SDF_Copilot
+MSSQL_DATABASE=SDF_assistent
 MSSQL_USER=sa
 MSSQL_PASS=<your_sql_password>
 
@@ -455,12 +455,12 @@ For the full outbound allowlist required by your network administrator, see:
 ## Developer Documentation
 
 For full technical documentation including architecture decisions, MSSQL schema, and emergency procedures, see:  
-[`documemnt/SDF_AI_Copilot_Developer_Guide.md`](./documemnt/SDF_AI_Copilot_Developer_Guide.md)
+[`documemnt/SDF_AI_assistent_Developer_Guide.md`](./documemnt/SDF_AI_assistent_Developer_Guide.md)
 
 For fresh server setup (disaster recovery), see:  
 [`documemnt/FRESH_SERVER_SETUP.md`](./documemnt/FRESH_SERVER_SETUP.md)
 
 ---
 
-*SDF AI Copilot — Sarvodaya Development Finance PLC*  
+*SDF AI assistent — Sarvodaya Development Finance PLC*  
 *Developed by SDF IT Development Team · 2026*
