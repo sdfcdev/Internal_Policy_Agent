@@ -1109,7 +1109,7 @@ async def google_sso(req: Dict[str, str]):
         from google.oauth2 import id_token
         from google.auth.transport import requests as grequests
         GOOGLE_CLIENT_ID = "244353936870-4bft7oc0tlei7of6e8nl3jg30pjm67k5.apps.googleusercontent.com"
-        idinfo = id_token.verify_oauth2_token(req['credential'], grequests.Request(), GOOGLE_CLIENT_ID, clock_skew_in_seconds=10)
+        idinfo = id_token.verify_oauth2_token(req['credential'], grequests.Request(), GOOGLE_CLIENT_ID, clock_skew_in_seconds=60)
         email = idinfo.get('email', '')
         if email: email = email.lower().strip()
         
