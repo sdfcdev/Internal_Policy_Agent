@@ -598,7 +598,8 @@ async def stream_chat(request: ChatRequest):
     is_farewell = bool(re.search(r'\b(b+y+e+|g+o+o+d\s*b+y+e+|b+b+y+|good\s*night)\b', q_lower))
     is_thanks = bool(re.search(r'\b(t+h+a+n+k+s+|t+h+a+n+k\s*y+o+u+|t+q+)\b', q_lower))
     is_identity = bool(re.search(r'\b(who\s*are\s*you|what\s*are\s*you|who\s*is\s*this|oya\s*k+a+w+d+a+|oy\s*k+o+w+d+|oya\s*k+a+u+d+a+|who\s*r\s*u+)\b', q_lower))
-    is_smalltalk = bool(re.search(r'\b(h+o+w\s*a+r+e\s*y+o+u+|h+o+w\s*r\s*u+|k+o+h+o+m+a+d+a+|k+h+m+d+|m+k+|k+e+w+a+d+a+|a+d+a+r+e+i+|n+i+d+i+d+a+)\b', q_lower))
+    # Restrict smalltalk to exact phrases so it doesn't intercept real questions ending in 'kohomada'
+    is_smalltalk = bool(re.fullmatch(r'(hi\s*|hello\s*|oyata\s*)*(h+o+w\s*a+r+e\s*y+o+u+|h+o+w\s*r\s*u+|k+o+h+o+m+a+d+a+|k+o+m+a+d+a+|k+h+m+d+|m+k+|k+e+w+a+d+a+|a+d+a+r+e+i+|n+i+d+i+d+a+)\s*\??', q_lower))
     
     # Catch pure gibberish strictly OR if the word count is less than 3
     word_count = len(q_lower.split())
