@@ -36,6 +36,8 @@ from llama_parse import LlamaParse
 
 load_dotenv()
 
+ENABLE_SEMANTIC_CACHE = False  # Set to True later to re-enable semantic cache
+
 # ─────────────────────────────────────────────
 # Logging Setup
 # ─────────────────────────────────────────────
@@ -519,15 +521,16 @@ def audit_node(state: AgentState) -> AgentState:
                            state["employee_id"], state.get("session_id", ""), state["query"], final, 1 if state.get("save_chat") else 0)
             
             # Save to Semantic Cache
-            try:
-                sc = get_semantic_cache()
-                sc.add_texts(
-                    texts=[state["query"]],
-                    metadatas=[{"answer": final, "accuracy": state.get("accuracy_score", "0%"), "source": "semantic_cache"}],
-                    ids=[str(uuid.uuid4())]
-                )
-            except Exception as e:
-                logger.error(f"Failed to update semantic cache: {e}")
+            if ENABLE_SEMANTIC_CACHE:
+                try:
+                    sc = get_semantic_cache()
+                    sc.add_texts(
+                        texts=[state["query"]],
+                        metadatas=[{"answer": final, "accuracy": state.get("accuracy_score", "0%"), "source": "semantic_cache"}],
+                        ids=[str(uuid.uuid4())]
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to update semantic cache: {e}")
                 
             # Intelligence Audit: Log ONLY if it failed 3 times and reached Gemini Pro (Max retries)
             if state.get("rewrite_count", 0) >= 3:
@@ -657,34 +660,35 @@ async def stream_chat(request: ChatRequest):
         return StreamingResponse(greeting_gen(), media_type="text/event-stream")
 
     # 2. Check Semantic Cache
-    try:
-        sc = get_semantic_cache()
-        results = sc.similarity_search_with_score(request.query, k=1)
-        if results:
-            doc, distance = results[0]
-            # Lower distance means higher semantic similarity. Threshold 0.15 is very strict.
-            if distance < 0.15:
-                logger.info(f"SEMANTIC CACHE HIT! Distance: {distance:.4f}")
-                ai_response = doc.metadata.get("answer", "")
-                accuracy_score = doc.metadata.get("accuracy", "Cached")
-                
-                # Save to AuditTrail so it exists if toggled later
-                conn = get_db_connection()
-                if conn:
-                    try:
-                        cursor = conn.cursor()
-                        is_saved = 1 if request.save_chat else 0
-                        cursor.execute("INSERT INTO AuditTrail (EmployeeID, SessionID, QueryText, AIResponse, IsSaved) VALUES (?, ?, ?, ?, ?)",
-                                       request.employee_id, request.session_id, request.query, ai_response, is_saved)
-                        conn.commit()
-                    finally: conn.close()
-                
-                async def cache_gen():
-                    yield f"data: {json.dumps({'agent': 'Semantic Cache', 'status': 'done', 'response': ai_response, 'accuracy_score': accuracy_score, 'hallucination_check': 'pass'})}\n\n"
-                    yield "data: [DONE]\n\n"
-                return StreamingResponse(cache_gen(), media_type="text/event-stream")
-    except Exception as e:
-        logger.warning(f"Semantic Cache check failed: {e}")
+    if ENABLE_SEMANTIC_CACHE:
+        try:
+            sc = get_semantic_cache()
+            results = sc.similarity_search_with_score(request.query, k=1)
+            if results:
+                doc, distance = results[0]
+                # Lower distance means higher semantic similarity. Threshold 0.15 is very strict.
+                if distance < 0.15:
+                    logger.info(f"SEMANTIC CACHE HIT! Distance: {distance:.4f}")
+                    ai_response = doc.metadata.get("answer", "")
+                    accuracy_score = doc.metadata.get("accuracy", "Cached")
+                    
+                    # Save to AuditTrail so it exists if toggled later
+                    conn = get_db_connection()
+                    if conn:
+                        try:
+                            cursor = conn.cursor()
+                            is_saved = 1 if request.save_chat else 0
+                            cursor.execute("INSERT INTO AuditTrail (EmployeeID, SessionID, QueryText, AIResponse, IsSaved) VALUES (?, ?, ?, ?, ?)",
+                                           request.employee_id, request.session_id, request.query, ai_response, is_saved)
+                            conn.commit()
+                        finally: conn.close()
+                    
+                    async def cache_gen():
+                        yield f"data: {json.dumps({'agent': 'Semantic Cache', 'status': 'done', 'response': ai_response, 'accuracy_score': accuracy_score, 'hallucination_check': 'pass'})}\n\n"
+                        yield "data: [DONE]\n\n"
+                    return StreamingResponse(cache_gen(), media_type="text/event-stream")
+        except Exception as e:
+            logger.warning(f"Semantic Cache check failed: {e}")
 
     # Fetch chat history for context if session_id is provided
     chat_history = ""
@@ -832,15 +836,16 @@ async def upload_pdf(
             finally: conn.close()
             
         # Flush Semantic Cache since knowledge base changed
-        try:
-            sc = get_semantic_cache()
-            sc._client.delete_collection("semantic_cache")
-            global _semantic_cache
-            _semantic_cache = None
-            get_semantic_cache() # Re-initialize empty cache
-            logger.info("Semantic Cache flushed due to document upload.")
-        except Exception as e:
-            logger.warning(f"Could not flush semantic cache: {e}")
+        if ENABLE_SEMANTIC_CACHE:
+            try:
+                sc = get_semantic_cache()
+                sc._client.delete_collection("semantic_cache")
+                global _semantic_cache
+                _semantic_cache = None
+                get_semantic_cache() # Re-initialize empty cache
+                logger.info("Semantic Cache flushed due to document upload.")
+            except Exception as e:
+                logger.warning(f"Could not flush semantic cache: {e}")
 
         return {"message": "Success", "filename": file.filename, "chunks_added": len(chunks), "department": department}
     except Exception as e:
