@@ -252,30 +252,72 @@ class AgentState(TypedDict):
 # Agent Nodes
 # ─────────────────────────────────────────────
 
+def is_pure_formatting_request(query: str, history: str) -> bool:
+    """Detects if query is strictly a follow-up translation or formatting request (e.g. 'translate to sinhala', 'make it short')."""
+    if not history or not history.strip():
+        return False
+    
+    q = query.strip().lower()
+    
+    # Substantive questions with question indicators or property inquiries are NEVER pure formatting
+    question_indicators = [
+        "what", "how", "why", "when", "where", "who", "which",
+        "kiyada", "mokakda", "kohomada", "kageda", "kawadada", "koheda",
+        "length", "limit", "rate", "fee", "penalty", "days", "dawas", "gaana", "ganana", "amount", "rule", "standard"
+    ]
+    if any(qi in q for qi in question_indicators):
+        return False
+        
+    formatting_phrases = [
+        "translate", "translte", "translt", "trnslt", 
+        "to sinhala", "in sinhala", "sinhalen", "sinhalin", "sinhalata",
+        "to english", "in english", "english walata",
+        "to tamil", "in tamil", "demalen", "demalata",
+        "make it short", "short karanna", "keti karanna", "summarize", "summarise",
+        "bullet points", "as a list", "as bullet", "points walata", "points widiyata",
+        "number format", "numbered list", "as numbers", "kalin eka sinhalen", "kalin eka translate"
+    ]
+    return any(p in q for p in formatting_phrases) and len(q.split()) <= 15
+
 def researcher_node(state: AgentState) -> AgentState:
     """Researcher Agent: Finds relevant chunks from ChromaDB and applies Distance Guardrail."""
     logger.info("[RESEARCHER] Finding relevant document chunks…")
     
-    # 0. Follow-up Query Detection
-    # If it's a short formatting/translation request, bypass DB search so we don't pull garbage chunks.
-    query_lower = state["query"].lower()
-    follow_up_keywords = [
-        "above", "abouv", "number", "point", "format", "list", "bullet", 
-        "translate", "translte", "translt", "trnslt", "trsanslte", 
-        "sinhala", "sinhla", "sinhalen", "sinhalin", "english", "tamil", "demala", "demalen",
-        "short", "summarize", "kalin", "eka", "uda", "numbers"
-    ]
-    is_follow_up = any(kw in query_lower for kw in follow_up_keywords) and len(state["query"].split()) <= 15 and state.get("history", "").strip() != ""
-    
-    if is_follow_up:
+    # 0. Pure Follow-up Formatting/Translation Detection (e.g. 'translate to sinhala', 'make it short')
+    # Only bypass vector search if it is purely requesting re-formatting of the prior answer
+    history = state.get("history", "").strip()
+    if is_pure_formatting_request(state["query"], history):
         logger.info("[RESEARCHER] Query identified as follow-up formatting. Bypassing vector search.")
         return {**state, "retrieved_chunks": ["GUARDRAIL_REJECT"], "current_agent": "Researcher"}
+
+    # Contextual Query Expansion for Conversational RAG
+    # If the user asks a follow-up question (e.g. 'ethakota minimum password length eka kiyada'),
+    # contextualize it into a standalone query so ChromaDB finds the exact matching page.
+    search_query = state["query"]
+    if history and len(state["query"].split()) <= 25:
+        try:
+            fast_llm = get_llm("gemini-2.5-flash")
+            rewrite_prompt = (
+                "You are an expert AI search query rephraser for an enterprise bank/finance policy document system.\n"
+                "Given the recent CHAT HISTORY and the user's latest follow-up question, rewrite the question into a clear, standalone English search query that includes the relevant policy subject/topic.\n"
+                "If the query is in Sinhala or Singlish, translate the search intent into concise English keywords for vector retrieval.\n"
+                "Do NOT answer the question. Output ONLY the standalone search query.\n\n"
+                f"CHAT HISTORY:\n{history}\n\n"
+                f"LATEST USER QUERY: {state['query']}\n\n"
+                "STANDALONE SEARCH QUERY:"
+            )
+            rewritten = fast_llm.invoke(rewrite_prompt).content.strip().strip('"').strip("'")
+            if rewritten and len(rewritten) > 2:
+                logger.info(f"[RESEARCHER] Contextual Query Rewrite: '{state['query']}' -> '{rewritten}'")
+                search_query = rewritten
+        except Exception as e:
+            logger.warning(f"[RESEARCHER] Contextual query rewrite failed, using original: {e}")
 
     vs = get_vectorstore()
     
     # 1. Apply document-level Access Control (Filter by source)
     allowed_files = state.get("allowed_filenames", [])
-    search_kwargs = {"k": 8}
+    search_kwargs = {"k": 10}
     if allowed_files:
         search_kwargs["filter"] = {"source": {"$in": allowed_files}}
     else:
@@ -284,15 +326,15 @@ def researcher_node(state: AgentState) -> AgentState:
         logger.info("[RESEARCHER] User has no allowed documents to search.")
         return {**state, "retrieved_chunks": ["GUARDRAIL_REJECT"], "current_agent": "Researcher"}
         
-    results = vs.similarity_search_with_score(state["query"], **search_kwargs)
+    results = vs.similarity_search_with_score(search_query, **search_kwargs)
     
     # 2. Distance Threshold Guardrail (Blocks off-topic queries locally)
-    # Increased threshold for Vertex AI text-embedding-004 metric ranges
-    DISTANCE_THRESHOLD = 1.2
+    # 1.30 accommodates multi-lingual variations while safely filtering off-topic queries
+    DISTANCE_THRESHOLD = 1.30
     
     if not results or results[0][1] > DISTANCE_THRESHOLD:
         best_dist = results[0][1] if results else "N/A"
-        logger.warning(f"[RESEARCHER] GUARDRAIL REJECT! Best match distance {best_dist} exceeds threshold. Query is off-topic.")
+        logger.warning(f"[RESEARCHER] GUARDRAIL REJECT! Best match distance {best_dist} exceeds threshold {DISTANCE_THRESHOLD}. Query is off-topic.")
         return {**state, "retrieved_chunks": ["GUARDRAIL_REJECT"], "current_agent": "Researcher"}
         
     logger.info(f"[RESEARCHER] Query accepted. Best chunk distance: {results[0][1]:.4f}")
@@ -314,18 +356,10 @@ def communicator_node(state: AgentState) -> AgentState:
     
     # Intercept Guardrail Rejects, but ALLOW follow-up formatting requests to hit the LLM
     is_rejected = state["retrieved_chunks"] and state["retrieved_chunks"][0] == "GUARDRAIL_REJECT"
-    
-    # COST OPTIMIZATION: Only pass rejects to LLM if it looks like a follow-up formatting request
-    query_lower = state["query"].lower()
-    follow_up_keywords = [
-        "above", "abouv", "number", "point", "format", "list", "bullet", 
-        "translate", "translte", "translt", "trnslt", "trsanslte", 
-        "sinhala", "sinhla", "sinhalen", "sinhalin", "english", "tamil", "demala", "demalen",
-        "short", "summarize", "kalin", "eka", "uda", "numbers"
-    ]
-    is_follow_up = any(kw in query_lower for kw in follow_up_keywords) and state.get("history", "").strip() != ""
+    history = state.get("history", "")
+    is_pure_formatting = is_pure_formatting_request(state["query"], history)
 
-    if is_rejected and not is_follow_up:
+    if is_rejected and not is_pure_formatting:
         logger.info("[COMMUNICATOR] Hard-rejecting off-topic query to save LLM cost.")
         return {
             **state,
