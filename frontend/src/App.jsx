@@ -8,7 +8,7 @@ import Register      from './components/Register';
 import ForgotPassword from './components/ForgotPassword';
 import { healthCheck, login, googleLogin } from './api';
 
-function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
+function LoginScreen({ onLogin, onForgotPassword, onRegister, onOpenManual }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -96,16 +96,15 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
           </div>
           
           <div className="text-center mt-6 flex flex-col items-center gap-2.5">
-            <a 
-              href="/User_Manual_SDF_Policy_Assistant.pdf" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-200 font-medium transition hover:underline bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 px-3 py-1.5 rounded-full border border-slate-200 dark:border-white/10 shadow-sm"
+            <button
+              type="button"
+              onClick={onOpenManual}
+              className="true-color inline-flex items-center gap-1.5 text-xs text-[#4c328e] hover:text-[#33245e] font-semibold transition bg-white hover:bg-[#f4f2fb] px-3.5 py-1.5 rounded-full border border-[#d4caee] shadow-sm cursor-pointer"
               title="Open SDF Policy Assistant User Manual"
             >
-              <FileText className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" />
+              <FileText className="w-3.5 h-3.5 text-[#5b3fa8]" />
               <span>User Manual and Guideline</span>
-            </a>
+            </button>
 
             <p className="true-color text-[13px] font-medium text-[#B7371F] tracking-wide">
               IT Help Desk Support : 2626
@@ -323,7 +322,8 @@ export default function App() {
             setView(initialView);
           }} 
           onForgotPassword={() => setView('forgot-password')} 
-          onRegister={() => setView('register')} 
+          onRegister={() => setView('register')}
+          onOpenManual={() => setViewPdfUrl('/User_Manual_SDF_Policy_Assistant.pdf')}
         />
       )}
 
@@ -504,38 +504,50 @@ export default function App() {
              </div>
           )}
 
-           {/* PDF Viewer Modal */}
-           {viewPdfUrl && (
-              <div className="fixed inset-0 z-[200] flex items-center justify-center bg-dark-900/90 backdrop-blur-sm p-4 animate-fade-in">
-                <div className="bg-dark-800 border border-white/10 rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden relative shadow-2xl">
-                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-dark-900">
-                    <h3 className="text-white font-semibold flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-brand-400" />
-                      Document Viewer
-                    </h3>
-                    <button onClick={() => setViewPdfUrl(null)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
-                      <X className="w-5 h-5 text-white" />
-                    </button>
-                  </div>
-                  <div className="pdf-iframe-wrapper flex-1 w-full" style={{ backgroundColor: '#ffffff', background: '#ffffff' }}>
-                    <iframe 
-                      src={`${viewPdfUrl}#toolbar=0&navpanes=0`} 
-                      className="w-full h-full border-0" 
-                      style={{ 
-                        backgroundColor: '#ffffff',
-                        background: '#ffffff',
-                        colorScheme: 'light',
-                        filter: 'none',
-                        WebkitFilter: 'none'
-                      }}
-                      data-darkreader-ignore="true"
-                      title="PDF Viewer" 
-                    />
-                  </div>
-                </div>
-              </div>
-           )}
         </>
+      )}
+
+      {/* PDF Viewer Modal (Accessible both on Login Screen and inside App) */}
+      {viewPdfUrl && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-dark-900/90 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-dark-800 border border-white/10 rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden relative shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-white/5 bg-dark-900">
+              <h3 className="text-white font-semibold flex items-center gap-2">
+                <FileText className="w-4 h-4 text-brand-400" />
+                Document Viewer
+              </h3>
+              <div className="flex items-center gap-2">
+                <a
+                  href={viewPdfUrl}
+                  download
+                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs text-slate-300 hover:text-white font-medium flex items-center gap-1.5 transition-colors"
+                  title="Download PDF"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download</span>
+                </a>
+                <button onClick={() => setViewPdfUrl(null)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+            <div className="pdf-iframe-wrapper flex-1 w-full" style={{ backgroundColor: '#ffffff', background: '#ffffff' }}>
+              <iframe 
+                src={`${viewPdfUrl}#toolbar=0&navpanes=0`} 
+                className="w-full h-full border-0" 
+                style={{ 
+                  backgroundColor: '#ffffff',
+                  background: '#ffffff',
+                  colorScheme: 'light',
+                  filter: 'none',
+                  WebkitFilter: 'none'
+                }}
+                data-darkreader-ignore="true"
+                title="PDF Viewer" 
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
