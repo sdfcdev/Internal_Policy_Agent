@@ -95,7 +95,18 @@ function LoginScreen({ onLogin, onForgotPassword, onRegister }) {
             />
           </div>
           
-          <div className="text-center mt-8">
+          <div className="text-center mt-6 flex flex-col items-center gap-2.5">
+            <a 
+              href="/User_Manual_SDF_Policy_Assistant.pdf" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-200 font-medium transition hover:underline bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 px-3 py-1.5 rounded-full border border-slate-200 dark:border-white/10 shadow-sm"
+              title="Open SDF Policy Assistant User Manual"
+            >
+              <FileText className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" />
+              <span>User Manual and Guideline</span>
+            </a>
+
             <p className="true-color text-[13px] font-medium text-[#B7371F] tracking-wide">
               IT Help Desk Support : 2626
             </p>
